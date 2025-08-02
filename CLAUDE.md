@@ -138,3 +138,5 @@ The application includes production-ready Docker configuration with:
 - focus on human-readable & developer-friendly when writing code
 - commit code along the way after every stage, make sure type check and code format are executed before committing
 - update `README.md`, `CLAUDE.md` and developer docs (in `./docs`) along the way
+- use `context7` mcp tools for reading latest docs if needed
+- use `kubernetes` and `postgresql` mcp tools to diagnose and verify if needed
