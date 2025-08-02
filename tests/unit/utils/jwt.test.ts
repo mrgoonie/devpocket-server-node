@@ -1,4 +1,4 @@
-import { generateTokens, verifyToken, TokenType } from '@/utils/jwt';
+import { generateTokens, verifyToken, TokenType } from '../../../src/utils/jwt';
 
 describe('JWT Utils', () => {
   const mockUserId = 'user_123';

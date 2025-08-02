@@ -1,0 +1,30 @@
+name: golang
+displayName: Go
+description: Go development environment with the latest Go compiler and popular development tools
+category: PROGRAMMING_LANGUAGE
+tags:
+  - go
+  - golang
+  - backend
+  - microservices
+  - api
+dockerImage: golang:1.21-alpine
+defaultPort: 8080
+defaultResourcesCpu: 500m
+defaultResourcesMemory: 1Gi
+defaultResourcesStorage: 10Gi
+environmentVariables:
+  GOPATH: /go
+  GOROOT: /usr/local/go
+  GO111MODULE: "on"
+  CGO_ENABLED: "0"
+startupCommands:
+  - go install github.com/air-verse/air@latest
+  - go install github.com/go-delve/delve/cmd/dlv@latest
+  - mkdir -p /workspace
+  - cd /workspace
+  - go mod init workspace
+documentationUrl: https://golang.org/doc/
+iconUrl: https://golang.org/lib/godoc/images/go-logo-blue.svg
+status: ACTIVE
+version: "1.21.0"

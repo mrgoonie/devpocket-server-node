@@ -1,6 +1,7 @@
 import 'dotenv/config';
-import { createServer } from 'http';
+import { createServer, IncomingMessage } from 'http';
 import { WebSocketServer } from 'ws';
+import { Socket } from 'net';
 import app from './app';
 import { getConfig } from '@/config/env';
 import logger from '@/config/logger';
@@ -25,8 +26,20 @@ async function startServer(): Promise<void> {
 
     // Initialize WebSocket server
     const wss = new WebSocketServer({ 
-      server,
-      path: '/api/v1/ws'
+      noServer: true
+    });
+    
+    // Handle upgrade requests manually for proper path routing
+    server.on('upgrade', (request: IncomingMessage, socket: Socket, head: Buffer) => {
+      const url = new URL(request.url!, `http://${request.headers.host}`);
+      
+      if (url.pathname.startsWith('/api/v1/ws')) {
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          wss.emit('connection', ws, request);
+        });
+      } else {
+        socket.destroy();
+      }
     });
     
     initializeWebSocketServer(wss);

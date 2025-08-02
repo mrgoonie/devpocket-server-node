@@ -1,8 +1,9 @@
 #!/usr/bin/env tsx
 
 import 'dotenv/config';
-import { PrismaClient, SubscriptionPlan, ClusterStatus, TemplateCategory, TemplateStatus } from '@prisma/client';
+import { PrismaClient, SubscriptionPlan, ClusterStatus } from '@prisma/client';
 import { hashPassword } from '@/utils/password';
+import { loadAllTemplates } from '@/scripts/load_templates';
 import logger from '@/config/logger';
 
 const prisma = new PrismaClient();
@@ -104,96 +105,15 @@ async function seedClusters() {
 async function seedTemplates() {
   logger.info('Seeding templates...');
   
-  const templates = [
-    {
-      name: 'nodejs-basic',
-      displayName: 'Node.js Basic',
-      description: 'Basic Node.js environment with npm and common development tools',
-      category: TemplateCategory.PROGRAMMING_LANGUAGE,
-      tags: ['nodejs', 'javascript', 'npm'],
-      dockerImage: 'node:18-alpine',
-      defaultPort: 3000,
-      defaultResourcesCpu: '500m',
-      defaultResourcesMemory: '1Gi',
-      defaultResourcesStorage: '10Gi',
-      environmentVariables: {
-        NODE_ENV: 'development',
-        NPM_CONFIG_CACHE: '/tmp/npm-cache',
-      },
-      startupCommands: [
-        'npm install -g nodemon',
-        'mkdir -p /workspace',
-        'cd /workspace',
-      ],
-      documentationUrl: 'https://nodejs.org/docs',
-      status: TemplateStatus.ACTIVE,
-      version: '18.0.0',
-    },
-    {
-      name: 'python-basic',
-      displayName: 'Python 3.11',
-      description: 'Python development environment with pip and common packages',
-      category: TemplateCategory.PROGRAMMING_LANGUAGE,
-      tags: ['python', 'pip', 'data-science'],
-      dockerImage: 'python:3.11-slim',
-      defaultPort: 8000,
-      defaultResourcesCpu: '500m',
-      defaultResourcesMemory: '1Gi',
-      defaultResourcesStorage: '10Gi',
-      environmentVariables: {
-        PYTHONPATH: '/workspace',
-        PYTHONUNBUFFERED: '1',
-      },
-      startupCommands: [
-        'pip install --upgrade pip',
-        'pip install requests numpy pandas',
-        'mkdir -p /workspace',
-        'cd /workspace',
-      ],
-      documentationUrl: 'https://docs.python.org/3/',
-      status: TemplateStatus.ACTIVE,
-      version: '3.11.0',
-    },
-    {
-      name: 'ubuntu-basic',
-      displayName: 'Ubuntu 22.04',
-      description: 'Ubuntu development environment with common tools',
-      category: TemplateCategory.OPERATING_SYSTEM,
-      tags: ['ubuntu', 'linux', 'bash'],
-      dockerImage: 'ubuntu:22.04',
-      defaultPort: 8080,
-      defaultResourcesCpu: '500m',
-      defaultResourcesMemory: '1Gi',
-      defaultResourcesStorage: '10Gi',
-      environmentVariables: {
-        DEBIAN_FRONTEND: 'noninteractive',
-      },
-      startupCommands: [
-        'apt-get update',
-        'apt-get install -y curl wget git vim',
-        'mkdir -p /workspace',
-        'cd /workspace',
-      ],
-      documentationUrl: 'https://ubuntu.com/server/docs',
-      status: TemplateStatus.ACTIVE,
-      version: '22.04',
-    },
-  ];
-
-  const createdTemplates = [];
+  // Load all templates from YAML files in scripts/templates/
+  await loadAllTemplates();
   
-  for (const template of templates) {
-    const created = await prisma.template.upsert({
-      where: { name: template.name },
-      update: template,
-      create: template,
-    });
-    createdTemplates.push(created);
-  }
-
-  logger.info(`Created/updated ${createdTemplates.length} templates`);
+  // Get all templates from database to return for other seeding functions
+  const templates = await prisma.template.findMany();
   
-  return createdTemplates;
+  logger.info(`Created/updated ${templates.length} templates`);
+  
+  return templates;
 }
 
 async function seedUserClusters(users: any, clusters: any) {
@@ -268,7 +188,7 @@ async function seedEnvironments(users: any, templates: any[], clusters: any) {
       name: 'my-nodejs-app',
       description: 'Demo Node.js application environment',
       userId: users.demoUser.id,
-      templateId: templates.find(t => t.name === 'nodejs-basic')?.id || templates[0].id,
+      templateId: templates.find(t => t.name === 'nodejs')?.id || templates.find(t => t.name.includes('node'))?.id || templates[0].id,
       clusterId: clusters.defaultCluster.id,
       dockerImage: 'node:18-alpine',
       port: 3000,
@@ -298,7 +218,7 @@ async function seedEnvironments(users: any, templates: any[], clusters: any) {
       name: 'python-playground',
       description: 'Python development playground',
       userId: users.testUser.id,
-      templateId: templates.find(t => t.name === 'python-basic')?.id || templates[1].id,
+      templateId: templates.find(t => t.name === 'python')?.id || templates.find(t => t.name.includes('python'))?.id || templates[1]?.id || templates[0].id,
       clusterId: clusters.defaultCluster.id,
       dockerImage: 'python:3.11-slim',
       port: 8000,

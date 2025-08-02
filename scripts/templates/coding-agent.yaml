@@ -1,0 +1,59 @@
+name: coding-agent
+displayName: Coding Agent Environment
+description: Ubuntu development environment with AI coding assistants (Claude Code, Gemini CLI) and VS Code pre-installed
+category: DEVOPS
+tags:
+  - ubuntu
+  - linux
+  - ai-tools
+  - claude-code
+  - gemini-cli
+  - vscode
+  - coding-assistant
+  - development
+dockerImage: ubuntu:22.04
+defaultPort: 8080
+defaultResourcesCpu: 1000m
+defaultResourcesMemory: 2Gi
+defaultResourcesStorage: 20Gi
+environmentVariables:
+  DEBIAN_FRONTEND: noninteractive
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
+  NODE_VERSION: "20"
+startupCommands:
+  # Update system and install base packages
+  - apt-get update
+  - apt-get install -y curl wget git vim nano htop tree build-essential software-properties-common
+  
+  # Install Node.js 20
+  - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  - apt-get install -y nodejs
+  
+  # Install VS Code (code-server for web access)
+  - curl -fsSL https://code-server.dev/install.sh | sh
+  
+  # Install Claude Code CLI
+  - npm install -g @anthropic-ai/claude-code
+  
+  # Install Gemini CLI
+  - npm install -g @google/gemini-cli
+  
+  # Create workspace directory
+  - mkdir -p /workspace
+  - cd /workspace
+  
+  # Configure shell aliases and environment
+  - echo 'alias ll="ls -la"' >> ~/.bashrc
+  - echo 'alias code="code-server"' >> ~/.bashrc
+  - echo 'export PATH=$PATH:/usr/local/bin' >> ~/.bashrc
+  
+  # Create sample project structure
+  - mkdir -p /workspace/projects
+  - echo "# Welcome to Coding Agent Environment" > /workspace/README.md
+  - echo "This environment includes Claude Code, Gemini CLI, and VS Code for AI-assisted development." >> /workspace/README.md
+  
+documentationUrl: https://docs.anthropic.com/en/docs/claude-code
+iconUrl: https://cdn-icons-png.flaticon.com/512/2103/2103633.png
+status: ACTIVE
+version: "1.0"

@@ -1,0 +1,30 @@
+name: nextjs
+displayName: Next.js
+description: Next.js full-stack React framework with TypeScript, Tailwind CSS, and development tools
+category: FRAMEWORK
+tags:
+  - nextjs
+  - react
+  - typescript
+  - fullstack
+  - ssr
+  - tailwindcss
+dockerImage: node:18-alpine
+defaultPort: 3000
+defaultResourcesCpu: 1000m
+defaultResourcesMemory: 2Gi
+defaultResourcesStorage: 20Gi
+environmentVariables:
+  NODE_ENV: development
+  NEXT_TELEMETRY_DISABLED: "1"
+  CHOKIDAR_USEPOLLING: "true"
+startupCommands:
+  - npm install -g create-next-app
+  - npm install -g typescript
+  - npm install -g tailwindcss
+  - mkdir -p /workspace
+  - cd /workspace
+documentationUrl: https://nextjs.org/docs
+iconUrl: https://nextjs.org/static/favicon/safari-pinned-tab.svg
+status: ACTIVE
+version: "14.0.0"

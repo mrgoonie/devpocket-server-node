@@ -1,6 +1,6 @@
 import { User, SubscriptionPlan } from '@prisma/client';
 import { sign } from 'jsonwebtoken';
-import { getConfig } from '@/config/env';
+import { getConfig } from '../../src/config/env';
 import { prisma } from '../setup';
 
 const config = getConfig();
@@ -48,14 +48,22 @@ export async function createTestUser(overrides: Partial<User> = {}): Promise<Tes
 /**
  * Generate a JWT token for testing
  */
-export function generateTestToken(userId: string): string {
+export function generateTestToken(
+  userId: string, 
+  options: { 
+    expiresIn?: string; 
+    tokenType?: 'access' | 'refresh' 
+  } = {}
+): string {
+  const { expiresIn = '1h', tokenType = 'access' } = options;
+  
   return sign(
     { 
       userId,
-      type: 'access',
+      type: tokenType,
     },
     config.JWT_SECRET,
-    { expiresIn: '1h' }
+    { expiresIn } as any
   );
 }
 

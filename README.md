@@ -236,6 +236,11 @@ curl -X POST http://localhost:8000/api/v1/templates/initialize \
    pnpm db:studio
    ```
 
+**🔑 Default Login Credentials:**
+- Admin: admin@devpocket.app / AdminPassword123!
+- Demo: demo@devpocket.app / DemoPassword123!
+- Test: test@devpocket.app / TestPassword123!
+
 4. **Run the Application**
    ```bash
    # Development mode with hot reload

@@ -1,5 +1,5 @@
 import request from 'supertest';
-import app from '@/app';
+import app from '../../src/app';
 import { prisma } from '../setup';
 import { createTestUser, createTestUserWithToken, cleanupTestData } from '../helpers/testUtils';
 

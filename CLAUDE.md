@@ -132,3 +132,9 @@ The application includes production-ready Docker configuration with:
 
 - ask questions for clarification of uncleared requests
 - always update the related docs in `./docs` folder if the code changes affect the docs
+- use `pnpm` (alias `p`) for package management and node runtime (not `npm`)
+- use try-catch handler
+- comprehensive log management- follow security best practices
+- focus on human-readable & developer-friendly when writing code
+- commit code along the way after every stage, make sure type check and code format are executed before committing
+- update `README.md`, `CLAUDE.md` and developer docs (in `./docs`) along the way

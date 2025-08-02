@@ -1,0 +1,30 @@
+name: ubuntu
+displayName: Ubuntu 22.04
+description: Full Ubuntu development environment with common development tools and utilities
+category: OPERATING_SYSTEM
+tags:
+  - ubuntu
+  - linux
+  - bash
+  - shell
+  - general-purpose
+dockerImage: ubuntu:22.04
+defaultPort: 8080
+defaultResourcesCpu: 500m
+defaultResourcesMemory: 1Gi
+defaultResourcesStorage: 10Gi
+environmentVariables:
+  DEBIAN_FRONTEND: noninteractive
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
+startupCommands:
+  - apt-get update
+  - apt-get install -y curl wget git vim nano htop tree
+  - apt-get install -y build-essential software-properties-common
+  - mkdir -p /workspace
+  - cd /workspace
+  - echo 'alias ll="ls -la"' >> ~/.bashrc
+documentationUrl: https://ubuntu.com/server/docs
+iconUrl: https://assets.ubuntu.com/v1/29985a98-ubuntu-logo32.png
+status: ACTIVE
+version: "22.04"

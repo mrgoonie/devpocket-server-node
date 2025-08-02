@@ -1,16 +1,8 @@
 // Set environment variables before any imports
 process.env.NODE_ENV = 'test';
-process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/devpocket_test';
-process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-that-is-long-enough';
-process.env.LOG_LEVEL = 'info';
-process.env.GOOGLE_CLIENT_ID = 'test-google-client-id';
-process.env.GOOGLE_CLIENT_SECRET = 'test-google-client-secret';
-process.env.RESEND_API_KEY = 'test-resend-api-key';
-process.env.FROM_EMAIL = 'test@example.com';
-process.env.SUPPORT_EMAIL = 'support@example.com';
-process.env.ALLOWED_ORIGINS = 'http://localhost:3000';
-process.env.KUBECONFIG_PATH = '/tmp/kubeconfig';
-process.env.DEFAULT_NAMESPACE = 'devpocket-test';
+process.env.BCRYPT_ROUNDS = '4';
+process.env.LOG_LEVEL = 'error';
+process.env.SKIP_DB_SETUP = 'true';
 
 import { hashPassword, comparePassword } from '@/utils/password';
 

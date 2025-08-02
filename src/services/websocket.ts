@@ -146,20 +146,114 @@ class WebSocketConnectionManager {
 const connectionManager = new WebSocketConnectionManager();
 
 /**
+ * Validate WebSocket upgrade request
+ */
+async function validateWebSocketUpgrade(request: IncomingMessage): Promise<void> {
+  const url = new URL(request.url!, `http://${request.headers.host}`);
+  const pathParts = url.pathname.split('/');
+  
+  // Parse path: /api/v1/ws/terminal/{environmentId} or /api/v1/ws/logs/{environmentId}
+  if (pathParts.length < 6) {
+    throw new Error('Invalid WebSocket path');
+  }
+
+  const connectionType = pathParts[4]; // 'terminal' or 'logs'
+  const environmentId = pathParts[5];
+
+  if (!connectionType || !['terminal', 'logs'].includes(connectionType)) {
+    throw new Error('Invalid connection type');
+  }
+
+  if (!environmentId) {
+    throw new Error('Environment ID is required');
+  }
+
+  // Authenticate user
+  const token = url.searchParams.get('token');
+  if (!token) {
+    throw new Error('Authentication token is required');
+  }
+
+  let userId: string;
+  try {
+    const payload = jwtService.verifyToken(token);
+    if (payload.type !== 'access') {
+      throw new Error('Invalid token type');
+    }
+    userId = payload.userId;
+  } catch (error) {
+    throw new Error('Invalid authentication token');
+  }
+
+  // Verify user exists and is active
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      isActive: true,
+      accountLockedUntil: true,
+    },
+  });
+
+  if (!user || !user.isActive) {
+    throw new Error('User not found or inactive');
+  }
+
+  if (user.accountLockedUntil && user.accountLockedUntil > new Date()) {
+    throw new Error('Account is locked');
+  }
+
+  // Verify environment exists and belongs to user
+  const environment = await prisma.environment.findFirst({
+    where: {
+      id: environmentId,
+      userId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!environment) {
+    throw new Error('Environment not found');
+  }
+
+  // Check connection limits
+  const userConnectionCount = connectionManager.getUserConnectionCount(userId);
+  if (userConnectionCount >= config.WS_MAX_CONNECTIONS_PER_USER) {
+    throw new Error('Too many connections');
+  }
+}
+
+/**
  * Initialize WebSocket server
  */
 export function initializeWebSocketServer(wss: WebSocketServer): void {
   wss.on('connection', async (ws: WebSocket, request: IncomingMessage) => {
+    // First validate the connection 
     try {
+      await validateWebSocketUpgrade(request);
+      // If validation passes, handle the connection normally
       await handleWebSocketConnection(ws as AuthenticatedWebSocket, request);
     } catch (error) {
-      logger.error('WebSocket connection error', { error });
+      logger.warn('WebSocket connection rejected', { 
+        url: request.url,
+        error: error instanceof Error ? error.message : error 
+      });
+      
+      // Close with 1008 (Policy Violation) immediately for authentication/authorization failures
       ws.close(1008, 'Authentication failed');
+      return;
     }
   });
 
   wss.on('error', (error) => {
     logger.error('WebSocket server error', { error });
+  });
+
+  // Clean up connection manager on server close
+  wss.on('close', () => {
+    connectionManager.destroy();
   });
 
   logger.info('WebSocket server initialized');
