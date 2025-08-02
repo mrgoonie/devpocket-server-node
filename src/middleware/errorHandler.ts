@@ -48,11 +48,11 @@ export const errorHandler = (
     if (error.name === 'ValidationError' && error.errors && error.errors.length > 0) {
       const firstError = error.errors[0];
       if (firstError && firstError.message.toLowerCase().includes('required')) {
-        message = 'Required fields are missing';
+        message = 'required fields are missing';
       } else if (firstError && firstError.field === 'email' && firstError.message.toLowerCase().includes('email')) {
-        message = 'Invalid email format';
+        message = 'invalid email format';
       } else if (firstError && firstError.field === 'password') {
-        message = 'Invalid password format';
+        message = 'invalid password format';
       }
     }
   }
@@ -70,11 +70,11 @@ export const errorHandler = (
     if (errors.length > 0) {
       const firstError = errors[0];
       if (firstError && firstError.message.toLowerCase().includes('required')) {
-        message = 'Required fields are missing';
+        message = 'required fields are missing';
       } else if (firstError && firstError.field === 'email' && firstError.message.toLowerCase().includes('email')) {
-        message = 'Invalid email format';
+        message = 'invalid email format';
       } else if (firstError && firstError.field === 'password') {
-        message = 'Invalid password format';
+        message = 'invalid password format';
       }
     }
   }
@@ -125,7 +125,7 @@ export const errorHandler = (
 
   // Create error response
   const errorResponse: ErrorResponse = {
-    error: getErrorName(statusCode),
+    error: error.name === 'ValidationError' || error instanceof ZodError ? message : getErrorName(statusCode),
     message,
     timestamp: new Date().toISOString(),
     path: req.path,
@@ -298,7 +298,7 @@ export const notFoundHandler = (
     Math.random().toString(36).substring(2, 15);
 
   const errorResponse = {
-    error: 'Not Found',
+    error: 'Not found',
     message: `Route ${req.method} ${req.path} not found`,
     timestamp: new Date().toISOString(),
     path: req.path,

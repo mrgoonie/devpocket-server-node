@@ -10,7 +10,7 @@ const config = getConfig();
  */
 export const defaultRateLimiter = rateLimit({
   windowMs: config.RATE_LIMIT_WINDOW_MS, // 15 minutes
-  max: config.NODE_ENV === 'test' ? 100 : config.RATE_LIMIT_MAX_REQUESTS, // Higher limit for testing
+  max: config.NODE_ENV === 'test' ? 5 : config.RATE_LIMIT_MAX_REQUESTS, // Lower limit for testing rate limit functionality
   message: {
     error: 'Too Many Requests',
     message: 'Too many requests from this IP, please try again later.',

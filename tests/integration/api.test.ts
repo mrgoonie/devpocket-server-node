@@ -258,7 +258,7 @@ describe('API Endpoints', () => {
         .post('/api/v1/auth/login')
         .set('Content-Type', 'application/json')
         .send({
-          email: 'test@example.com',
+          usernameOrEmail: 'test@example.com',
           password: 'password123',
         })
         .expect(401); // Invalid credentials, but JSON was parsed
@@ -270,7 +270,7 @@ describe('API Endpoints', () => {
       const response = await request(app)
         .post('/api/v1/auth/login')
         .set('Content-Type', 'application/x-www-form-urlencoded')
-        .send('email=test@example.com&password=password123')
+        .send('usernameOrEmail=test@example.com&password=password123')
         .expect(401); // Invalid credentials, but data was parsed
 
       expect(response.body).toHaveProperty('error');
