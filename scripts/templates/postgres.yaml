@@ -1,0 +1,28 @@
+name: postgres
+displayName: PostgreSQL
+description: PostgreSQL database server with pgAdmin and common database tools
+category: DATABASE
+tags:
+  - postgresql
+  - database
+  - sql
+  - pgadmin
+dockerImage: postgres:15-alpine
+defaultPort: 5432
+defaultResourcesCpu: 500m
+defaultResourcesMemory: 1Gi
+defaultResourcesStorage: 20Gi
+environmentVariables:
+  POSTGRES_DB: devpocket
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: password
+  PGDATA: /var/lib/postgresql/data/pgdata
+startupCommands:
+  - mkdir -p /var/lib/postgresql/data
+  - chown -R postgres:postgres /var/lib/postgresql/data
+  - su postgres -c 'initdb -D /var/lib/postgresql/data'
+  - su postgres -c 'pg_ctl -D /var/lib/postgresql/data start'
+documentationUrl: https://www.postgresql.org/docs/
+iconUrl: https://www.postgresql.org/media/img/about/press/elephant.png
+status: ACTIVE
+version: "15.0"

@@ -1,0 +1,30 @@
+name: react
+displayName: React.js
+description: React development environment with Create React App, TypeScript support, and modern development tools
+category: FRAMEWORK
+tags:
+  - react
+  - javascript
+  - typescript
+  - frontend
+  - spa
+dockerImage: node:18-alpine
+defaultPort: 3000
+defaultResourcesCpu: 1000m
+defaultResourcesMemory: 2Gi
+defaultResourcesStorage: 15Gi
+environmentVariables:
+  NODE_ENV: development
+  BROWSER: none
+  CHOKIDAR_USEPOLLING: "true"
+  REACT_APP_DEV_MODE: "true"
+startupCommands:
+  - npm install -g create-react-app
+  - npm install -g typescript
+  - npm install -g @types/react @types/react-dom
+  - mkdir -p /workspace
+  - cd /workspace
+documentationUrl: https://reactjs.org/docs
+iconUrl: https://reactjs.org/logo-og.png
+status: ACTIVE
+version: "18.2.0"

@@ -1,0 +1,30 @@
+name: python
+displayName: Python 3.11
+description: Python development environment with pip, virtualenv, and common data science libraries
+category: PROGRAMMING_LANGUAGE
+tags:
+  - python
+  - pip
+  - django
+  - flask
+  - data-science
+dockerImage: python:3.11-slim
+defaultPort: 8000
+defaultResourcesCpu: 500m
+defaultResourcesMemory: 1Gi
+defaultResourcesStorage: 10Gi
+environmentVariables:
+  PYTHONPATH: /workspace
+  PYTHONUNBUFFERED: "1"
+  PIP_CACHE_DIR: /tmp/pip-cache
+startupCommands:
+  - pip install --upgrade pip
+  - pip install virtualenv
+  - pip install jupyter
+  - pip install requests numpy pandas
+  - mkdir -p /workspace
+  - cd /workspace
+documentationUrl: https://docs.python.org/3/
+iconUrl: https://www.python.org/static/community_logos/python-logo.png
+status: ACTIVE
+version: "3.11.0"

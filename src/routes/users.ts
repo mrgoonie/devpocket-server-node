@@ -1,0 +1,437 @@
+import { Router, Request, Response } from 'express';
+import { z } from 'zod';
+import { prisma } from '@/config/database';
+import { asyncHandler } from '@/middleware/errorHandler';
+import { authenticate, AuthenticatedRequest, requireEmailVerification } from '@/middleware/auth';
+import { ValidationError, NotFoundError, ConflictError } from '@/types/errors';
+import passwordService from '@/utils/password';
+import logger from '@/config/logger';
+
+const router = Router();
+
+// Validation schemas
+const updateUserSchema = z.object({
+  fullName: z.string()
+    .min(1, 'Full name is required')
+    .max(100, 'Full name must be less than 100 characters')
+    .optional(),
+  email: z.string().email('Invalid email format').optional(),
+  avatarUrl: z.string().url('Invalid avatar URL').optional().nullable(),
+});
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password must be less than 128 characters'),
+});
+
+/**
+ * @swagger
+ * /api/v1/users/me:
+ *   get:
+ *     summary: Get current user profile
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+  const user = await prisma.user.findUnique({
+    where: { id: authReq.user.id },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      fullName: true,
+      isActive: true,
+      isVerified: true,
+      avatarUrl: true,
+      subscriptionPlan: true,
+      createdAt: true,
+      lastLoginAt: true,
+      // Include related data
+      _count: {
+        select: {
+          environments: {
+            where: {
+              status: {
+                notIn: ['TERMINATED'],
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    throw new NotFoundError('User not found');
+  }
+
+  res.json({
+    ...user,
+    environmentCount: user._count.environments,
+    _count: undefined, // Remove the count object from response
+  });
+}));
+
+/**
+ * @swagger
+ * /api/v1/users/me:
+ *   put:
+ *     summary: Update current user profile
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *                 example: John Updated Doe
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: updated@example.com
+ *               avatarUrl:
+ *                 type: string
+ *                 format: url
+ *                 example: https://example.com/avatar.jpg
+ *     responses:
+ *       200:
+ *         description: User profile updated successfully
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       409:
+ *         description: Email already exists
+ */
+router.put('/me', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+  const validationResult = updateUserSchema.safeParse(req.body);
+  if (!validationResult.success) {
+    throw new ValidationError('Validation failed', validationResult.error.errors.map(err => ({
+      field: err.path.join('.'),
+      message: err.message,
+      code: err.code,
+    })));
+  }
+
+  const updateData = validationResult.data;
+
+  // If email is being updated, check if it's already taken
+  if (updateData.email) {
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email: updateData.email.toLowerCase(),
+        id: { not: authReq.user.id },
+      },
+    });
+
+    if (existingUser) {
+      throw new ConflictError('Email is already taken');
+    }
+
+    // If email is changed, mark as unverified
+    if (updateData.email.toLowerCase() !== authReq.user.email.toLowerCase()) {
+      (updateData as any).isVerified = false;
+      (updateData as any).emailVerifiedAt = null;
+    }
+  }
+
+  // Update user
+  const userData: any = {};
+  if (updateData.email) userData.email = updateData.email.toLowerCase();
+  if (updateData.fullName) userData.fullName = updateData.fullName;
+  if (updateData.avatarUrl !== undefined) userData.avatarUrl = updateData.avatarUrl;
+
+  const updatedUser = await prisma.user.update({
+    where: { id: authReq.user.id },
+    data: userData,
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      fullName: true,
+      isActive: true,
+      isVerified: true,
+      avatarUrl: true,
+      subscriptionPlan: true,
+      createdAt: true,
+      lastLoginAt: true,
+    },
+  });
+
+  logger.info('User profile updated', {
+    userId: authReq.user.id,
+    updatedFields: Object.keys(updateData),
+  });
+
+  res.json(updatedUser);
+}));
+
+/**
+ * @swagger
+ * /api/v1/users/me/change-password:
+ *   post:
+ *     summary: Change user password
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 example: currentPassword123
+ *               newPassword:
+ *                 type: string
+ *                 example: newSecurePassword123
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *       400:
+ *         description: Validation error or incorrect current password
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/me/change-password', 
+  authenticate, 
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthenticatedRequest;
+    const validationResult = changePasswordSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      throw new ValidationError('Validation failed', validationResult.error.errors.map(err => ({
+        field: err.path.join('.'),
+        message: err.message,
+        code: err.code,
+      })));
+    }
+
+    const { currentPassword, newPassword } = validationResult.data;
+
+    // Get user with password
+    const user = await prisma.user.findUnique({
+      where: { id: authReq.user.id },
+      select: {
+        id: true,
+        password: true,
+      },
+    });
+
+    if (!user || !user.password) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await passwordService.verifyPassword(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      throw new ValidationError('Current password is incorrect', [{
+        field: 'currentPassword',
+        message: 'Current password is incorrect',
+        code: 'invalid_password',
+      }]);
+    }
+
+    // Validate new password strength
+    const passwordValidation = passwordService.validatePasswordStrength(newPassword);
+    if (!passwordValidation.isValid) {
+      throw new ValidationError('New password validation failed', passwordValidation.errors.map(error => ({
+        field: 'newPassword',
+        message: error,
+        code: 'weak_password',
+      })));
+    }
+
+    // Hash new password
+    const hashedNewPassword = await passwordService.hashPassword(newPassword);
+
+    // Update password and revoke all refresh tokens
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: authReq.user.id },
+        data: {
+          password: hashedNewPassword,
+          failedLoginAttempts: 0, // Reset failed attempts
+          accountLockedUntil: null, // Unlock account if locked
+        },
+      }),
+      prisma.refreshToken.updateMany({
+        where: {
+          userId: authReq.user.id,
+          revokedAt: null,
+        },
+        data: {
+          revokedAt: new Date(),
+        },
+      }),
+    ]);
+
+    logger.info('User password changed', { userId: authReq.user.id });
+
+    res.json({
+      message: 'Password changed successfully. Please log in again.',
+    });
+  })
+);
+
+/**
+ * @swagger
+ * /api/v1/users/me/stats:
+ *   get:
+ *     summary: Get user statistics
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User statistics retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/me/stats', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+  const stats = await prisma.user.findUnique({
+    where: { id: authReq.user.id },
+    select: {
+      _count: {
+        select: {
+          environments: {
+            where: {
+              status: { notIn: ['TERMINATED'] },
+            },
+          },
+          refreshTokens: {
+            where: {
+              revokedAt: null,
+              expiresAt: { gt: new Date() },
+            },
+          },
+        },
+      },
+      environments: {
+        select: {
+          status: true,
+          createdAt: true,
+          lastActivityAt: true,
+        },
+        where: {
+          status: { notIn: ['TERMINATED'] },
+        },
+      },
+    },
+  });
+
+  if (!stats) {
+    throw new NotFoundError('User not found');
+  }
+
+  // Calculate environment stats
+  const environmentsByStatus = stats.environments.reduce((acc, env) => {
+    acc[env.status] = (acc[env.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Calculate activity stats
+  const now = new Date();
+  const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const recentActivity = {
+    environmentsCreatedLast7Days: stats.environments.filter(env => 
+      env.createdAt > last7Days
+    ).length,
+    environmentsCreatedLast30Days: stats.environments.filter(env => 
+      env.createdAt > last30Days
+    ).length,
+    environmentsActiveLastWeek: stats.environments.filter(env => 
+      env.lastActivityAt && env.lastActivityAt > last7Days
+    ).length,
+  };
+
+  res.json({
+    totalEnvironments: stats._count.environments,
+    activeTokens: stats._count.refreshTokens,
+    environmentsByStatus,
+    recentActivity,
+  });
+}));
+
+/**
+ * @swagger
+ * /api/v1/users/me:
+ *   delete:
+ *     summary: Delete current user account
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User account deleted successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.delete('/me', 
+  authenticate, 
+  requireEmailVerification,
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthenticatedRequest;
+    // Soft delete: deactivate user and anonymize data
+    await prisma.$transaction(async (tx) => {
+      // First, terminate all user environments
+      await tx.environment.updateMany({
+        where: { userId: authReq.user.id },
+        data: { status: 'TERMINATED' },
+      });
+
+      // Revoke all refresh tokens
+      await tx.refreshToken.updateMany({
+        where: { userId: authReq.user.id },
+        data: { revokedAt: new Date() },
+      });
+
+      // Anonymize and deactivate user
+      await tx.user.update({
+        where: { id: authReq.user.id },
+        data: {
+          isActive: false,
+          email: `deleted_${authReq.user.id}@devpocket.deleted`,
+          username: `deleted_${authReq.user.id}`,
+          fullName: 'Deleted User',
+          password: null,
+          avatarUrl: null,
+          googleId: null,
+        },
+      });
+    });
+
+    logger.info('User account deleted', {
+      userId: authReq.user.id,
+      email: authReq.user.email,
+    });
+
+    res.json({
+      message: 'User account deleted successfully',
+    });
+  })
+);
+
+export default router;

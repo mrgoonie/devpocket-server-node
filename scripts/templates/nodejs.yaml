@@ -1,0 +1,29 @@
+name: nodejs
+displayName: Node.js
+description: Full-featured Node.js development environment with npm, yarn, and popular development tools pre-installed
+category: PROGRAMMING_LANGUAGE
+tags:
+  - javascript
+  - nodejs
+  - npm
+  - yarn
+  - backend
+dockerImage: node:18-alpine
+defaultPort: 3000
+defaultResourcesCpu: 500m
+defaultResourcesMemory: 1Gi
+defaultResourcesStorage: 10Gi
+environmentVariables:
+  NODE_ENV: development
+  NPM_CONFIG_CACHE: /tmp/npm-cache
+  YARN_CACHE_FOLDER: /tmp/yarn-cache
+startupCommands:
+  - npm install -g nodemon
+  - npm install -g typescript
+  - npm install -g @types/node
+  - mkdir -p /workspace
+  - cd /workspace
+documentationUrl: https://nodejs.org/docs
+iconUrl: https://nodejs.org/static/images/logo.svg
+status: ACTIVE
+version: "18.0.0"

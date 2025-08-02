@@ -1,0 +1,42 @@
+# DevPocket Server Development Dockerfile
+# Optimized for development with hot reload
+
+FROM node:18-alpine
+
+# Install necessary tools for development
+RUN apk add --no-cache \
+    git \
+    curl \
+    bash \
+    postgresql-client
+
+# Create app directory
+WORKDIR /app
+
+# Create non-root user for development
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S devpocket -u 1001 -G nodejs
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install all dependencies (including dev dependencies)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Create logs directory
+RUN mkdir -p /app/logs && chown -R devpocket:nodejs /app
+
+# Switch to non-root user
+USER devpocket
+
+# Expose port
+EXPOSE 8000
+
+# For development, we'll use nodemon for hot reload
+CMD ["npm", "run", "dev"]
