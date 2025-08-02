@@ -149,7 +149,7 @@ describe('WebSocket API', () => {
       
       ws.on('open', () => {
         expect(ws.readyState).toBe(WebSocket.OPEN);
-        ws.close();
+        // Don't close immediately - wait for welcome message
       });
 
       ws.on('message', (data) => {
@@ -160,6 +160,7 @@ describe('WebSocket API', () => {
           expect(message).toHaveProperty('environment');
           expect(message.environment.id).toBe(testEnvironment.id);
           expect(message.environment.ptyEnabled).toBe(true);
+          ws.close();
           done();
         }
       });
@@ -247,7 +248,7 @@ describe('WebSocket API', () => {
       
       ws.on('open', () => {
         expect(ws.readyState).toBe(WebSocket.OPEN);
-        ws.close();
+        // Don't close immediately - wait for welcome message
       });
 
       ws.on('message', (data) => {
@@ -257,6 +258,7 @@ describe('WebSocket API', () => {
           expect(message).toHaveProperty('environment');
           expect(message.environment.id).toBe(testEnvironment.id);
           expect(message.environment.ptyEnabled).toBe(false);
+          ws.close();
           done();
         }
       });
@@ -274,7 +276,15 @@ describe('WebSocket API', () => {
       ws = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}?token=${authToken}`);
       
       ws.on('open', () => {
-        done();
+        // Wait for welcome message before considering connection ready
+      });
+
+      ws.on('message', (data) => {
+        const message = JSON.parse(data.toString());
+        if (message.type === 'welcome') {
+          // Connection is fully established and welcome message received
+          done();
+        }
       });
 
       ws.on('error', (error) => {
@@ -289,22 +299,27 @@ describe('WebSocket API', () => {
     });
 
     it('should handle ping/pong messages', (done) => {
+      const timeout = setTimeout(() => {
+        done(new Error('Pong message not received within timeout') as any);
+      }, 5000);
+
       ws.send(JSON.stringify({ type: 'ping' }));
       
       ws.on('message', (data) => {
         const message = JSON.parse(data.toString());
         
         if (message.type === 'pong') {
+          clearTimeout(timeout);
           done();
         }
       });
-
-      setTimeout(() => {
-        done(new Error('Pong message not received within timeout') as any);
-      }, 5000);
     });
 
     it('should handle terminal input messages', (done) => {
+      const timeout = setTimeout(() => {
+        done(new Error('Terminal response not received within timeout') as any);
+      }, 10000);
+
       ws.send(JSON.stringify({ 
         type: 'input', 
         data: 'echo "Hello World"\\n' 
@@ -315,13 +330,10 @@ describe('WebSocket API', () => {
         
         if (message.type === 'output' || message.type === 'error') {
           // Received response to terminal input
+          clearTimeout(timeout);
           done();
         }
       });
-
-      setTimeout(() => {
-        done(new Error('Terminal response not received within timeout') as any);
-      }, 10000);
     });
 
     it('should handle terminal resize messages', (done) => {
