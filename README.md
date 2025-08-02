@@ -47,7 +47,7 @@ DevPocket Server is a production-ready Node.js ExpressJS backend that powers the
 - **Docker containerization** with multi-stage builds
 - **Docker Compose** setup with all dependencies
 - **Nginx reverse proxy** with SSL termination
-- **MongoDB** with replica set support
+- **PostgreSQL** with replica set support
 - **Redis** for caching and session management
 
 ## 🏗️ Architecture
@@ -64,9 +64,30 @@ DevPocket Server is a production-ready Node.js ExpressJS backend that powers the
                         │  (Kubernetes)    │            │
                         └──────────────────┘            │
 ┌─────────────────┐    ┌──────────────────┐    ┌────────────────┐
-│   MongoDB       │────│      Redis       │────│   Prometheus   │
+│   PostgreSQL    │────│      Redis       │────│   Prometheus   │
 │  (Database)     │    │    (Cache)       │    │  (Metrics)     │
 └─────────────────┘    └──────────────────┘    └────────────────┘
+```
+
+### Mermaid chart:
+```mermaid
+graph TB
+    A[Mobile App<br/>Flutter] --> B[Nginx Proxy<br/>Load Balancer]
+    B --> C[ExpressJS App<br/>Node.js]
+    C --> D[Environment Orchestrator<br/>Kubernetes]
+    C --> E[PostgreSQL<br/>Database]
+    C --> F[Redis<br/>Cache]
+    C --> G[Prometheus<br/>Metrics]
+    E -.-> F
+    F -.-> G
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+    style F fill:#ffebee
+    style G fill:#f1f8e9
 ```
 
 ## 🚀 Quick Start
