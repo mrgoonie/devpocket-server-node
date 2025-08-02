@@ -106,7 +106,7 @@ describe('Environments API', () => {
           name: 'test-env',
           // missing templateId and clusterId
         })
-        .expect(422);
+        .expect(400);
 
       expect(response.body).toHaveProperty('error');
     });

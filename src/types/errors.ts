@@ -29,7 +29,7 @@ export class ValidationError extends ApiError {
     message: string = 'Validation failed',
     errors: Array<{ field?: string; message: string; code?: string }>
   ) {
-    super(message, 422, true, errors);
+    super(message, 400, true, errors);
     this.name = 'ValidationError';
   }
 }
@@ -131,7 +131,7 @@ export class EnvironmentNotReadyError extends ApiError {
 
 export class ResourceLimitError extends ApiError {
   constructor(message: string = 'Resource limit exceeded') {
-    super(message, 429, true);
+    super(message, 403, true);
     this.name = 'ResourceLimitError';
   }
 }

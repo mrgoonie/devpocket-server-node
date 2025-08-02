@@ -85,7 +85,13 @@ const createTemplateSchema = z.object({
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const { category, status, search } = req.query;
   const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
-  const offset = parseInt(req.query.offset as string) || 0;
+  
+  // Handle both page-based and offset-based pagination
+  let offset = parseInt(req.query.offset as string) || 0;
+  const page = parseInt(req.query.page as string);
+  if (page && page > 0) {
+    offset = (page - 1) * limit;
+  }
 
   const where: any = {
     // Only show active templates by default (unless includeDeprecated query param is true)
@@ -270,7 +276,13 @@ router.get('/popular', asyncHandler(async (req: Request, res: Response) => {
 router.get('/search', asyncHandler(async (req: Request, res: Response) => {
   const { q, category, tags, fuzzy } = req.query;
   const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-  const offset = parseInt(req.query.offset as string) || 0;
+  
+  // Handle both page-based and offset-based pagination
+  let offset = parseInt(req.query.offset as string) || 0;
+  const page = parseInt(req.query.page as string);
+  if (page && page > 0) {
+    offset = (page - 1) * limit;
+  }
 
   const where: any = {
     status: 'ACTIVE',

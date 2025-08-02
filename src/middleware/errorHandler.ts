@@ -43,16 +43,40 @@ export const errorHandler = (
     statusCode = error.statusCode;
     message = error.message;
     errors = error.errors;
+    
+    // For validation errors, include more specific error context in the main message
+    if (error.name === 'ValidationError' && error.errors && error.errors.length > 0) {
+      const firstError = error.errors[0];
+      if (firstError && firstError.message.toLowerCase().includes('required')) {
+        message = 'Required fields are missing';
+      } else if (firstError && firstError.field === 'email' && firstError.message.toLowerCase().includes('email')) {
+        message = 'Invalid email format';
+      } else if (firstError && firstError.field === 'password') {
+        message = 'Invalid password format';
+      }
+    }
   }
   // Handle Zod validation errors
   else if (error instanceof ZodError) {
-    statusCode = 422;
+    statusCode = 400;
     message = 'Validation failed';
     errors = error.errors.map(err => ({
       field: err.path.join('.'),
       message: err.message,
       code: err.code,
     }));
+    
+    // Provide more specific error messages for common validation cases
+    if (errors.length > 0) {
+      const firstError = errors[0];
+      if (firstError && firstError.message.toLowerCase().includes('required')) {
+        message = 'Required fields are missing';
+      } else if (firstError && firstError.field === 'email' && firstError.message.toLowerCase().includes('email')) {
+        message = 'Invalid email format';
+      } else if (firstError && firstError.field === 'password') {
+        message = 'Invalid password format';
+      }
+    }
   }
   // Handle Prisma errors
   else if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -92,6 +116,11 @@ export const errorHandler = (
   else if (error instanceof SyntaxError && 'body' in error) {
     statusCode = 400;
     message = 'Invalid JSON in request body';
+  }
+  // Handle payload too large errors
+  else if (error.message && error.message.includes('entity too large')) {
+    statusCode = 413;
+    message = 'Request payload too large';
   }
 
   // Create error response
@@ -262,12 +291,40 @@ function getErrorName(statusCode: number): string {
  */
 export const notFoundHandler = (
   req: Request,
-  _res: Response,
-  next: NextFunction
+  res: Response,
+  _next: NextFunction
 ): void => {
-  const error = new Error(`Route ${req.method} ${req.path} not found`);
-  (error as any).statusCode = 404;
-  next(error);
+  const requestId = req.headers['x-request-id'] as string || 
+    Math.random().toString(36).substring(2, 15);
+
+  const errorResponse = {
+    error: 'Not Found',
+    message: `Route ${req.method} ${req.path} not found`,
+    timestamp: new Date().toISOString(),
+    path: req.path,
+    requestId,
+  };
+
+  logger.error('Request error', {
+    error: {
+      name: 'NotFoundError',
+      message: errorResponse.message,
+    },
+    request: {
+      method: req.method,
+      url: req.url,
+      headers: req.headers,
+      params: req.params,
+      query: req.query,
+    },
+    response: {
+      statusCode: 404,
+      message: errorResponse.message,
+    },
+    requestId,
+  });
+
+  res.status(404).json(errorResponse);
 };
 
 /**

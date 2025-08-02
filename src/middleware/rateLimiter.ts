@@ -10,14 +10,14 @@ const config = getConfig();
  */
 export const defaultRateLimiter = rateLimit({
   windowMs: config.RATE_LIMIT_WINDOW_MS, // 15 minutes
-  max: config.RATE_LIMIT_MAX_REQUESTS, // 100 requests per window
+  max: config.NODE_ENV === 'test' ? 100 : config.RATE_LIMIT_MAX_REQUESTS, // Higher limit for testing
   message: {
     error: 'Too Many Requests',
     message: 'Too many requests from this IP, please try again later.',
     retryAfter: Math.ceil(config.RATE_LIMIT_WINDOW_MS / 1000),
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  legacyHeaders: true, // Enable the `X-RateLimit-*` headers for compatibility
   handler: (req: Request, res: Response) => {
     logger.warn('Rate limit exceeded', {
       ip: req.ip,
@@ -35,8 +35,8 @@ export const defaultRateLimiter = rateLimit({
     });
   },
   skip: (req: Request) => {
-    // Skip rate limiting for health check endpoints and test environment
-    return req.path.startsWith('/health') || req.path === '/api/v1/info' || config.NODE_ENV === 'test';
+    // Skip rate limiting for health check endpoints only
+    return req.path.startsWith('/health');
   },
   keyGenerator: (req: Request) => {
     // Use user ID if authenticated, otherwise use IP

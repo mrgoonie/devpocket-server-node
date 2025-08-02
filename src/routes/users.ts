@@ -85,9 +85,11 @@ router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response)
   }
 
   res.json({
-    ...user,
-    environmentCount: user._count.environments,
-    _count: undefined, // Remove the count object from response
+    user: {
+      ...user,
+      environmentCount: user._count.environments,
+      _count: undefined, // Remove the count object from response
+    },
   });
 }));
 

@@ -45,7 +45,7 @@ export const authenticate = async (
 
     if (!token) {
       res.status(401).json({
-        error: 'Unauthorized',
+        error: 'authentication required',
         message: 'Access token is required',
       });
       return;
