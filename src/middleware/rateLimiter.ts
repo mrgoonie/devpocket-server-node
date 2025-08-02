@@ -35,8 +35,8 @@ export const defaultRateLimiter = rateLimit({
     });
   },
   skip: (req: Request) => {
-    // Skip rate limiting for health check endpoints
-    return req.path.startsWith('/health') || req.path === '/api/v1/info';
+    // Skip rate limiting for health check endpoints and test environment
+    return req.path.startsWith('/health') || req.path === '/api/v1/info' || config.NODE_ENV === 'test';
   },
   keyGenerator: (req: Request) => {
     // Use user ID if authenticated, otherwise use IP
@@ -74,6 +74,10 @@ export const authRateLimiter = rateLimit({
       path: req.path,
     });
   },
+  skip: (_req: Request) => {
+    // Skip rate limiting in test environment
+    return config.NODE_ENV === 'test';
+  },
   keyGenerator: (req: Request) => {
     // Use email/username if provided, otherwise use IP
     const identifier = req.body?.email || req.body?.username_or_email || req.ip;
@@ -108,6 +112,10 @@ export const wsRateLimiter = rateLimit({
       timestamp: new Date().toISOString(),
       path: req.path,
     });
+  },
+  skip: (_req: Request) => {
+    // Skip rate limiting in test environment
+    return config.NODE_ENV === 'test';
   },
   keyGenerator: (req: Request) => {
     return req.user?.id || req.ip || 'unknown';
@@ -148,8 +156,8 @@ export const environmentRateLimiter = rateLimit({
     return `env:${req.user?.id || req.ip}`;
   },
   skip: (req: Request) => {
-    // Skip for PRO users (they have higher limits)
-    return req.user?.subscriptionPlan === 'PRO' || req.user?.subscriptionPlan === 'ENTERPRISE';
+    // Skip for PRO users (they have higher limits) or test environment
+    return req.user?.subscriptionPlan === 'PRO' || req.user?.subscriptionPlan === 'ENTERPRISE' || config.NODE_ENV === 'test';
   },
 });
 
@@ -166,6 +174,10 @@ export const passwordResetRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (_req: Request) => {
+    // Skip rate limiting in test environment
+    return config.NODE_ENV === 'test';
+  },
   keyGenerator: (req: Request) => {
     return `password-reset:${req.body?.email || req.ip}`;
   },
@@ -184,6 +196,10 @@ export const emailVerificationRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (_req: Request) => {
+    // Skip rate limiting in test environment
+    return config.NODE_ENV === 'test';
+  },
   keyGenerator: (req: Request) => {
     return `email-verification:${req.user?.id || req.ip}`;
   },

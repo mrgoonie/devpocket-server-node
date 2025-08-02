@@ -7,7 +7,7 @@ import { authenticate, AuthenticatedRequest } from '@/middleware/auth';
 import { authRateLimiter, emailVerificationRateLimiter } from '@/middleware/rateLimiter';
 import jwtService from '@/utils/jwt';
 import passwordService from '@/utils/password';
-import { ValidationError, AuthenticationError, ConflictError, NotFoundError } from '@/types/errors';
+import { ValidationError, AuthenticationError, AuthorizationError, ConflictError, NotFoundError } from '@/types/errors';
 import logger from '@/config/logger';
 import { getConfig } from '@/config/env';
 import emailService from '@/services/email';
@@ -275,6 +275,11 @@ router.post('/login', authRateLimiter, asyncHandler(async (req: Request, res: Re
   // Check if user is active
   if (!user.isActive) {
     throw new AuthenticationError('Account is deactivated');
+  }
+
+  // Check if user is verified
+  if (!user.isVerified) {
+    throw new AuthorizationError('Account is not verified. Please check your email for verification instructions.');
   }
 
   // Reset failed login attempts on successful login

@@ -82,24 +82,23 @@ const createTemplateSchema = z.object({
  *       401:
  *         description: Unauthorized
  */
-router.get('/', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  const authReq = req as AuthenticatedRequest;
+router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const { category, status, search } = req.query;
   const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
   const offset = parseInt(req.query.offset as string) || 0;
 
   const where: any = {
-    // Only show active and beta templates to regular users
-    status: authReq.user.subscriptionPlan === 'PRO' || authReq.user.subscriptionPlan === 'ENTERPRISE'
-      ? undefined // Admin can see all
-      : { in: ['ACTIVE', 'BETA'] },
+    // Only show active templates by default (unless includeDeprecated query param is true)
+    status: req.query.includeDeprecated === 'true' 
+      ? undefined // Show all statuses when explicitly requested
+      : 'ACTIVE', // Default: only show active templates
   };
 
   if (category && typeof category === 'string') {
     where.category = category;
   }
 
-  if (status && typeof status === 'string' && (authReq.user.subscriptionPlan === 'PRO' || authReq.user.subscriptionPlan === 'ENTERPRISE')) {
+  if (status && typeof status === 'string') {
     where.status = status;
   }
 
@@ -153,6 +152,193 @@ router.get('/', authenticate, asyncHandler(async (req: Request, res: Response) =
       total,
       limit,
       offset,
+      totalPages: Math.ceil(total / limit),
+      hasMore: offset + limit < total,
+    },
+  });
+}));
+
+/**
+ * @swagger
+ * /api/v1/templates/categories:
+ *   get:
+ *     summary: Get all template categories with counts
+ *     tags: [Templates]
+ *     responses:
+ *       200:
+ *         description: Categories retrieved successfully
+ */
+router.get('/categories', asyncHandler(async (_req: Request, res: Response) => {
+  const categories = await prisma.template.groupBy({
+    by: ['category'],
+    where: {
+      status: 'ACTIVE',
+    },
+    _count: {
+      category: true,
+    },
+  });
+
+  res.json({
+    categories: categories.map(cat => ({
+      name: cat.category,
+      count: cat._count.category,
+    })),
+  });
+}));
+
+/**
+ * @swagger
+ * /api/v1/templates/popular:
+ *   get:
+ *     summary: Get most popular templates
+ *     tags: [Templates]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 10
+ *         description: Number of popular templates to return
+ *     responses:
+ *       200:
+ *         description: Popular templates retrieved successfully
+ */
+router.get('/popular', asyncHandler(async (req: Request, res: Response) => {
+  const limit = Math.min(parseInt(req.query.limit as string) || 10, 50);
+
+  const templates = await prisma.template.findMany({
+    where: {
+      status: 'ACTIVE',
+    },
+    select: {
+      id: true,
+      name: true,
+      displayName: true,
+      description: true,
+      category: true,
+      tags: true,
+      dockerImage: true,
+      defaultPort: true,
+      iconUrl: true,
+      usageCount: true,
+    },
+    orderBy: [
+      { usageCount: 'desc' },
+      { createdAt: 'desc' },
+    ],
+    take: limit,
+  });
+
+  res.json({ templates });
+}));
+
+/**
+ * @swagger
+ * /api/v1/templates/search:
+ *   get:
+ *     summary: Advanced template search
+ *     tags: [Templates]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: Search query
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *       - in: query
+ *         name: tags
+ *         schema:
+ *           type: string
+ *         description: Filter by tags (comma-separated)
+ *       - in: query
+ *         name: fuzzy
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Enable fuzzy search
+ *     responses:
+ *       200:
+ *         description: Search results retrieved successfully
+ */
+router.get('/search', asyncHandler(async (req: Request, res: Response) => {
+  const { q, category, tags, fuzzy } = req.query;
+  const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+  const offset = parseInt(req.query.offset as string) || 0;
+
+  const where: any = {
+    status: 'ACTIVE',
+  };
+
+  if (category && typeof category === 'string') {
+    where.category = category;
+  }
+
+  if (tags && typeof tags === 'string') {
+    const tagList = tags.split(',').map(tag => tag.trim());
+    where.tags = {
+      hasEvery: tagList,
+    };
+  }
+
+  if (q && typeof q === 'string') {
+    if (fuzzy === 'true') {
+      // Simple fuzzy search using contains with case insensitive
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { displayName: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+        { tags: { hasSome: [q] } },
+      ];
+    } else {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { displayName: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+        { tags: { has: q } },
+      ];
+    }
+  }
+
+  const [templates, total] = await Promise.all([
+    prisma.template.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        displayName: true,
+        description: true,
+        category: true,
+        tags: true,
+        dockerImage: true,
+        defaultPort: true,
+        iconUrl: true,
+        usageCount: true,
+        createdAt: true,
+      },
+      orderBy: [
+        { usageCount: 'desc' },
+        { createdAt: 'desc' },
+      ],
+      take: limit,
+      skip: offset,
+    }),
+    prisma.template.count({ where }),
+  ]);
+
+  res.json({
+    templates,
+    pagination: {
+      total,
+      limit,
+      offset,
+      totalPages: Math.ceil(total / limit),
       hasMore: offset + limit < total,
     },
   });
@@ -181,8 +367,7 @@ router.get('/', authenticate, asyncHandler(async (req: Request, res: Response) =
  *       404:
  *         description: Template not found
  */
-router.get('/:templateId', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  const authReq = req as AuthenticatedRequest;
+router.get('/:templateId', asyncHandler(async (req: Request, res: Response) => {
   const { templateId } = req.params;
 
   if (!templateId) {
@@ -209,8 +394,8 @@ router.get('/:templateId', authenticate, asyncHandler(async (req: Request, res: 
   }
 
   // Check if user can access this template
-  const isAdmin = authReq.user.subscriptionPlan === 'PRO' || authReq.user.subscriptionPlan === 'ENTERPRISE';
-  if (!isAdmin && !['ACTIVE', 'BETA'].includes(template.status)) {
+  // Only allow deprecated templates if explicitly requested
+  if (template.status === 'DEPRECATED' && req.query.includeDeprecated !== 'true') {
     throw new NotFoundError('Template not found');
   }
 
@@ -503,6 +688,145 @@ router.post('/initialize', authenticate, requireAdmin, asyncHandler(async (_req:
     created: createdCount,
     skipped: defaultTemplates.length - createdCount,
     errors: errors.length > 0 ? errors : undefined,
+  });
+}));
+
+/**
+ * @swagger
+ * /api/v1/templates/{templateId}/compatibility:
+ *   get:
+ *     summary: Check template compatibility with user subscription
+ *     tags: [Templates]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Template ID
+ *     responses:
+ *       200:
+ *         description: Compatibility information retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Template not found
+ */
+router.get('/:templateId/compatibility', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+  const { templateId } = req.params;
+
+  const template = await prisma.template.findUnique({
+    where: { id: templateId! },
+    select: {
+      id: true,
+      name: true,
+      displayName: true,
+      status: true,
+      defaultResourcesCpu: true,
+      defaultResourcesMemory: true,
+      defaultResourcesStorage: true,
+    },
+  });
+
+  if (!template) {
+    throw new NotFoundError('Template not found');
+  }
+
+  // Simple compatibility logic based on subscription plan
+  const userPlan = authReq.user.subscriptionPlan;
+  const isCompatible = userPlan === 'PRO' || userPlan === 'STARTER' || (userPlan === 'FREE' && template.status === 'ACTIVE');
+
+  res.json({
+    templateId: template.id,
+    name: template.name,
+    displayName: template.displayName,
+    compatible: isCompatible,
+    userPlan,
+    requirements: {
+      cpu: template.defaultResourcesCpu,
+      memory: template.defaultResourcesMemory,
+      storage: template.defaultResourcesStorage,
+    },
+    limitations: userPlan === 'FREE' ? ['Limited to 1 environment', 'Basic support only'] : [],
+  });
+}));
+
+/**
+ * @swagger
+ * /api/v1/templates/{templateId}/stats:
+ *   get:
+ *     summary: Get template usage statistics
+ *     tags: [Templates]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Template ID
+ *     responses:
+ *       200:
+ *         description: Template statistics retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Template not found
+ */
+router.get('/:templateId/stats', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  const { templateId } = req.params;
+
+  const template = await prisma.template.findUnique({
+    where: { id: templateId! },
+    select: {
+      id: true,
+      name: true,
+      displayName: true,
+      usageCount: true,
+      createdAt: true,
+      _count: {
+        select: {
+          environments: {
+            where: {
+              status: { notIn: ['TERMINATED'] },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!template) {
+    throw new NotFoundError('Template not found');
+  }
+
+  // Calculate some basic stats
+  const now = new Date();
+  const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const recentEnvironments = await prisma.environment.count({
+    where: {
+      templateId: templateId!,
+      createdAt: {
+        gte: last30Days,
+      },
+    },
+  });
+
+  res.json({
+    templateId: template.id,
+    name: template.name,
+    displayName: template.displayName,
+    totalUsage: template.usageCount,
+    activeEnvironments: template._count.environments,
+    recentUsage: {
+      last30Days: recentEnvironments,
+    },
+    createdAt: template.createdAt,
   });
 }));
 

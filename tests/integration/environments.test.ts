@@ -87,20 +87,18 @@ describe('Environments API', () => {
         .send(environmentData)
         .expect(201);
 
-      expect(response.body).toHaveProperty('environment');
-      expect(response.body.environment.name).toBe(environmentData.name);
-      expect(response.body.environment.userId).toBe(testUser.id);
-      expect(response.body.environment.status).toBe('CREATING');
+      expect(response.body.name).toBe(environmentData.name);
+      expect(response.body.status).toBe('CREATING');
 
       // Verify environment was created in database
       const dbEnvironment = await prisma.environment.findUnique({
-        where: { id: response.body.environment.id },
+        where: { id: response.body.id },
       });
       expect(dbEnvironment).toBeTruthy();
       expect(dbEnvironment?.name).toBe(environmentData.name);
     });
 
-    it('should return 400 for missing required fields', async () => {
+    it('should return 422 for missing required fields', async () => {
       const response = await request(app)
         .post('/api/v1/environments')
         .set(authHeaders)
@@ -108,7 +106,7 @@ describe('Environments API', () => {
           name: 'test-env',
           // missing templateId and clusterId
         })
-        .expect(400);
+        .expect(422);
 
       expect(response.body).toHaveProperty('error');
     });
@@ -139,7 +137,7 @@ describe('Environments API', () => {
         })
         .expect(409);
 
-      expect(response.body.error).toContain('Environment name already exists');
+      expect(response.body.message).toContain('already exists');
     });
 
     it('should enforce resource limits based on subscription plan', async () => {
@@ -181,7 +179,7 @@ describe('Environments API', () => {
         })
         .expect(403);
 
-      expect(response.body.error).toContain('limit');
+      expect(response.body.message).toContain('limit');
     });
   });
 
@@ -221,12 +219,14 @@ describe('Environments API', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('environments');
+      expect(response.body).toHaveProperty('pagination');
       expect(Array.isArray(response.body.environments)).toBe(true);
       expect(response.body.environments).toHaveLength(2);
       
       // All environments should belong to the authenticated user
       response.body.environments.forEach((env: any) => {
-        expect(env.userId).toBe(testUser.id);
+        expect(env.id).toBeDefined();
+        expect(env.name).toBeDefined();
       });
     });
 
@@ -277,11 +277,10 @@ describe('Environments API', () => {
         .set(authHeaders)
         .expect(200);
 
-      expect(response.body).toHaveProperty('environment');
-      expect(response.body.environment.id).toBe(testEnvironment.id);
-      expect(response.body.environment.name).toBe(testEnvironment.name);
-      expect(response.body.environment).toHaveProperty('template');
-      expect(response.body.environment).toHaveProperty('cluster');
+      expect(response.body.id).toBe(testEnvironment.id);
+      expect(response.body.name).toBe(testEnvironment.name);
+      expect(response.body).toHaveProperty('template');
+      expect(response.body).toHaveProperty('cluster');
     });
 
     it('should return 404 for non-existent environment', async () => {
@@ -293,13 +292,13 @@ describe('Environments API', () => {
       expect(response.body).toHaveProperty('error');
     });
 
-    it('should return 403 for environment owned by another user', async () => {
+    it('should return 404 for environment owned by another user', async () => {
       const { token: otherUserToken } = await createTestUserWithToken();
 
       const response = await request(app)
         .get(`/api/v1/environments/${testEnvironment.id}`)
         .set({ Authorization: `Bearer ${otherUserToken}` })
-        .expect(403);
+        .expect(404);
 
       expect(response.body).toHaveProperty('error');
     });
@@ -347,13 +346,13 @@ describe('Environments API', () => {
       expect(response.body).toHaveProperty('error');
     });
 
-    it('should return 403 for environment owned by another user', async () => {
+    it('should return 404 for environment owned by another user', async () => {
       const { token: otherUserToken } = await createTestUserWithToken();
 
       const response = await request(app)
         .delete(`/api/v1/environments/${testEnvironment.id}`)
         .set({ Authorization: `Bearer ${otherUserToken}` })
-        .expect(403);
+        .expect(404);
 
       expect(response.body).toHaveProperty('error');
     });

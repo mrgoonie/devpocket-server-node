@@ -138,7 +138,7 @@ describe('Templates API', () => {
         expect(template).toHaveProperty('dockerImage');
         expect(template).toHaveProperty('defaultPort');
         expect(template).toHaveProperty('version');
-        expect(template).toHaveProperty('popularity');
+        expect(template).toHaveProperty('usageCount');
       });
     });
 
@@ -188,7 +188,7 @@ describe('Templates API', () => {
       
       // Check if sorted by popularity (descending)
       for (let i = 0; i < templates.length - 1; i++) {
-        expect(templates[i].popularity).toBeGreaterThanOrEqual(templates[i + 1].popularity);
+        expect(templates[i].usageCount).toBeGreaterThanOrEqual(templates[i + 1].usageCount);
       }
     });
 
@@ -201,7 +201,7 @@ describe('Templates API', () => {
       expect(response.body.templates).toHaveLength(2);
       expect(response.body).toHaveProperty('pagination');
       expect(response.body.pagination).toHaveProperty('total');
-      expect(response.body.pagination).toHaveProperty('page');
+      expect(response.body.pagination).toHaveProperty('offset');
       expect(response.body.pagination).toHaveProperty('limit');
       expect(response.body.pagination).toHaveProperty('totalPages');
     });
@@ -255,18 +255,18 @@ describe('Templates API', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body).toHaveProperty('template');
-      expect(response.body.template.id).toBe(template.id);
-      expect(response.body.template.name).toBe(template.name);
-      expect(response.body.template.displayName).toBe(template.displayName);
-      expect(response.body.template.description).toBe(template.description);
-      expect(response.body.template.category).toBe(template.category);
-      expect(response.body.template.tags).toEqual(template.tags);
-      expect(response.body.template.dockerImage).toBe(template.dockerImage);
-      expect(response.body.template.defaultPort).toBe(template.defaultPort);
-      expect(response.body.template.environmentVariables).toEqual(template.environmentVariables);
-      expect(response.body.template.startupCommands).toEqual(template.startupCommands);
-      expect(response.body.template.version).toBe(template.version);
+      // API returns template data directly, not wrapped in 'template' object
+      expect(response.body.id).toBe(template.id);
+      expect(response.body.name).toBe(template.name);
+      expect(response.body.displayName).toBe(template.displayName);
+      expect(response.body.description).toBe(template.description);
+      expect(response.body.category).toBe(template.category);
+      expect(response.body.tags).toEqual(template.tags);
+      expect(response.body.dockerImage).toBe(template.dockerImage);
+      expect(response.body.defaultPort).toBe(template.defaultPort);
+      expect(response.body.environmentVariables).toEqual(template.environmentVariables);
+      expect(response.body.startupCommands).toEqual(template.startupCommands);
+      expect(response.body.version).toBe(template.version);
     });
 
     it('should include resource requirements', async () => {
@@ -277,12 +277,12 @@ describe('Templates API', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body.template).toHaveProperty('defaultResourcesCpu');
-      expect(response.body.template).toHaveProperty('defaultResourcesMemory');
-      expect(response.body.template).toHaveProperty('defaultResourcesStorage');
-      expect(response.body.template.defaultResourcesCpu).toBe(template.defaultResourcesCpu);
-      expect(response.body.template.defaultResourcesMemory).toBe(template.defaultResourcesMemory);
-      expect(response.body.template.defaultResourcesStorage).toBe(template.defaultResourcesStorage);
+      expect(response.body).toHaveProperty('defaultResourcesCpu');
+      expect(response.body).toHaveProperty('defaultResourcesMemory');
+      expect(response.body).toHaveProperty('defaultResourcesStorage');
+      expect(response.body.defaultResourcesCpu).toBe(template.defaultResourcesCpu);
+      expect(response.body.defaultResourcesMemory).toBe(template.defaultResourcesMemory);
+      expect(response.body.defaultResourcesStorage).toBe(template.defaultResourcesStorage);
     });
 
     it('should return 404 for non-existent template', async () => {
@@ -292,7 +292,7 @@ describe('Templates API', () => {
         .expect(404);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('Template not found');
+      expect(response.body.error).toContain('Not Found');
     });
 
     it('should return 404 for deprecated template by default', async () => {
@@ -314,8 +314,8 @@ describe('Templates API', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body.template.id).toBe(deprecatedTemplate.id);
-      expect(response.body.template.status).toBe('DEPRECATED');
+      expect(response.body.id).toBe(deprecatedTemplate.id);
+      expect(response.body.status).toBe('DEPRECATED');
     });
 
     it('should not require authentication for active templates', async () => {
@@ -325,7 +325,7 @@ describe('Templates API', () => {
         .get(`/api/v1/templates/${template.id}`)
         .expect(200);
 
-      expect(response.body.template.id).toBe(template.id);
+      expect(response.body.id).toBe(template.id);
     });
   });
 

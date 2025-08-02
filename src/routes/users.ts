@@ -15,8 +15,14 @@ const updateUserSchema = z.object({
     .min(1, 'Full name is required')
     .max(100, 'Full name must be less than 100 characters')
     .optional(),
-  email: z.string().email('Invalid email format').optional(),
+  username: z.string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(50, 'Username must be less than 50 characters')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens')
+    .optional(),
   avatarUrl: z.string().url('Invalid avatar URL').optional().nullable(),
+  // Note: email updates are not allowed through this endpoint for security
+  // Use a separate email change endpoint that requires verification
 });
 
 const changePasswordSchema = z.object({
@@ -24,6 +30,10 @@ const changePasswordSchema = z.object({
   newPassword: z.string()
     .min(8, 'Password must be at least 8 characters')
     .max(128, 'Password must be less than 128 characters'),
+});
+
+const deleteUserSchema = z.object({
+  password: z.string().min(1, 'Password is required'),
 });
 
 /**
@@ -130,29 +140,23 @@ router.put('/me', authenticate, asyncHandler(async (req: Request, res: Response)
 
   const updateData = validationResult.data;
 
-  // If email is being updated, check if it's already taken
-  if (updateData.email) {
+  // If username is being updated, check if it's already taken
+  if (updateData.username) {
     const existingUser = await prisma.user.findFirst({
       where: {
-        email: updateData.email.toLowerCase(),
+        username: updateData.username.toLowerCase(),
         id: { not: authReq.user.id },
       },
     });
 
     if (existingUser) {
-      throw new ConflictError('Email is already taken');
-    }
-
-    // If email is changed, mark as unverified
-    if (updateData.email.toLowerCase() !== authReq.user.email.toLowerCase()) {
-      (updateData as any).isVerified = false;
-      (updateData as any).emailVerifiedAt = null;
+      throw new ConflictError('Username already exists');
     }
   }
 
-  // Update user
+  // Update user (excluding email changes - they need a separate secure flow)
   const userData: any = {};
-  if (updateData.email) userData.email = updateData.email.toLowerCase();
+  if (updateData.username) userData.username = updateData.username.toLowerCase();
   if (updateData.fullName) userData.fullName = updateData.fullName;
   if (updateData.avatarUrl !== undefined) userData.avatarUrl = updateData.avatarUrl;
 
@@ -213,7 +217,7 @@ router.put('/me', authenticate, asyncHandler(async (req: Request, res: Response)
  *       401:
  *         description: Unauthorized
  */
-router.post('/me/change-password', 
+router.post('/change-password', 
   authenticate, 
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthenticatedRequest;
@@ -394,6 +398,42 @@ router.delete('/me',
   requireEmailVerification,
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthenticatedRequest;
+    
+    // Validate request body
+    const validationResult = deleteUserSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      throw new ValidationError('Validation failed', validationResult.error.errors.map(err => ({
+        field: err.path.join('.'),
+        message: err.message,
+        code: err.code,
+      })));
+    }
+
+    const { password } = validationResult.data;
+
+    // Get user with password for verification
+    const user = await prisma.user.findUnique({
+      where: { id: authReq.user.id },
+      select: {
+        id: true,
+        password: true,
+      },
+    });
+
+    if (!user || !user.password) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Verify password
+    const isPasswordValid = await passwordService.verifyPassword(password, user.password);
+    if (!isPasswordValid) {
+      throw new ValidationError('Incorrect password', [{
+        field: 'password',
+        message: 'Incorrect password',
+        code: 'invalid_password',
+      }]);
+    }
+
     // Soft delete: deactivate user and anonymize data
     await prisma.$transaction(async (tx) => {
       // First, terminate all user environments

@@ -23,7 +23,7 @@ export async function createTestUser(overrides: Partial<User> = {}): Promise<Tes
     email: `test-${Date.now()}@example.com`,
     username: `testuser-${Date.now()}`,
     fullName: 'Test User',
-    password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/Lew2bQ2zVNQ4tJKUy', // 'password123'
+    password: '$2a$12$T//ybuV8YSqlg2U6Yx2V8.qUYW8QS4VcWf.9iISGMUZGERpVQSlvm', // 'password123'
     subscriptionPlan: SubscriptionPlan.FREE,
     isActive: true,
     isVerified: true,
