@@ -127,12 +127,12 @@ class KubeconfigService {
           region,
           server: cluster.server,
           kubeconfig: content, // Store the full kubeconfig
-          certificateAuthority: cluster.certificateAuthorityData,
-          clientCertificate: user.clientCertificateData,
-          clientKey: user.clientKeyData,
-          token: user.token,
-          username: user.username,
-          password: user.password,
+          certificateAuthority: cluster.certificateAuthorityData || '',
+          clientCertificate: user.clientCertificateData || '',
+          clientKey: user.clientKeyData || '',
+          token: user.token || '',
+          username: user.username || '',
+          password: user.password || '',
           namespace: context.namespace || 'default',
           isCurrentContext: contextEntry.name === kubeconfigData.currentContext,
         };
@@ -183,12 +183,12 @@ class KubeconfigService {
           
           // Test connectivity with a simple API call
           // Try to list namespaces (should work with basic permissions)
-          const namespacesResponse = await coreV1Api.listNamespace();
+          const namespacesResponse = await coreV1Api.listNamespaces();
           
           // Try to get node count (may fail if no permissions, but that's ok)
           let nodeCount = 0;
           try {
-            const nodesResponse = await coreV1Api.listNode();
+            const nodesResponse = await coreV1Api.listNodes();
             nodeCount = nodesResponse.body.items?.length || 0;
           } catch (nodeError) {
             // If we can't list nodes, assume cluster is still working but with limited permissions
@@ -272,7 +272,7 @@ class KubeconfigService {
 
       for (const pattern of regionPatterns) {
         const match = hostname.match(pattern);
-        if (match && !match[1].match(/^\d/)) { // Don't match if it starts with a digit
+        if (match && match[1] && !match[1].match(/^\d/)) { // Don't match if it starts with a digit
           return match[1];
         }
       }

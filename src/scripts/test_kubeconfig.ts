@@ -51,7 +51,7 @@ async function testKubeconfigParsing() {
       const firstCluster = clusterDataList[0];
       
       console.log('Encrypting kubeconfig...');
-      const encryptedKubeconfig = encryptionService.encrypt(firstCluster.kubeconfig);
+      const encryptedKubeconfig = encryptionService.encrypt(firstCluster!.kubeconfig);
       console.log(`Encrypted kubeconfig length: ${encryptedKubeconfig.length} characters`);
       
       console.log('Decrypting kubeconfig...');

@@ -82,15 +82,15 @@ class EncryptionService {
         throw new Error('Invalid encrypted data format');
       }
       
-      const iv = Buffer.from(parts[0], 'hex');
+      const iv = Buffer.from(parts[0]!, 'hex');
       let authTag: Buffer | undefined;
       let encrypted: string;
       
       if (this.algorithm.includes('gcm') && parts.length === 3) {
-        authTag = Buffer.from(parts[1], 'hex');
-        encrypted = parts[2];
+        authTag = Buffer.from(parts[1]!, 'hex');
+        encrypted = parts[2]!;
       } else {
-        encrypted = parts[1];
+        encrypted = parts[1]!;
       }
       
       const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
@@ -141,8 +141,8 @@ class EncryptionService {
         throw new Error('Invalid encrypted data format');
       }
       
-      const iv = Buffer.from(parts[0], 'hex');
-      const encrypted = parts[1];
+      const iv = Buffer.from(parts[0]!, 'hex');
+      const encrypted = parts[1]!;
       
       const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
       let decrypted = decipher.update(encrypted, 'hex', 'utf8');
