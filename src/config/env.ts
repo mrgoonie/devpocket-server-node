@@ -9,11 +9,6 @@ const envSchema = z.object({
 
   // Database
   DATABASE_URL: z.string().url(),
-  DATABASE_HOST: z.string().default('localhost'),
-  DATABASE_PORT: z.coerce.number().default(5432),
-  DATABASE_USER: z.string().default('devpocket'),
-  DATABASE_PASSWORD: z.string(),
-  DATABASE_NAME: z.string().default('devpocket_server'),
 
   // JWT
   JWT_SECRET: z.string().min(32),

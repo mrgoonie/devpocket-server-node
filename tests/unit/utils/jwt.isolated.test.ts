@@ -1,7 +1,6 @@
 // Set environment variables before any imports
 process.env.NODE_ENV = 'test';
 process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/devpocket_test';
-process.env.DATABASE_PASSWORD = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-that-is-long-enough';
 process.env.LOG_LEVEL = 'info';
 process.env.GOOGLE_CLIENT_ID = 'test-google-client-id';
