@@ -1,5 +1,6 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
 import type { StringValue } from 'ms';
+import { randomBytes } from 'crypto';
 import { getConfig } from '@/config/env';
 import logger from '@/config/logger';
 
@@ -16,6 +17,7 @@ export interface JwtPayload {
   email?: string;
   iat?: number;
   exp?: number;
+  jti?: string; // JWT ID for uniqueness
   type: TokenType;
 }
 
@@ -39,14 +41,20 @@ class JwtService {
   /**
    * Generate access and refresh token pair
    */
-  public generateTokenPair(payload: Omit<JwtPayload, 'iat' | 'exp' | 'type'>): TokenPair {
+  public generateTokenPair(payload: Omit<JwtPayload, 'iat' | 'exp' | 'jti' | 'type'>): TokenPair {
+    // Generate unique IDs for each token to prevent collisions
+    const accessTokenId = randomBytes(16).toString('hex');
+    const refreshTokenId = randomBytes(16).toString('hex');
+
     const accessTokenPayload: JwtPayload = {
       ...payload,
+      jti: accessTokenId,
       type: TokenType.ACCESS,
     };
 
     const refreshTokenPayload: JwtPayload = {
       ...payload,
+      jti: refreshTokenId,
       type: TokenType.REFRESH,
     };
 
