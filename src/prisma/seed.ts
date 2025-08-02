@@ -4,7 +4,10 @@ import 'dotenv/config';
 import { PrismaClient, SubscriptionPlan, ClusterStatus } from '@prisma/client';
 import { hashPassword } from '@/utils/password';
 import { loadAllTemplates } from '@/scripts/load_templates';
+import { kubeconfigService } from '@/utils/kubeconfig';
+import { encryptionService } from '@/utils/encryption';
 import logger from '@/config/logger';
+import path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -65,39 +68,144 @@ async function seedUsers() {
 }
 
 async function seedClusters() {
-  logger.info('Seeding clusters...');
+  logger.info('Seeding clusters from real kubeconfig data...');
   
-  // Create default cluster
+  try {
+    // Path to the kubeconfig file
+    const kubeconfigPath = path.join(process.cwd(), 'k8s', 'kube_config_ovh.yaml');
+    
+    // Parse the kubeconfig file
+    const clusterDataList = await kubeconfigService.parseKubeconfigFile(kubeconfigPath);
+    
+    if (clusterDataList.length === 0) {
+      logger.warn('No clusters found in kubeconfig, falling back to mock data');
+      return await seedMockClusters();
+    }
+
+    // Validate connectivity for all clusters
+    const kubeconfigContent = require('fs').readFileSync(kubeconfigPath, 'utf8');
+    const validationResult = await kubeconfigService.validateKubeconfigConnectivity(kubeconfigContent);
+    
+    logger.info('Cluster connectivity validation results:', {
+      valid: validationResult.valid,
+      clusters: validationResult.clusters.map(c => ({
+        name: c.name,
+        connected: c.connected,
+        nodeCount: c.nodeCount,
+        error: c.error
+      }))
+    });
+
+    const seededClusters: any = {};
+
+    // Create/update clusters from real kubeconfig data
+    for (const clusterData of clusterDataList) {
+      try {
+        // Encrypt the kubeconfig content
+        const encryptedKubeconfig = encryptionService.encrypt(clusterData.kubeconfig);
+        
+        // Find validation data for this cluster
+        const validationData = validationResult.clusters.find(c => c.name === clusterData.name);
+        const nodeCount = validationData?.nodeCount || 1;
+        const isConnected = validationData?.connected || false;
+        
+        // Determine cluster status based on connectivity
+        const status = isConnected ? ClusterStatus.ACTIVE : ClusterStatus.INACTIVE;
+        
+        const cluster = await prisma.cluster.upsert({
+          where: { name: clusterData.name },
+          update: {
+            description: clusterData.description,
+            provider: clusterData.provider,
+            region: clusterData.region,
+            kubeconfig: encryptedKubeconfig,
+            status,
+            nodeCount,
+          },
+          create: {
+            name: clusterData.name,
+            description: clusterData.description,
+            provider: clusterData.provider,
+            region: clusterData.region,
+            kubeconfig: encryptedKubeconfig,
+            status,
+            nodeCount,
+          },
+        });
+
+        seededClusters[clusterData.name] = cluster;
+        
+        logger.info('Cluster seeded successfully', {
+          name: cluster.name,
+          provider: cluster.provider,
+          region: cluster.region,
+          status: cluster.status,
+          nodeCount: cluster.nodeCount,
+          connected: isConnected
+        });
+      } catch (error) {
+        logger.error('Failed to seed cluster', {
+          clusterName: clusterData.name,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    }
+
+    const clusterCount = Object.keys(seededClusters).length;
+    logger.info(`Successfully seeded ${clusterCount} clusters from kubeconfig`);
+    
+    // Return in expected format for backwards compatibility
+    const clusterEntries = Object.values(seededClusters);
+    return {
+      defaultCluster: clusterEntries[0] || null,
+      stagingCluster: clusterEntries[1] || clusterEntries[0] || null,
+      allClusters: seededClusters
+    };
+    
+  } catch (error) {
+    logger.error('Failed to seed clusters from kubeconfig, falling back to mock data', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    
+    // Fallback to mock data if kubeconfig parsing fails
+    return await seedMockClusters();
+  }
+}
+
+async function seedMockClusters() {
+  logger.info('Seeding mock cluster data...');
+  
+  // Create default mock cluster
   const defaultCluster = await prisma.cluster.upsert({
-    where: { name: 'default-cluster' },
+    where: { name: 'default-cluster-mock' },
     update: {},
     create: {
-      name: 'default-cluster',
-      description: 'Default OVH Kubernetes cluster for development environments',
+      name: 'default-cluster-mock',
+      description: 'Mock Kubernetes cluster for development (kubeconfig unavailable)',
       provider: 'ovh',
       region: 'eu-west-1',
-      kubeconfig: 'encrypted-kubeconfig-content-placeholder',
-      status: ClusterStatus.ACTIVE,
-      nodeCount: 3,
+      kubeconfig: encryptionService.encrypt('# Mock kubeconfig - replace with real cluster configuration'),
+      status: ClusterStatus.INACTIVE,
+      nodeCount: 1,
     },
   });
 
-  // Create staging cluster
+  // Create staging mock cluster
   const stagingCluster = await prisma.cluster.upsert({
-    where: { name: 'staging-cluster' },
+    where: { name: 'staging-cluster-mock' },
     update: {},
     create: {
-      name: 'staging-cluster',
-      description: 'Staging cluster for testing environments',
+      name: 'staging-cluster-mock',
+      description: 'Mock staging cluster for testing (kubeconfig unavailable)',
       provider: 'ovh',
       region: 'eu-west-1',
-      kubeconfig: 'encrypted-staging-kubeconfig-content-placeholder',
-      status: ClusterStatus.ACTIVE,
-      nodeCount: 2,
+      kubeconfig: encryptionService.encrypt('# Mock kubeconfig - replace with real cluster configuration'),
+      status: ClusterStatus.INACTIVE,
+      nodeCount: 1,
     },
   });
 
-  logger.info(`Created/updated clusters: ${defaultCluster.id}, ${stagingCluster.id}`);
+  logger.info(`Created/updated mock clusters: ${defaultCluster.id}, ${stagingCluster.id}`);
   
   return { defaultCluster, stagingCluster };
 }
@@ -119,57 +227,89 @@ async function seedTemplates() {
 async function seedUserClusters(users: any, clusters: any) {
   logger.info('Seeding user-cluster relationships...');
   
+  // Handle both new structure (with allClusters) and old structure
+  const clusterList = clusters.allClusters ? Object.values(clusters.allClusters) : Object.values(clusters);
+  
   // Give admin access to all clusters
-  for (const cluster of Object.values(clusters)) {
-    await prisma.userCluster.upsert({
-      where: {
-        userId_clusterId: {
+  for (const cluster of clusterList) {
+    try {
+      await prisma.userCluster.upsert({
+        where: {
+          userId_clusterId: {
+            userId: users.adminUser.id,
+            clusterId: (cluster as any).id,
+          },
+        },
+        update: {},
+        create: {
           userId: users.adminUser.id,
           clusterId: (cluster as any).id,
+          role: 'ADMIN',
         },
-      },
-      update: {},
-      create: {
-        userId: users.adminUser.id,
+      });
+      
+      logger.debug('Admin access granted to cluster', {
         clusterId: (cluster as any).id,
-        role: 'ADMIN',
-      },
-    });
+        clusterName: (cluster as any).name
+      });
+    } catch (error) {
+      logger.error('Failed to grant admin access to cluster', {
+        clusterId: (cluster as any).id,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   }
 
-  // Give demo user access to default cluster
-  await prisma.userCluster.upsert({
-    where: {
-      userId_clusterId: {
-        userId: users.demoUser.id,
-        clusterId: clusters.defaultCluster.id,
-      },
-    },
-    update: {},
-    create: {
-      userId: users.demoUser.id,
-      clusterId: clusters.defaultCluster.id,
-      role: 'USER',
-    },
-  });
+  // Give demo and test users access to default cluster (if available)
+  if (clusters.defaultCluster) {
+    try {
+      // Give demo user access to default cluster
+      await prisma.userCluster.upsert({
+        where: {
+          userId_clusterId: {
+            userId: users.demoUser.id,
+            clusterId: clusters.defaultCluster.id,
+          },
+        },
+        update: {},
+        create: {
+          userId: users.demoUser.id,
+          clusterId: clusters.defaultCluster.id,
+          role: 'USER',
+        },
+      });
 
-  // Give test user access to default cluster
-  await prisma.userCluster.upsert({
-    where: {
-      userId_clusterId: {
-        userId: users.testUser.id,
+      // Give test user access to default cluster
+      await prisma.userCluster.upsert({
+        where: {
+          userId_clusterId: {
+            userId: users.testUser.id,
+            clusterId: clusters.defaultCluster.id,
+          },
+        },
+        update: {},
+        create: {
+          userId: users.testUser.id,
+          clusterId: clusters.defaultCluster.id,
+          role: 'USER',
+        },
+      });
+      
+      logger.info('Demo and test users granted access to default cluster', {
         clusterId: clusters.defaultCluster.id,
-      },
-    },
-    update: {},
-    create: {
-      userId: users.testUser.id,
-      clusterId: clusters.defaultCluster.id,
-      role: 'USER',
-    },
-  });
+        clusterName: clusters.defaultCluster.name
+      });
+    } catch (error) {
+      logger.error('Failed to grant user access to default cluster', {
+        clusterId: clusters.defaultCluster.id,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  } else {
+    logger.warn('No default cluster available for demo/test users');
+  }
 
-  logger.info('User-cluster relationships created');
+  logger.info('User-cluster relationships seeding completed');
 }
 
 async function seedEnvironments(users: any, templates: any[], clusters: any) {

@@ -10,6 +10,7 @@ import {
   V1PersistentVolumeClaim
 } from '@kubernetes/client-node';
 import { prisma } from '@/config/database';
+import { encryptionService } from '@/utils/encryption';
 import logger from '@/config/logger';
 import { KubernetesError } from '@/types/errors';
 
@@ -77,9 +78,19 @@ class KubernetesService {
       // Initialize Kubernetes configuration
       const kc = new KubeConfig();
       
-      // In production, decrypt the kubeconfig
-      // const decryptedKubeconfig = await encryptionService.decrypt(cluster.kubeconfig);
-      const kubeconfig = cluster.kubeconfig; // For now, assume it's not encrypted
+      // Decrypt the kubeconfig content
+      let kubeconfig: string;
+      try {
+        kubeconfig = encryptionService.decrypt(cluster.kubeconfig);
+        logger.debug('Kubeconfig decrypted successfully', { clusterId });
+      } catch (decryptError) {
+        // Fallback: assume it's plain text (backwards compatibility)
+        logger.warn('Failed to decrypt kubeconfig, assuming plain text', { 
+          clusterId, 
+          error: decryptError instanceof Error ? decryptError.message : 'Unknown error'
+        });
+        kubeconfig = cluster.kubeconfig;
+      }
       
       kc.loadFromString(kubeconfig);
 
