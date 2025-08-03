@@ -105,51 +105,51 @@ app.use((req, res, next) => {
 });
 
 // API Documentation (Swagger)
-if (config.ENABLE_API_DOCS) {
-  const swaggerOptions = {
-    definition: {
-      openapi: '3.0.0',
-      info: {
-        title: 'DevPocket API',
-        version: '1.0.0',
-        description: 'Mobile-first cloud IDE backend API',
-        contact: {
-          name: 'DevPocket Team',
-          email: 'support@devpocket.app',
-        },
+// if (config.ENABLE_API_DOCS) {
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'DevPocket API',
+      version: '1.0.0',
+      description: 'Mobile-first cloud IDE backend API',
+      contact: {
+        name: 'DevPocket Team',
+        email: 'support@devpocket.app',
       },
-      servers: [
-        {
-          url: config.NODE_ENV === 'production' 
-            ? 'https://api.devpocket.app'
-            : `http://localhost:${config.PORT}`,
-          description: config.NODE_ENV === 'production' ? 'Production' : 'Development',
-        },
-      ],
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT',
-          },
-        },
-      },
-      security: [
-        {
-          bearerAuth: [],
-        },
-      ],
     },
-    apis: ['./src/routes/*.ts', './src/types/*.ts'], // Path to the API files
-  };
+    servers: [
+      {
+        url: config.NODE_ENV === 'production' 
+          ? 'https://api.devpocket.app'
+          : `http://localhost:${config.PORT}`,
+        description: config.NODE_ENV === 'production' ? 'Production' : 'Development',
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
+  },
+  apis: ['./src/routes/*.ts', './src/types/*.ts'], // Path to the API files
+};
 
-  const swaggerSpec = swaggerJsdoc(swaggerOptions);
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-    customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'DevPocket API Documentation',
-  }));
-}
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'DevPocket API Documentation',
+}));
+// }
 
 // Health check routes (no rate limiting)
 app.use('/health', healthRoutes);
