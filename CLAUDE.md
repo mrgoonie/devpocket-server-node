@@ -83,23 +83,23 @@ The release workflow:
 
 ## Important Implementation Details
 
-**Authentication Flow**: JWT tokens are created in `auth_service.create_tokens()` and validated in `middleware.auth.get_current_user()`. Google OAuth uses `google.auth` library for token verification.
+**Authentication Flow**: JWT tokens are generated using `jwtService.generateTokenPair()` and validated in `middleware/auth.ts`. Google OAuth is planned but not yet implemented.
 
-**Environment Management**: Environments are simulated containers with lifecycle management. The actual container creation is stubbed in `environment_service._create_container()` - this would integrate with Kubernetes in production.
+**Environment Management**: Environments are Kubernetes deployments managed through the `KubernetesService`. Each environment gets its own namespace, persistent volume claim, and service.
 
-**WebSocket Architecture**: WebSocket connections are managed through `WebSocketConnectionManager` with rate limiting per user. Terminal sessions are tracked in database and memory for cleanup.
+**WebSocket Architecture**: WebSocket connections are handled in `services/websocket.ts` with support for terminal and logs endpoints. Sessions are tracked using tmux for persistence across reconnections.
 
-**Database Indexes**: Critical indexes are created in `database.create_indexes()` for users (email, username), environments (user_id, status), and metrics (time-series data with TTL).
+**Database**: Using PostgreSQL with Prisma ORM. Key models include User, Environment, Template, Cluster, and TerminalSession. Relationships are properly defined with cascading deletes.
 
-**Resource Limits**: Subscription-based resource allocation is enforced in `environment_service._get_default_resources()` and `_check_user_limits()`.
+**Resource Limits**: Subscription-based resource allocation is enforced when creating environments based on user's subscription plan (FREE, STARTER, PRO).
 
-**Error Handling**: Global exception handlers in `server.ts` provide structured error responses. HTTPExceptions are used for expected errors, with detailed logging for debugging.
+**Error Handling**: Global error handlers in `middleware/errorHandler.ts` provide structured error responses. Custom error types (ValidationError, AuthenticationError, etc.) are used for different scenarios.
 
-**Security Features**: Account lockout after 5 failed attempts, rate limiting middleware, security headers, CORS configuration, and non-root container execution.
+**Security Features**: Account lockout after 5 failed attempts, rate limiting middleware, Helmet for security headers, CORS configuration, and JWT-based authentication.
 
 ## Configuration
 
-Environment variables are managed through `.env` files and Pydantic Settings:
+Environment variables are managed through `.env` files and TypeScript configuration:
 - `DATABASE_URL`: Database connection string
 - `SECRET_KEY`: JWT signing key (auto-generated if not provided)
 - `GOOGLE_CLIENT_ID/SECRET`: OAuth credentials

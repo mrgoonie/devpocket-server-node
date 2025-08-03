@@ -40,23 +40,24 @@ API information endpoint
 ### POST /api/v1/auth/register
 Register a new user account
 - **Authentication:** Not required
-- **Body:** User registration data (username, email, password, full_name)
-- **Returns:** Created user object
+- **Body:** User registration data (username, email, password, fullName)
+- **Returns:** Created user object with verification message
 - **Status:** 201 Created
 
 ### POST /api/v1/auth/login
-User login with email/password
+User login with email or username
 - **Authentication:** Not required
-- **Body:** Login credentials (email, password)
+- **Body:** Login credentials (usernameOrEmail, password)
 - **Returns:** JWT tokens (access_token, refresh_token) and user info
 - **Status:** 200 OK
 
-### POST /api/v1/auth/google
+### POST /api/v1/auth/google (Coming Soon)
 Google OAuth login
 - **Authentication:** Not required
 - **Body:** Google OAuth token
 - **Returns:** JWT tokens and user info
 - **Status:** 200 OK
+- **Note:** This endpoint is not yet implemented
 
 ### GET /api/v1/auth/me
 Get current user information
@@ -89,6 +90,44 @@ Resend email verification
 - **Authentication:** Required
 - **Returns:** Success message
 - **Status:** 200 OK
+
+## Users API
+
+### GET /api/v1/users/me
+Get current user profile
+- **Authentication:** Required
+- **Returns:** User profile with environment count
+- **Status:** 200 OK
+
+### PUT /api/v1/users/me
+Update current user profile
+- **Authentication:** Required
+- **Body:** Update data (fullName, username, avatarUrl)
+- **Returns:** Updated user object
+- **Status:** 200 OK
+- **Note:** Email changes require separate secure flow
+
+### POST /api/v1/users/change-password
+Change user password
+- **Authentication:** Required
+- **Body:** Password change data (currentPassword, newPassword)
+- **Returns:** Success message
+- **Status:** 200 OK
+- **Note:** All refresh tokens are revoked after password change
+
+### GET /api/v1/users/me/stats
+Get user statistics
+- **Authentication:** Required
+- **Returns:** User statistics including environment counts and activity
+- **Status:** 200 OK
+
+### DELETE /api/v1/users/me
+Delete current user account
+- **Authentication:** Required with email verification
+- **Body:** Account deletion confirmation (password)
+- **Returns:** Success message
+- **Status:** 200 OK
+- **Note:** Soft delete - user data is anonymized
 
 ## Environments API
 
@@ -322,6 +361,7 @@ The system includes these default templates:
   "status": "running",
   "docker_image": "string",
   "port": 8080,
+  "web_port": 3000,
   "resources": {
     "cpu": "500m",
     "memory": "1Gi", 
@@ -329,9 +369,15 @@ The system includes these default templates:
   },
   "environment_variables": {},
   "installation_completed": true,
+  "kubernetes_namespace": "devpocket-user-123",
+  "kubernetes_pod_name": "env-abc123",
+  "kubernetes_service_name": "env-abc123-svc",
+  "cpu_usage": 0.25,
+  "memory_usage": 0.45,
+  "storage_usage": 0.10,
   "created_at": "2024-01-01T00:00:00Z",
   "updated_at": "2024-01-01T00:00:00Z",
-  "last_activity": "2024-01-01T00:00:00Z"
+  "last_activity_at": "2024-01-01T00:00:00Z"
 }
 ```
 
@@ -408,6 +454,54 @@ The system includes these default templates:
     "id": "string",
     "username": "string",
     "email": "string"
+  }
+}
+```
+
+### Terminal Session Object
+```json
+{
+  "id": "string",
+  "environment_id": "string",
+  "session_id": "string",
+  "status": "active",
+  "tmux_session_name": "devpocket_env123",
+  "client_info": {
+    "user_agent": "string",
+    "ip_address": "string"
+  },
+  "started_at": "2024-01-01T00:00:00Z",
+  "last_activity_at": "2024-01-01T00:00:00Z"
+}
+```
+
+### Environment Log Object
+```json
+{
+  "id": "string",
+  "environment_id": "string",
+  "level": "INFO",
+  "message": "Container started successfully",
+  "source": "container",
+  "metadata": {},
+  "timestamp": "2024-01-01T00:00:00Z"
+}
+```
+
+### User Stats Response
+```json
+{
+  "total_environments": 5,
+  "active_tokens": 2,
+  "environments_by_status": {
+    "running": 3,
+    "stopped": 1,
+    "creating": 1
+  },
+  "recent_activity": {
+    "environments_created_last_7_days": 2,
+    "environments_created_last_30_days": 4,
+    "environments_active_last_week": 3
   }
 }
 ```
