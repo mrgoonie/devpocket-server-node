@@ -6,7 +6,7 @@ import { authenticate, AuthenticatedRequest, requireAdmin } from '@/middleware/a
 import { ValidationError, NotFoundError, ConflictError } from '@/types/errors';
 import logger from '@/config/logger';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const createClusterSchema = z.object({

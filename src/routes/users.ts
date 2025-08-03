@@ -7,7 +7,7 @@ import { ValidationError, NotFoundError, ConflictError } from '@/types/errors';
 import passwordService from '@/utils/password';
 import logger from '@/config/logger';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const updateUserSchema = z.object({

@@ -9,7 +9,7 @@ import logger from '@/config/logger';
 import { getConfig } from '@/config/env';
 import kubernetesService from '@/services/kubernetes';
 
-const router = Router();
+const router: Router = Router();
 const config = getConfig();
 
 // Validation schemas

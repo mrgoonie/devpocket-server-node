@@ -12,7 +12,7 @@ import logger from '@/config/logger';
 import { getConfig } from '@/config/env';
 import emailService from '@/services/email';
 
-const router = Router();
+const router: Router = Router();
 const config = getConfig();
 
 // Validation schemas

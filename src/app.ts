@@ -22,7 +22,7 @@ import clusterRoutes from '@/routes/clusters';
 loadConfig();
 const config = getConfig();
 
-const app = express();
+const app: express.Application = express();
 
 // Trust proxy (for load balancers)
 app.set('trust proxy', 1);
