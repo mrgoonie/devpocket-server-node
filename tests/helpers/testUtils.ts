@@ -49,16 +49,16 @@ export async function createTestUser(overrides: Partial<User> = {}): Promise<Tes
  * Generate a JWT token for testing
  */
 export function generateTestToken(
-  userId: string, 
-  options: { 
-    expiresIn?: string; 
-    tokenType?: 'access' | 'refresh' 
+  userId: string,
+  options: {
+    expiresIn?: string;
+    tokenType?: 'access' | 'refresh';
   } = {}
 ): string {
   const { expiresIn = '1h', tokenType = 'access' } = options;
-  
+
   return sign(
-    { 
+    {
       userId,
       type: tokenType,
     },
@@ -73,7 +73,7 @@ export function generateTestToken(
 export async function createTestUserWithToken(overrides: Partial<User> = {}) {
   const user = await createTestUser(overrides);
   const token = generateTestToken(user.id);
-  
+
   return { user, token };
 }
 

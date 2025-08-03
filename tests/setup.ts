@@ -1,7 +1,9 @@
 // Set test environment variables FIRST before any imports
 process.env.NODE_ENV = 'test';
-process.env.DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgresql://postgres:postgresql@localhost:5432/devpocket_test';
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-that-is-long-enough';
+process.env.DATABASE_URL =
+  process.env.TEST_DATABASE_URL || 'postgresql://postgres:postgresql@localhost:5432/devpocket_test';
+process.env.JWT_SECRET =
+  process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-that-is-long-enough';
 process.env.LOG_LEVEL = 'info';
 process.env.GOOGLE_CLIENT_ID = 'test-google-client-id';
 process.env.GOOGLE_CLIENT_SECRET = 'test-google-client-secret';
@@ -26,12 +28,12 @@ beforeAll(async () => {
   if (process.env.SKIP_DB_SETUP === 'true') {
     return;
   }
-  
+
   // Run database migrations for test database
   try {
-    execSync('pnpm prisma migrate deploy', { 
+    execSync('pnpm prisma migrate deploy', {
       stdio: 'inherit',
-      env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL }
+      env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
     });
   } catch (error) {
     console.warn('Migration failed - this is expected for the first run');
@@ -52,12 +54,12 @@ beforeEach(async () => {
   if (process.env.SKIP_DB_SETUP === 'true') {
     return;
   }
-  
+
   // Clean all tables in reverse order to handle foreign key constraints
   const tablenames = await prisma.$queryRaw<Array<{ tablename: string }>>`
     SELECT tablename FROM pg_tables WHERE schemaname='public'
   `;
-  
+
   const tables = tablenames
     .map(({ tablename }) => tablename)
     .filter(name => name !== '_prisma_migrations')

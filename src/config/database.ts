@@ -10,9 +10,7 @@ class DatabaseManager {
 
   private constructor() {
     this.prisma = new PrismaClient({
-      log: config.DEBUG 
-        ? ['info', 'warn', 'error']
-        : ['warn', 'error'],
+      log: config.DEBUG ? ['info', 'warn', 'error'] : ['warn', 'error'],
     });
 
     // Set up Prisma event listeners
@@ -31,7 +29,7 @@ class DatabaseManager {
   }
 
   private setupEventListeners(): void {
-    // Note: With the simplified log configuration above, 
+    // Note: With the simplified log configuration above,
     // Prisma will automatically log to stdout/stderr
     // We don't need custom event listeners for basic logging
     logger.info('Database manager initialized', { debug: config.DEBUG });

@@ -12,7 +12,7 @@ describe('Password Utils - Isolated', () => {
   describe('hashPassword', () => {
     it('should hash a password', async () => {
       const hash = await hashPassword(testPassword);
-      
+
       expect(typeof hash).toBe('string');
       expect(hash).not.toBe(testPassword);
       expect(hash.length).toBeGreaterThan(50); // bcrypt hashes are typically 60 chars
@@ -21,7 +21,7 @@ describe('Password Utils - Isolated', () => {
     it('should generate different hashes for same password', async () => {
       const hash1 = await hashPassword(testPassword);
       const hash2 = await hashPassword(testPassword);
-      
+
       expect(hash1).not.toBe(hash2);
     });
   });
@@ -30,20 +30,20 @@ describe('Password Utils - Isolated', () => {
     it('should verify correct password against hash', async () => {
       const hash = await hashPassword(testPassword);
       const isValid = await comparePassword(testPassword, hash);
-      
+
       expect(isValid).toBe(true);
     });
 
     it('should reject incorrect password against hash', async () => {
       const hash = await hashPassword(testPassword);
       const isValid = await comparePassword('wrongpassword', hash);
-      
+
       expect(isValid).toBe(false);
     });
 
     it('should reject password against invalid hash', async () => {
       const isValid = await comparePassword(testPassword, 'invalid-hash');
-      
+
       expect(isValid).toBe(false);
     });
   });

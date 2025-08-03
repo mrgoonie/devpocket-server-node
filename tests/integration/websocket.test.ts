@@ -21,29 +21,29 @@ describe('WebSocket API', () => {
   beforeAll(async () => {
     // Create HTTP server with Express app
     server = createServer(app);
-    
+
     // Initialize WebSocket server without path restriction to handle all requests
-    wss = new WebSocketServer({ 
-      noServer: true
+    wss = new WebSocketServer({
+      noServer: true,
     });
-    
+
     // Handle upgrade requests manually - allow all WebSocket connections to establish
     server.on('upgrade', (request: IncomingMessage, socket: Socket, head: Buffer) => {
       const url = new URL(request.url!, `http://${request.headers.host}`);
-      
+
       if (url.pathname.startsWith('/api/v1/ws')) {
-        wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.handleUpgrade(request, socket, head, ws => {
           wss.emit('connection', ws, request);
         });
       } else {
         socket.destroy();
       }
     });
-    
+
     initializeWebSocketServer(wss);
 
     // Start server on random port
-    await new Promise<void>((resolve) => {
+    await new Promise<void>(resolve => {
       server.listen(0, () => {
         const port = server.address()?.port;
         wsUrl = `ws://localhost:${port}/api/v1/ws`;
@@ -55,7 +55,7 @@ describe('WebSocket API', () => {
   afterAll(async () => {
     // Clean up WebSocket service
     cleanup();
-    
+
     // Clean up WebSocket connections first
     if (wss) {
       wss.clients.forEach(client => {
@@ -65,9 +65,9 @@ describe('WebSocket API', () => {
       });
       wss.close();
     }
-    
+
     if (server) {
-      await new Promise<void>((resolve) => {
+      await new Promise<void>(resolve => {
         server.close(() => resolve());
       });
     }
@@ -77,7 +77,7 @@ describe('WebSocket API', () => {
     const { user, token } = await createTestUserWithToken({
       subscriptionPlan: SubscriptionPlan.PRO,
     });
-    
+
     testUser = user;
     authToken = token;
 
@@ -145,17 +145,17 @@ describe('WebSocket API', () => {
   });
 
   describe('Terminal WebSocket Connection', () => {
-    it('should establish terminal WebSocket connection with valid token', (done) => {
+    it('should establish terminal WebSocket connection with valid token', done => {
       const ws = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}?token=${authToken}`);
-      
+
       ws.on('open', () => {
         expect(ws.readyState).toBe(WebSocket.OPEN);
         // Don't close immediately - wait for welcome message
       });
 
-      ws.on('message', (data) => {
+      ws.on('message', data => {
         const message = JSON.parse(data.toString());
-        
+
         if (message.type === 'welcome') {
           expect(message).toHaveProperty('message');
           expect(message).toHaveProperty('environment');
@@ -166,46 +166,46 @@ describe('WebSocket API', () => {
         }
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', error => {
         done(error);
       });
     });
 
-    it('should reject connection without authentication token', (done) => {
+    it('should reject connection without authentication token', done => {
       const ws = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}`);
-      
-      ws.on('close', (code) => {
+
+      ws.on('close', code => {
         expect(code).toBe(1008); // Authentication failed
         done();
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', error => {
         done(error);
       });
     });
 
-    it('should reject connection with invalid token', (done) => {
+    it('should reject connection with invalid token', done => {
       const ws = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}?token=invalid.jwt.token`);
-      
-      ws.on('close', (code) => {
+
+      ws.on('close', code => {
         expect(code).toBe(1008); // Authentication failed
         done();
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', error => {
         done(error);
       });
     });
 
-    it('should reject connection to non-existent environment', (done) => {
+    it('should reject connection to non-existent environment', done => {
       const ws = new WebSocket(`${wsUrl}/terminal/non-existent-env?token=${authToken}`);
-      
-      ws.on('close', (code) => {
+
+      ws.on('close', code => {
         expect(code).toBe(1008); // Authentication failed
         done();
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', error => {
         done(error);
       });
     });
@@ -213,7 +213,7 @@ describe('WebSocket API', () => {
     it('should reject connection to environment owned by another user', async () => {
       // Create another user and their environment
       const { user: otherUser } = await createTestUserWithToken();
-      
+
       const otherEnvironment = await prisma.environment.create({
         data: {
           name: 'other-user-env',
@@ -228,15 +228,15 @@ describe('WebSocket API', () => {
         },
       });
 
-      return new Promise<void>((done) => {
+      return new Promise<void>(done => {
         const ws = new WebSocket(`${wsUrl}/terminal/${otherEnvironment.id}?token=${authToken}`);
-        
-        ws.on('close', (code) => {
+
+        ws.on('close', code => {
           expect(code).toBe(1008); // Authentication failed
           done();
         });
 
-        ws.on('error', (error) => {
+        ws.on('error', error => {
           done(error as any);
         });
       });
@@ -244,17 +244,17 @@ describe('WebSocket API', () => {
   });
 
   describe('Logs WebSocket Connection', () => {
-    it('should establish logs WebSocket connection', (done) => {
+    it('should establish logs WebSocket connection', done => {
       const ws = new WebSocket(`${wsUrl}/logs/${testEnvironment.id}?token=${authToken}`);
-      
+
       ws.on('open', () => {
         expect(ws.readyState).toBe(WebSocket.OPEN);
         // Don't close immediately - wait for welcome message
       });
 
-      ws.on('message', (data) => {
+      ws.on('message', data => {
         const message = JSON.parse(data.toString());
-        
+
         if (message.type === 'welcome') {
           expect(message).toHaveProperty('environment');
           expect(message.environment.id).toBe(testEnvironment.id);
@@ -264,7 +264,7 @@ describe('WebSocket API', () => {
         }
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', error => {
         done(error);
       });
     });
@@ -273,14 +273,14 @@ describe('WebSocket API', () => {
   describe('WebSocket Communication', () => {
     let ws: WebSocket;
 
-    beforeEach((done) => {
+    beforeEach(done => {
       ws = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}?token=${authToken}`);
-      
+
       ws.on('open', () => {
         // Wait for welcome message before considering connection ready
       });
 
-      ws.on('message', (data) => {
+      ws.on('message', data => {
         const message = JSON.parse(data.toString());
         if (message.type === 'welcome') {
           // Connection is fully established and welcome message received
@@ -288,7 +288,7 @@ describe('WebSocket API', () => {
         }
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', error => {
         done(error);
       });
     });
@@ -299,16 +299,16 @@ describe('WebSocket API', () => {
       }
     });
 
-    it('should handle ping/pong messages', (done) => {
+    it('should handle ping/pong messages', done => {
       const timeout = setTimeout(() => {
         done(new Error('Pong message not received within timeout') as any);
       }, 5000);
 
       ws.send(JSON.stringify({ type: 'ping' }));
-      
-      ws.on('message', (data) => {
+
+      ws.on('message', data => {
         const message = JSON.parse(data.toString());
-        
+
         if (message.type === 'pong') {
           clearTimeout(timeout);
           done();
@@ -316,19 +316,21 @@ describe('WebSocket API', () => {
       });
     });
 
-    it('should handle terminal input messages', (done) => {
+    it('should handle terminal input messages', done => {
       const timeout = setTimeout(() => {
         done(new Error('Terminal response not received within timeout') as any);
       }, 10000);
 
-      ws.send(JSON.stringify({ 
-        type: 'input', 
-        data: 'echo "Hello World"\\n' 
-      }));
-      
-      ws.on('message', (data) => {
+      ws.send(
+        JSON.stringify({
+          type: 'input',
+          data: 'echo "Hello World"\\n',
+        })
+      );
+
+      ws.on('message', data => {
         const message = JSON.parse(data.toString());
-        
+
         if (message.type === 'output' || message.type === 'error') {
           // Received response to terminal input
           clearTimeout(timeout);
@@ -337,29 +339,33 @@ describe('WebSocket API', () => {
       });
     });
 
-    it('should handle terminal resize messages', (done) => {
-      ws.send(JSON.stringify({ 
-        type: 'resize', 
-        cols: 80, 
-        rows: 24 
-      }));
-      
-      // Resize doesn't necessarily send a response, 
+    it('should handle terminal resize messages', done => {
+      ws.send(
+        JSON.stringify({
+          type: 'resize',
+          cols: 80,
+          rows: 24,
+        })
+      );
+
+      // Resize doesn't necessarily send a response,
       // so we just verify the message doesn't cause an error
       setTimeout(() => {
         done();
       }, 1000);
     });
 
-    it('should handle invalid message types gracefully', (done) => {
-      ws.send(JSON.stringify({ 
-        type: 'invalid_type', 
-        data: 'test' 
-      }));
-      
-      ws.on('message', (data) => {
+    it('should handle invalid message types gracefully', done => {
+      ws.send(
+        JSON.stringify({
+          type: 'invalid_type',
+          data: 'test',
+        })
+      );
+
+      ws.on('message', data => {
         const message = JSON.parse(data.toString());
-        
+
         // Should not crash the connection
         if (message.type === 'error') {
           expect(message.message).toContain('Failed to process message');
@@ -373,13 +379,13 @@ describe('WebSocket API', () => {
       }, 2000);
     });
 
-    it('should handle malformed JSON messages', (done) => {
+    it('should handle malformed JSON messages', done => {
       // Send malformed JSON
       ws.send('{"invalid": json}');
-      
-      ws.on('message', (data) => {
+
+      ws.on('message', data => {
         const message = JSON.parse(data.toString());
-        
+
         if (message.type === 'error') {
           expect(message.message).toContain('Failed to process message');
           done();
@@ -394,18 +400,18 @@ describe('WebSocket API', () => {
   });
 
   describe('Connection Management', () => {
-    it('should handle multiple connections to same environment', (done) => {
+    it('should handle multiple connections to same environment', done => {
       const ws1 = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}?token=${authToken}`);
       const ws2 = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}?token=${authToken}`);
-      
+
       let connectedCount = 0;
-      
+
       const checkConnections = () => {
         connectedCount++;
         if (connectedCount === 2) {
           expect(ws1.readyState).toBe(WebSocket.OPEN);
           expect(ws2.readyState).toBe(WebSocket.OPEN);
-          
+
           ws1.close();
           ws2.close();
           done();
@@ -419,14 +425,14 @@ describe('WebSocket API', () => {
       ws2.on('error', done);
     });
 
-    it('should handle connection cleanup on close', (done) => {
+    it('should handle connection cleanup on close', done => {
       const ws = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}?token=${authToken}`);
-      
+
       ws.on('open', () => {
         ws.close();
       });
 
-      ws.on('close', (code) => {
+      ws.on('close', code => {
         expect(code).toBe(1005); // Normal closure
         done();
       });
@@ -470,16 +476,16 @@ describe('WebSocket API', () => {
     it('should reject expired tokens', async () => {
       // Generate an expired token
       const expiredToken = generateTestToken(testUser.id, { expiresIn: '-1h' });
-      
-      return new Promise<void>((done) => {
+
+      return new Promise<void>(done => {
         const ws = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}?token=${expiredToken}`);
-        
-        ws.on('close', (code) => {
+
+        ws.on('close', code => {
           expect(code).toBe(1008); // Authentication failed
           done();
         });
 
-        ws.on('error', (error) => {
+        ws.on('error', error => {
           done(error as any);
         });
       });
@@ -488,16 +494,16 @@ describe('WebSocket API', () => {
     it('should reject refresh tokens for WebSocket connection', async () => {
       // Generate a refresh token instead of access token
       const refreshToken = generateTestToken(testUser.id, { tokenType: 'refresh' });
-      
-      return new Promise<void>((done) => {
+
+      return new Promise<void>(done => {
         const ws = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}?token=${refreshToken}`);
-        
-        ws.on('close', (code) => {
+
+        ws.on('close', code => {
           expect(code).toBe(1008); // Authentication failed
           done();
         });
 
-        ws.on('error', (error) => {
+        ws.on('error', error => {
           done(error as any);
         });
       });
@@ -509,16 +515,16 @@ describe('WebSocket API', () => {
         where: { id: testUser.id },
         data: { isActive: false },
       });
-      
-      return new Promise<void>((done) => {
+
+      return new Promise<void>(done => {
         const ws = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}?token=${authToken}`);
-        
-        ws.on('close', (code) => {
+
+        ws.on('close', code => {
           expect(code).toBe(1008); // Authentication failed
           done();
         });
 
-        ws.on('error', (error) => {
+        ws.on('error', error => {
           done(error as any);
         });
       });
@@ -528,20 +534,20 @@ describe('WebSocket API', () => {
       // Lock the user account
       await prisma.user.update({
         where: { id: testUser.id },
-        data: { 
+        data: {
           accountLockedUntil: new Date(Date.now() + 3600000), // 1 hour from now
         },
       });
-      
-      return new Promise<void>((done) => {
+
+      return new Promise<void>(done => {
         const ws = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}?token=${authToken}`);
-        
-        ws.on('close', (code) => {
+
+        ws.on('close', code => {
           expect(code).toBe(1008); // Authentication failed
           done();
         });
 
-        ws.on('error', (error) => {
+        ws.on('error', error => {
           done(error as any);
         });
       });
@@ -549,41 +555,43 @@ describe('WebSocket API', () => {
   });
 
   describe('Invalid WebSocket Paths', () => {
-    it('should reject invalid connection types', (done) => {
+    it('should reject invalid connection types', done => {
       const ws = new WebSocket(`${wsUrl}/invalid/${testEnvironment.id}?token=${authToken}`);
-      
-      ws.on('close', (code) => {
+
+      ws.on('close', code => {
         expect(code).toBe(1008); // Authentication failed
         done();
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', error => {
         done(error);
       });
     });
 
-    it('should reject connections without environment ID', (done) => {
+    it('should reject connections without environment ID', done => {
       const ws = new WebSocket(`${wsUrl}/terminal/?token=${authToken}`);
-      
-      ws.on('close', (code) => {
+
+      ws.on('close', code => {
         expect(code).toBe(1008); // Authentication failed
         done();
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', error => {
         done(error);
       });
     });
 
-    it('should reject connections with malformed paths', (done) => {
-      const ws = new WebSocket(`${wsUrl}/terminal/extra/path/${testEnvironment.id}?token=${authToken}`);
-      
-      ws.on('close', (code) => {
+    it('should reject connections with malformed paths', done => {
+      const ws = new WebSocket(
+        `${wsUrl}/terminal/extra/path/${testEnvironment.id}?token=${authToken}`
+      );
+
+      ws.on('close', code => {
         expect(code).toBe(1008); // Authentication failed
         done();
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', error => {
         done(error);
       });
     });

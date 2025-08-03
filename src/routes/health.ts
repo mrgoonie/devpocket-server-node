@@ -38,17 +38,20 @@ const config = getConfig();
  *                   example: 1672531200.0
  *     security: []
  */
-router.get('/', asyncHandler(async (_req: Request, res: Response) => {
-  const health = {
-    status: 'healthy',
-    service: config.APP_NAME,
-    version: '1.0.0',
-    environment: config.NODE_ENV,
-    timestamp: Date.now() / 1000,
-  };
+router.get(
+  '/',
+  asyncHandler(async (_req: Request, res: Response) => {
+    const health = {
+      status: 'healthy',
+      service: config.APP_NAME,
+      version: '1.0.0',
+      environment: config.NODE_ENV,
+      timestamp: Date.now() / 1000,
+    };
 
-  res.json(health);
-}));
+    res.json(health);
+  })
+);
 
 /**
  * @swagger
@@ -92,27 +95,30 @@ router.get('/', asyncHandler(async (_req: Request, res: Response) => {
  *                       example: unhealthy
  *     security: []
  */
-router.get('/ready', asyncHandler(async (_req: Request, res: Response) => {
-  const checks = {
-    database: 'unknown',
-  };
+router.get(
+  '/ready',
+  asyncHandler(async (_req: Request, res: Response) => {
+    const checks = {
+      database: 'unknown',
+    };
 
-  // Check database connectivity
-  try {
-    const isDbHealthy = await db.healthCheck();
-    checks.database = isDbHealthy ? 'healthy' : 'unhealthy';
-  } catch (error) {
-    checks.database = 'unhealthy';
-  }
+    // Check database connectivity
+    try {
+      const isDbHealthy = await db.healthCheck();
+      checks.database = isDbHealthy ? 'healthy' : 'unhealthy';
+    } catch (error) {
+      checks.database = 'unhealthy';
+    }
 
-  const isReady = Object.values(checks).every(status => status === 'healthy');
-  const statusCode = isReady ? 200 : 503;
+    const isReady = Object.values(checks).every(status => status === 'healthy');
+    const statusCode = isReady ? 200 : 503;
 
-  res.status(statusCode).json({
-    status: isReady ? 'ready' : 'not ready',
-    checks,
-  });
-}));
+    res.status(statusCode).json({
+      status: isReady ? 'ready' : 'not ready',
+      checks,
+    });
+  })
+);
 
 /**
  * @swagger
@@ -134,10 +140,13 @@ router.get('/ready', asyncHandler(async (_req: Request, res: Response) => {
  *                   example: alive
  *     security: []
  */
-router.get('/live', asyncHandler(async (_req: Request, res: Response) => {
-  res.json({
-    status: 'alive',
-  });
-}));
+router.get(
+  '/live',
+  asyncHandler(async (_req: Request, res: Response) => {
+    res.json({
+      status: 'alive',
+    });
+  })
+);
 
 export default router;

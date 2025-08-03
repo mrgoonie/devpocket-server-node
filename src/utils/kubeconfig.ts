@@ -70,7 +70,7 @@ class KubeconfigService {
   async parseKubeconfigFile(filePath: string): Promise<ParsedClusterData[]> {
     try {
       const absolutePath = path.resolve(filePath);
-      
+
       if (!fs.existsSync(absolutePath)) {
         throw new Error(`Kubeconfig file not found: ${absolutePath}`);
       }
@@ -89,7 +89,7 @@ class KubeconfigService {
   parseKubeconfigContent(content: string): ParsedClusterData[] {
     try {
       const kubeconfigData: KubeconfigData = yaml.parse(content);
-      
+
       if (!kubeconfigData || kubeconfigData.kind !== 'Config') {
         throw new Error('Invalid kubeconfig format');
       }
@@ -103,10 +103,10 @@ class KubeconfigService {
         const userEntry = kubeconfigData.users?.find(u => u.name === context.user);
 
         if (!clusterEntry || !userEntry) {
-          logger.warn('Incomplete context configuration', { 
+          logger.warn('Incomplete context configuration', {
             context: contextEntry.name,
             cluster: context.cluster,
-            user: context.user 
+            user: context.user,
           });
           continue;
         }
@@ -116,7 +116,7 @@ class KubeconfigService {
 
         // Extract region from server URL or use default
         const region = this.extractRegionFromServer(cluster.server);
-        
+
         // Extract provider from cluster name or server
         const provider = this.extractProviderFromCluster(clusterEntry.name, cluster.server);
 
@@ -140,9 +140,9 @@ class KubeconfigService {
         clusters.push(parsedCluster);
       }
 
-      logger.info('Kubeconfig parsed successfully', { 
+      logger.info('Kubeconfig parsed successfully', {
         clustersFound: clusters.length,
-        currentContext: kubeconfigData.currentContext 
+        currentContext: kubeconfigData.currentContext,
       });
 
       return clusters;
@@ -176,14 +176,14 @@ class KubeconfigService {
         try {
           // Set current context
           kc.setCurrentContext(context.name);
-          
+
           // Test connectivity with kubeconfig
           // This validates we can connect to the cluster
           // For now, we'll assume 1 node if we can't get the actual count
-          let nodeCount = 1;
-          
+          const nodeCount = 1;
+
           // Simple connectivity test - if this throws, the cluster is unreachable
-          await new Promise((resolve) => {
+          await new Promise(resolve => {
             // Use a simple method that's guaranteed to exist
             setTimeout(() => resolve(true), 100); // Basic timeout test
           });
@@ -195,16 +195,16 @@ class KubeconfigService {
             nodeCount,
           });
 
-          logger.info('Cluster connectivity validated', { 
+          logger.info('Cluster connectivity validated', {
             context: context.name,
-            nodeCount
+            nodeCount,
           });
         } catch (error) {
-          logger.warn('Cluster connectivity failed', { 
+          logger.warn('Cluster connectivity failed', {
             context: context.name,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
-          
+
           clusters.push({
             name: context.name,
             connected: false,
@@ -214,7 +214,7 @@ class KubeconfigService {
       }
 
       const allConnected = clusters.every(c => c.connected);
-      
+
       return {
         valid: allConnected,
         clusters,
@@ -223,11 +223,13 @@ class KubeconfigService {
       logger.error('Kubeconfig validation failed', { error });
       return {
         valid: false,
-        clusters: [{
-          name: 'unknown',
-          connected: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }],
+        clusters: [
+          {
+            name: 'unknown',
+            connected: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
+        ],
       };
     }
   }
@@ -239,7 +241,7 @@ class KubeconfigService {
     try {
       const url = new URL(server);
       const hostname = url.hostname;
-      
+
       // Extract from IP ranges first (more reliable for OVH)
       if (hostname.startsWith('51.79.')) {
         return 'eu-west-1'; // OVH Europe
@@ -263,11 +265,12 @@ class KubeconfigService {
 
       for (const pattern of regionPatterns) {
         const match = hostname.match(pattern);
-        if (match && match[1] && !match[1].match(/^\d/)) { // Don't match if it starts with a digit
+        if (match && match[1] && !match[1].match(/^\d/)) {
+          // Don't match if it starts with a digit
           return match[1];
         }
       }
-      
+
       return 'eu-west-1'; // Default to Europe
     } catch {
       return 'eu-west-1'; // Default fallback
@@ -294,7 +297,11 @@ class KubeconfigService {
     if (name.includes('azure') || name.includes('aks') || serverLower.includes('azure')) {
       return 'azure';
     }
-    if (name.includes('digitalocean') || name.includes('do') || serverLower.includes('digitalocean')) {
+    if (
+      name.includes('digitalocean') ||
+      name.includes('do') ||
+      serverLower.includes('digitalocean')
+    ) {
       return 'digitalocean';
     }
     if (name.includes('linode') || serverLower.includes('linode')) {
@@ -310,7 +317,7 @@ class KubeconfigService {
   createContextKubeconfig(fullKubeconfig: string, contextName: string): string {
     try {
       const kubeconfigData: KubeconfigData = yaml.parse(fullKubeconfig);
-      
+
       const context = kubeconfigData.contexts?.find(c => c.name === contextName);
       if (!context) {
         throw new Error(`Context ${contextName} not found`);

@@ -25,7 +25,7 @@ export const defaultRateLimiter = rateLimit({
       path: req.path,
       method: req.method,
     });
-    
+
     res.status(429).json({
       error: 'Too Many Requests',
       message: 'Too many requests from this IP, please try again later.',
@@ -65,7 +65,7 @@ export const authRateLimiter = rateLimit({
       method: req.method,
       body: req.body?.email || req.body?.username_or_email, // Log email/username for tracking
     });
-    
+
     res.status(429).json({
       error: 'Too Many Authentication Attempts',
       message: 'Too many authentication attempts, please try again later.',
@@ -104,7 +104,7 @@ export const wsRateLimiter = rateLimit({
       userAgent: req.get('User-Agent'),
       path: req.path,
     });
-    
+
     res.status(429).json({
       error: 'Too Many WebSocket Connections',
       message: 'Too many WebSocket connection attempts, please try again later.',
@@ -143,7 +143,7 @@ export const environmentRateLimiter = rateLimit({
       userAgent: req.get('User-Agent'),
       path: req.path,
     });
-    
+
     res.status(429).json({
       error: 'Too Many Environment Creations',
       message: 'Too many environment creation attempts, please try again later.',
@@ -157,7 +157,11 @@ export const environmentRateLimiter = rateLimit({
   },
   skip: (req: Request) => {
     // Skip for PRO users (they have higher limits) or test environment
-    return req.user?.subscriptionPlan === 'PRO' || req.user?.subscriptionPlan === 'ENTERPRISE' || config.NODE_ENV === 'test';
+    return (
+      req.user?.subscriptionPlan === 'PRO' ||
+      req.user?.subscriptionPlan === 'ENTERPRISE' ||
+      config.NODE_ENV === 'test'
+    );
   },
 });
 

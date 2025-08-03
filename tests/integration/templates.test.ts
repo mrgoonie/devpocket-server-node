@@ -28,14 +28,11 @@ describe('Templates API', () => {
           defaultResourcesCpu: '500m',
           defaultResourcesMemory: '1Gi',
           defaultResourcesStorage: '10Gi',
-          environmentVariables: { 
+          environmentVariables: {
             NODE_ENV: 'development',
-            PORT: '3000'
+            PORT: '3000',
           },
-          startupCommands: [
-            'npm install',
-            'npm start'
-          ],
+          startupCommands: ['npm install', 'npm start'],
           status: TemplateStatus.ACTIVE,
           version: '1.0.0',
         },
@@ -52,14 +49,11 @@ describe('Templates API', () => {
           defaultResourcesCpu: '500m',
           defaultResourcesMemory: '2Gi',
           defaultResourcesStorage: '15Gi',
-          environmentVariables: { 
+          environmentVariables: {
             PYTHONPATH: '/app',
-            PYTHON_ENV: 'development'
+            PYTHON_ENV: 'development',
           },
-          startupCommands: [
-            'pip install -r requirements.txt',
-            'python app.py'
-          ],
+          startupCommands: ['pip install -r requirements.txt', 'python app.py'],
           status: TemplateStatus.ACTIVE,
           version: '2.1.0',
         },
@@ -76,14 +70,11 @@ describe('Templates API', () => {
           defaultResourcesCpu: '500m',
           defaultResourcesMemory: '1Gi',
           defaultResourcesStorage: '10Gi',
-          environmentVariables: { 
+          environmentVariables: {
             NODE_ENV: 'development',
-            REACT_APP_ENV: 'development'
+            REACT_APP_ENV: 'development',
           },
-          startupCommands: [
-            'npm install',
-            'npm run dev'
-          ],
+          startupCommands: ['npm install', 'npm run dev'],
           status: TemplateStatus.ACTIVE,
           version: '1.5.0',
         },
@@ -122,11 +113,11 @@ describe('Templates API', () => {
 
       expect(response.body).toHaveProperty('templates');
       expect(Array.isArray(response.body.templates)).toBe(true);
-      
+
       // Should only return active templates
       const activeTemplates = response.body.templates;
       expect(activeTemplates).toHaveLength(3); // 3 active templates
-      
+
       activeTemplates.forEach((template: any) => {
         expect(template.status).toBe('ACTIVE');
         expect(template).toHaveProperty('id');
@@ -162,7 +153,7 @@ describe('Templates API', () => {
 
       expect(response.body.templates.length).toBeGreaterThan(0);
       response.body.templates.forEach((template: any) => {
-        const hasNodejsTag = template.tags.some((tag: string) => 
+        const hasNodejsTag = template.tags.some((tag: string) =>
           tag.toLowerCase().includes('nodejs')
         );
         expect(hasNodejsTag).toBe(true);
@@ -188,7 +179,7 @@ describe('Templates API', () => {
 
       const templates = response.body.templates;
       expect(templates.length).toBeGreaterThan(1);
-      
+
       // Check if sorted by popularity (descending)
       for (let i = 0; i < templates.length - 1; i++) {
         expect(templates[i].usageCount).toBeGreaterThanOrEqual(templates[i + 1].usageCount);
@@ -243,7 +234,7 @@ describe('Templates API', () => {
       // Should return different results if there are enough templates
       const firstPageIds = firstPage.body.templates.map((t: any) => t.id);
       const secondPageIds = secondPage.body.templates.map((t: any) => t.id);
-      
+
       // Test pagination with the templates we have
       if (firstPage.body.pagination.total > 2) {
         // We have enough templates for pagination
@@ -259,9 +250,7 @@ describe('Templates API', () => {
     });
 
     it('should not require authentication for public templates', async () => {
-      const response = await request(app)
-        .get('/api/v1/templates')
-        .expect(200);
+      const response = await request(app).get('/api/v1/templates').expect(200);
 
       expect(response.body).toHaveProperty('templates');
       expect(Array.isArray(response.body.templates)).toBe(true);
@@ -274,8 +263,10 @@ describe('Templates API', () => {
         .expect(200);
 
       expect(response.body.templates).toHaveLength(4); // All templates including deprecated
-      
-      const deprecatedTemplate = response.body.templates.find((t: any) => t.status === 'DEPRECATED');
+
+      const deprecatedTemplate = response.body.templates.find(
+        (t: any) => t.status === 'DEPRECATED'
+      );
       expect(deprecatedTemplate).toBeTruthy();
     });
   });
@@ -283,7 +274,7 @@ describe('Templates API', () => {
   describe('GET /api/v1/templates/:id', () => {
     it('should return template details', async () => {
       const template = testTemplates[0];
-      
+
       const response = await request(app)
         .get(`/api/v1/templates/${template.id}`)
         .set('Authorization', `Bearer ${authToken}`)
@@ -305,7 +296,7 @@ describe('Templates API', () => {
 
     it('should include resource requirements', async () => {
       const template = testTemplates[0];
-      
+
       const response = await request(app)
         .get(`/api/v1/templates/${template.id}`)
         .set('Authorization', `Bearer ${authToken}`)
@@ -341,7 +332,7 @@ describe('Templates API', () => {
 
     it('should return deprecated template when explicitly requested', async () => {
       const deprecatedTemplate = testTemplates.find(t => t.status === 'DEPRECATED');
-      
+
       const response = await request(app)
         .get(`/api/v1/templates/${deprecatedTemplate.id}?includeDeprecated=true`)
         .set('Authorization', `Bearer ${authToken}`)
@@ -353,10 +344,8 @@ describe('Templates API', () => {
 
     it('should not require authentication for active templates', async () => {
       const template = testTemplates[0];
-      
-      const response = await request(app)
-        .get(`/api/v1/templates/${template.id}`)
-        .expect(200);
+
+      const response = await request(app).get(`/api/v1/templates/${template.id}`).expect(200);
 
       expect(response.body.id).toBe(template.id);
     });
@@ -364,15 +353,13 @@ describe('Templates API', () => {
 
   describe('Template Categories', () => {
     it('should return all available categories', async () => {
-      const response = await request(app)
-        .get('/api/v1/templates/categories')
-        .expect(200);
+      const response = await request(app).get('/api/v1/templates/categories').expect(200);
 
       expect(response.body).toHaveProperty('categories');
       expect(Array.isArray(response.body.categories)).toBe(true);
-      
+
       // Check if categories are returned as objects with name and count
-      const categoryNames = response.body.categories.map((cat: any) => 
+      const categoryNames = response.body.categories.map((cat: any) =>
         typeof cat === 'string' ? cat : cat.name
       );
       expect(categoryNames).toContain('PROGRAMMING_LANGUAGE');
@@ -395,15 +382,13 @@ describe('Templates API', () => {
 
   describe('Popular Templates', () => {
     it('should return most popular templates', async () => {
-      const response = await request(app)
-        .get('/api/v1/templates/popular')
-        .expect(200);
+      const response = await request(app).get('/api/v1/templates/popular').expect(200);
 
       expect(response.body).toHaveProperty('templates');
       expect(Array.isArray(response.body.templates)).toBe(true);
-      
+
       const templates = response.body.templates;
-      
+
       // Should be sorted by usageCount (descending)
       for (let i = 0; i < templates.length - 1; i++) {
         const currentUsage = templates[i].usageCount || 0;
@@ -413,9 +398,7 @@ describe('Templates API', () => {
     });
 
     it('should limit popular templates count', async () => {
-      const response = await request(app)
-        .get('/api/v1/templates/popular?limit=2')
-        .expect(200);
+      const response = await request(app).get('/api/v1/templates/popular?limit=2').expect(200);
 
       expect(response.body.templates).toHaveLength(2);
     });
@@ -433,11 +416,12 @@ describe('Templates API', () => {
       if (response.body.searchQuery) {
         expect(response.body.searchQuery).toBe('javascript');
       }
-      
+
       response.body.templates.forEach((template: any) => {
         expect(template.category).toBe('PROGRAMMING_LANGUAGE');
         // Should match search query in name, description, or tags
-        const searchText = `${template.name} ${template.description} ${template.tags.join(' ')}`.toLowerCase();
+        const searchText =
+          `${template.name} ${template.description} ${template.tags.join(' ')}`.toLowerCase();
         const hasJavaScript = searchText.includes('javascript') || searchText.includes('nodejs');
         expect(hasJavaScript).toBe(true);
       });
@@ -475,7 +459,7 @@ describe('Templates API', () => {
       // Skip this test if compatibility endpoint doesn't exist
       // This test validates that the template API can check subscription compatibility
       const template = testTemplates[0];
-      
+
       try {
         const response = await request(app)
           .get(`/api/v1/templates/${template.id}`)
@@ -497,7 +481,7 @@ describe('Templates API', () => {
   describe('Template Usage Statistics', () => {
     it('should track template usage when creating environments', async () => {
       const template = testTemplates[0];
-      
+
       // Verify template has usageCount field (basic usage tracking)
       const response = await request(app)
         .get(`/api/v1/templates/${template.id}`)
@@ -507,7 +491,7 @@ describe('Templates API', () => {
       expect(response.body).toHaveProperty('usageCount');
       expect(typeof response.body.usageCount).toBe('number');
       expect(response.body.usageCount).toBeGreaterThanOrEqual(0);
-      
+
       // Note: Detailed stats endpoint (/stats) may not be implemented yet
       // Basic usage tracking is handled through the usageCount field
     });

@@ -92,10 +92,10 @@ let env: Env;
 
 function loadEnvFiles() {
   const nodeEnv = process.env.NODE_ENV || 'development';
-  
+
   // Define the priority order for env files based on NODE_ENV
   let envFiles: string[] = [];
-  
+
   if (nodeEnv === 'local' || nodeEnv === 'development') {
     envFiles = ['.env.local', '.env'];
   } else if (nodeEnv === 'production') {
@@ -106,7 +106,7 @@ function loadEnvFiles() {
     // Default fallback
     envFiles = ['.env'];
   }
-  
+
   // Try to load each env file in order, stop at the first successful one
   for (const envFile of envFiles) {
     const envPath = path.resolve(process.cwd(), envFile);
@@ -120,7 +120,7 @@ function loadEnvFiles() {
 export function loadConfig(): Env {
   // Load environment variables from files based on NODE_ENV
   loadEnvFiles();
-  
+
   try {
     env = envSchema.parse(process.env);
     return env;
@@ -129,9 +129,7 @@ export function loadConfig(): Env {
       const missingVars = error.errors
         .map(err => `${err.path.join('.')}: ${err.message}`)
         .join('\n');
-      throw new ConfigError(
-        `Environment validation failed:\n${missingVars}`
-      );
+      throw new ConfigError(`Environment validation failed:\n${missingVars}`);
     }
     throw error;
   }

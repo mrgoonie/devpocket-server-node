@@ -28,44 +28,48 @@ const app: express.Application = express();
 app.set('trust proxy', 1);
 
 // Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      baseUri: ["'self'"],
-      fontSrc: ["'self'", "https:", "data:"],
-      formAction: ["'self'"],
-      frameAncestors: ["'self'"],
-      objectSrc: ["'none'"],
-      scriptSrcAttr: ["'none'"],
-      upgradeInsecureRequests: [],
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        baseUri: ["'self'"],
+        fontSrc: ["'self'", 'https:', 'data:'],
+        formAction: ["'self'"],
+        frameAncestors: ["'self'"],
+        objectSrc: ["'none'"],
+        scriptSrcAttr: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
     },
-  },
-  crossOriginEmbedderPolicy: false,
-  frameguard: { action: 'deny' }, // Set X-Frame-Options to DENY
-}));
+    crossOriginEmbedderPolicy: false,
+    frameguard: { action: 'deny' }, // Set X-Frame-Options to DENY
+  })
+);
 
 // CORS configuration
 const allowedOrigins = config.ALLOWED_ORIGINS.split(',').map(origin => origin.trim());
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    logger.warn('CORS blocked request', { origin, allowedOrigins });
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      logger.warn('CORS blocked request', { origin, allowedOrigins });
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  })
+);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -78,8 +82,8 @@ if (config.NODE_ENV !== 'test') {
 
 // Request ID middleware
 app.use((req, res, next) => {
-  req.headers['x-request-id'] = req.headers['x-request-id'] || 
-    Math.random().toString(36).substring(2, 15);
+  req.headers['x-request-id'] =
+    req.headers['x-request-id'] || Math.random().toString(36).substring(2, 15);
   res.setHeader('X-Request-ID', req.headers['x-request-id'] as string);
   next();
 });
@@ -87,7 +91,7 @@ app.use((req, res, next) => {
 // Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
-  
+
   res.on('finish', () => {
     const duration = Date.now() - start;
     logger.info('HTTP Request', {
@@ -100,7 +104,7 @@ app.use((req, res, next) => {
       requestId: req.headers['x-request-id'],
     });
   });
-  
+
   next();
 });
 
@@ -120,9 +124,10 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: config.NODE_ENV === 'production' 
-          ? 'https://api.devpocket.app'
-          : `http://localhost:${config.PORT}`,
+        url:
+          config.NODE_ENV === 'production'
+            ? 'https://api.devpocket.app'
+            : `http://localhost:${config.PORT}`,
         description: config.NODE_ENV === 'production' ? 'Production' : 'Development',
       },
     ],
@@ -142,9 +147,9 @@ const swaggerOptions = {
     ],
   },
   apis: [
-    config.NODE_ENV === 'production' 
+    config.NODE_ENV === 'production'
       ? ['./dist/routes/*.js', './dist/types/*.js']
-      : ['./src/routes/*.ts', './src/types/*.ts']
+      : ['./src/routes/*.ts', './src/types/*.ts'],
   ].flat(), // Path to the API files
 };
 
@@ -156,13 +161,17 @@ app.get('/api-docs.json', (_req, res) => {
   res.send(swaggerSpec);
 });
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'DevPocket API Documentation',
-  swaggerOptions: {
-    url: '/api-docs.json',
-  },
-}));
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'DevPocket API Documentation',
+    swaggerOptions: {
+      url: '/api-docs.json',
+    },
+  })
+);
 // }
 
 // Health check routes (no rate limiting)
@@ -224,32 +233,32 @@ app.use(errorHandler);
 // Graceful shutdown handler
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully');
-  
+
   try {
     await db.disconnect();
     logger.info('Database disconnected');
   } catch (error) {
     logger.error('Error during database disconnect', { error });
   }
-  
+
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   logger.info('SIGINT received, shutting down gracefully');
-  
+
   try {
     await db.disconnect();
     logger.info('Database disconnected');
   } catch (error) {
     logger.error('Error during database disconnect', { error });
   }
-  
+
   process.exit(0);
 });
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   logger.error('Uncaught exception', { error });
   process.exit(1);
 });

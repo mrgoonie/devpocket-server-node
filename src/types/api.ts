@@ -41,7 +41,7 @@
  *         - subscription
  *         - createdAt
  *         - updatedAt
- *     
+ *
  *     Subscription:
  *       type: object
  *       properties:
@@ -66,7 +66,7 @@
  *         - plan
  *         - status
  *         - startDate
- *     
+ *
  *     Environment:
  *       type: object
  *       properties:
@@ -110,7 +110,7 @@
  *         - resources
  *         - createdAt
  *         - updatedAt
- *     
+ *
  *     EnvironmentResources:
  *       type: object
  *       properties:
@@ -127,7 +127,7 @@
  *         - cpu
  *         - memory
  *         - storage
- *     
+ *
  *     Template:
  *       type: object
  *       properties:
@@ -183,7 +183,7 @@
  *         - isPublic
  *         - createdAt
  *         - updatedAt
- *     
+ *
  *     Cluster:
  *       type: object
  *       properties:
@@ -223,7 +223,7 @@
  *         - provider
  *         - createdAt
  *         - updatedAt
- *     
+ *
  *     AuthTokens:
  *       type: object
  *       properties:
@@ -245,7 +245,7 @@
  *         - refreshToken
  *         - tokenType
  *         - expiresIn
- *     
+ *
  *     LoginResponse:
  *       type: object
  *       properties:
@@ -256,7 +256,7 @@
  *       required:
  *         - user
  *         - tokens
- *     
+ *
  *     RegisterResponse:
  *       type: object
  *       properties:
@@ -271,7 +271,7 @@
  *         - user
  *         - tokens
  *         - message
- *     
+ *
  *     ErrorResponse:
  *       type: object
  *       properties:
@@ -296,7 +296,7 @@
  *             - statusCode
  *       required:
  *         - error
- *     
+ *
  *     SuccessResponse:
  *       type: object
  *       properties:
@@ -308,7 +308,7 @@
  *           description: Optional response data
  *       required:
  *         - message
- *     
+ *
  *     PaginatedResponse:
  *       type: object
  *       properties:
@@ -340,7 +340,7 @@
  *       required:
  *         - data
  *         - pagination
- *     
+ *
  *     HealthCheckResponse:
  *       type: object
  *       properties:
@@ -381,7 +381,7 @@
  *         - version
  *         - timestamp
  *         - services
- *     
+ *
  *     ValidationErrorResponse:
  *       type: object
  *       properties:

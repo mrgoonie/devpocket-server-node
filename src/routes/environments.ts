@@ -14,33 +14,63 @@ const config = getConfig();
 
 // Validation schemas
 const createEnvironmentSchema = z.object({
-  name: z.string()
+  name: z
+    .string()
     .min(1, 'Environment name is required')
     .max(50, 'Environment name must be less than 50 characters')
-    .regex(/^[a-zA-Z0-9-_]+$/, 'Environment name can only contain letters, numbers, hyphens, and underscores'),
+    .regex(
+      /^[a-zA-Z0-9-_]+$/,
+      'Environment name can only contain letters, numbers, hyphens, and underscores'
+    ),
   description: z.string().max(500, 'Description must be less than 500 characters').optional(),
   templateId: z.string().min(1, 'Template ID is required'),
   clusterId: z.string().min(1, 'Cluster ID is required').optional(),
-  resources: z.object({
-    cpu: z.string().regex(/^\d+m?$/, 'Invalid CPU format').optional(),
-    memory: z.string().regex(/^\d+[GMK]i?$/, 'Invalid memory format').optional(),
-    storage: z.string().regex(/^\d+[GMK]i?$/, 'Invalid storage format').optional(),
-  }).optional(),
+  resources: z
+    .object({
+      cpu: z
+        .string()
+        .regex(/^\d+m?$/, 'Invalid CPU format')
+        .optional(),
+      memory: z
+        .string()
+        .regex(/^\d+[GMK]i?$/, 'Invalid memory format')
+        .optional(),
+      storage: z
+        .string()
+        .regex(/^\d+[GMK]i?$/, 'Invalid storage format')
+        .optional(),
+    })
+    .optional(),
   environmentVariables: z.record(z.string()).optional(),
 });
 
 const updateEnvironmentSchema = z.object({
-  name: z.string()
+  name: z
+    .string()
     .min(1, 'Environment name is required')
     .max(50, 'Environment name must be less than 50 characters')
-    .regex(/^[a-zA-Z0-9-_]+$/, 'Environment name can only contain letters, numbers, hyphens, and underscores')
+    .regex(
+      /^[a-zA-Z0-9-_]+$/,
+      'Environment name can only contain letters, numbers, hyphens, and underscores'
+    )
     .optional(),
   description: z.string().max(500, 'Description must be less than 500 characters').optional(),
-  resources: z.object({
-    cpu: z.string().regex(/^\d+m?$/, 'Invalid CPU format').optional(),
-    memory: z.string().regex(/^\d+[GMK]i?$/, 'Invalid memory format').optional(),
-    storage: z.string().regex(/^\d+[GMK]i?$/, 'Invalid storage format').optional(),
-  }).optional(),
+  resources: z
+    .object({
+      cpu: z
+        .string()
+        .regex(/^\d+m?$/, 'Invalid CPU format')
+        .optional(),
+      memory: z
+        .string()
+        .regex(/^\d+[GMK]i?$/, 'Invalid memory format')
+        .optional(),
+      storage: z
+        .string()
+        .regex(/^\d+[GMK]i?$/, 'Invalid storage format')
+        .optional(),
+    })
+    .optional(),
   environmentVariables: z.record(z.string()).optional(),
 });
 
@@ -155,22 +185,27 @@ async function checkEnvironmentLimits(userId: string, subscriptionPlan: string):
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/', 
+router.post(
+  '/',
   environmentRateLimiter,
-  authenticate, 
+  authenticate,
   requireEmailVerification,
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthenticatedRequest;
     const validationResult = createEnvironmentSchema.safeParse(req.body);
     if (!validationResult.success) {
-      throw new ValidationError('Validation failed', validationResult.error.errors.map(err => ({
-        field: err.path.join('.'),
-        message: err.message,
-        code: err.code,
-      })));
+      throw new ValidationError(
+        'Validation failed',
+        validationResult.error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message,
+          code: err.code,
+        }))
+      );
     }
 
-    const { name, description, templateId, clusterId, resources, environmentVariables } = validationResult.data;
+    const { name, description, templateId, clusterId, resources, environmentVariables } =
+      validationResult.data;
 
     // Check environment limits
     await checkEnvironmentLimits(authReq.user.id, authReq.user.subscriptionPlan);
@@ -224,7 +259,7 @@ router.post('/',
         resourcesMemory: finalResources.memory,
         resourcesStorage: finalResources.storage,
         environmentVariables: {
-          ...(template.environmentVariables as Record<string, any> || {}),
+          ...((template.environmentVariables as Record<string, any>) || {}),
           ...(environmentVariables || {}),
         },
         status: 'CREATING',
@@ -254,10 +289,13 @@ router.post('/',
         port: environment.port,
         resources: finalResources,
         environmentVariables: environment.environmentVariables as Record<string, string>,
-        startupCommands: template.startupCommands as string[],
+        startupCommands: template.startupCommands,
       });
     } catch (error) {
-      logger.error('Failed to create environment in Kubernetes', { environmentId: environment.id, error });
+      logger.error('Failed to create environment in Kubernetes', {
+        environmentId: environment.id,
+        error,
+      });
       // Environment status will be updated to ERROR by the Kubernetes service
     }
 
@@ -339,86 +377,90 @@ router.post('/',
  *       401:
  *         description: Unauthorized
  */
-router.get('/', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  const authReq = req as AuthenticatedRequest;
-  const { status, templateId } = req.query;
-  const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-  const offset = parseInt(req.query.offset as string) || 0;
+router.get(
+  '/',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthenticatedRequest;
+    const { status, templateId } = req.query;
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+    const offset = parseInt(req.query.offset as string) || 0;
 
-  const where: any = {
-    userId: authReq.user.id,
-    status: { notIn: ['TERMINATED'] }, // Don't show terminated environments by default
-  };
+    const where: any = {
+      userId: authReq.user.id,
+      status: { notIn: ['TERMINATED'] }, // Don't show terminated environments by default
+    };
 
-  if (status && typeof status === 'string') {
-    where.status = status;
-  }
+    if (status && typeof status === 'string') {
+      where.status = status;
+    }
 
-  if (templateId && typeof templateId === 'string') {
-    where.templateId = templateId;
-  }
+    if (templateId && typeof templateId === 'string') {
+      where.templateId = templateId;
+    }
 
-  const [environments, total] = await Promise.all([
-    prisma.environment.findMany({
-      where,
-      include: {
-        template: {
-          select: {
-            name: true,
-            displayName: true,
+    const [environments, total] = await Promise.all([
+      prisma.environment.findMany({
+        where,
+        include: {
+          template: {
+            select: {
+              name: true,
+              displayName: true,
+            },
+          },
+          cluster: {
+            select: {
+              name: true,
+            },
           },
         },
-        cluster: {
-          select: {
-            name: true,
-          },
-        },
+        orderBy: { updatedAt: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.environment.count({ where }),
+    ]);
+
+    const formattedEnvironments = environments.map(env => ({
+      id: env.id,
+      name: env.name,
+      description: env.description,
+      templateId: env.templateId,
+      templateName: env.template.displayName,
+      clusterId: env.clusterId,
+      clusterName: env.cluster.name,
+      status: env.status,
+      dockerImage: env.dockerImage,
+      port: env.port,
+      webPort: env.webPort,
+      resources: {
+        cpu: env.resourcesCpu,
+        memory: env.resourcesMemory,
+        storage: env.resourcesStorage,
       },
-      orderBy: { updatedAt: 'desc' },
-      take: limit,
-      skip: offset,
-    }),
-    prisma.environment.count({ where }),
-  ]);
+      environmentVariables: env.environmentVariables,
+      installationCompleted: env.installationCompleted,
+      externalUrl: env.externalUrl,
+      createdAt: env.createdAt,
+      updatedAt: env.updatedAt,
+      lastActivityAt: env.lastActivityAt,
+      cpuUsage: env.cpuUsage,
+      memoryUsage: env.memoryUsage,
+      storageUsage: env.storageUsage,
+    }));
 
-  const formattedEnvironments = environments.map(env => ({
-    id: env.id,
-    name: env.name,
-    description: env.description,
-    templateId: env.templateId,
-    templateName: env.template.displayName,
-    clusterId: env.clusterId,
-    clusterName: env.cluster.name,
-    status: env.status,
-    dockerImage: env.dockerImage,
-    port: env.port,
-    webPort: env.webPort,
-    resources: {
-      cpu: env.resourcesCpu,
-      memory: env.resourcesMemory,
-      storage: env.resourcesStorage,
-    },
-    environmentVariables: env.environmentVariables,
-    installationCompleted: env.installationCompleted,
-    externalUrl: env.externalUrl,
-    createdAt: env.createdAt,
-    updatedAt: env.updatedAt,
-    lastActivityAt: env.lastActivityAt,
-    cpuUsage: env.cpuUsage,
-    memoryUsage: env.memoryUsage,
-    storageUsage: env.storageUsage,
-  }));
-
-  res.json({
-    environments: formattedEnvironments,
-    pagination: {
-      total,
-      limit,
-      offset,
-      hasMore: offset + limit < total,
-    },
-  });
-}));
+    res.json({
+      environments: formattedEnvironments,
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + limit < total,
+      },
+    });
+  })
+);
 
 /**
  * @swagger
@@ -443,86 +485,90 @@ router.get('/', authenticate, asyncHandler(async (req: Request, res: Response) =
  *       404:
  *         description: Environment not found
  */
-router.get('/:environmentId', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  const authReq = req as AuthenticatedRequest;
-  const { environmentId } = req.params;
+router.get(
+  '/:environmentId',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthenticatedRequest;
+    const { environmentId } = req.params;
 
-  if (!environmentId) {
-    throw new ValidationError('Environment ID is required', []);
-  }
+    if (!environmentId) {
+      throw new ValidationError('Environment ID is required', []);
+    }
 
-  const environment = await prisma.environment.findFirst({
-    where: {
-      id: environmentId,
-      userId: authReq.user.id,
-    },
-    include: {
-      template: {
-        select: {
-          name: true,
-          displayName: true,
-          description: true,
-          category: true,
-          tags: true,
+    const environment = await prisma.environment.findFirst({
+      where: {
+        id: environmentId,
+        userId: authReq.user.id,
+      },
+      include: {
+        template: {
+          select: {
+            name: true,
+            displayName: true,
+            description: true,
+            category: true,
+            tags: true,
+          },
+        },
+        cluster: {
+          select: {
+            name: true,
+            region: true,
+          },
+        },
+        terminalSessions: {
+          select: {
+            id: true,
+            sessionId: true,
+            status: true,
+            startedAt: true,
+            lastActivityAt: true,
+          },
+          where: {
+            status: 'ACTIVE',
+          },
         },
       },
-      cluster: {
-        select: {
-          name: true,
-          region: true,
-        },
-      },
-      terminalSessions: {
-        select: {
-          id: true,
-          sessionId: true,
-          status: true,
-          startedAt: true,
-          lastActivityAt: true,
-        },
-        where: {
-          status: 'ACTIVE',
-        },
-      },
-    },
-  });
+    });
 
-  if (!environment) {
-    throw new NotFoundError('Environment not found');
-  }
+    if (!environment) {
+      throw new NotFoundError('Environment not found');
+    }
 
-  res.json({
-    id: environment.id,
-    name: environment.name,
-    description: environment.description,
-    templateId: environment.templateId,
-    template: environment.template,
-    clusterId: environment.clusterId,
-    cluster: environment.cluster,
-    status: environment.status,
-    dockerImage: environment.dockerImage,
-    port: environment.port,
-    webPort: environment.webPort,
-    resources: {
-      cpu: environment.resourcesCpu,
-      memory: environment.resourcesMemory,
-      storage: environment.resourcesStorage,
-    },
-    environmentVariables: environment.environmentVariables,
-    installationCompleted: environment.installationCompleted,
-    externalUrl: environment.externalUrl,
-    kubernetesNamespace: environment.kubernetesNamespace,
-    kubernetesPodName: environment.kubernetesPodName,
-    kubernetesServiceName: environment.kubernetesServiceName,
-    createdAt: environment.createdAt,
-    updatedAt: environment.updatedAt,
-    lastActivityAt: environment.lastActivityAt,
-    cpuUsage: environment.cpuUsage,
-    memoryUsage: environment.memoryUsage,
-    storageUsage: environment.storageUsage,
-    terminalSessions: environment.terminalSessions,
-  });
-}));
+    res.json({
+      id: environment.id,
+      name: environment.name,
+      description: environment.description,
+      templateId: environment.templateId,
+      template: environment.template,
+      clusterId: environment.clusterId,
+      cluster: environment.cluster,
+      status: environment.status,
+      dockerImage: environment.dockerImage,
+      port: environment.port,
+      webPort: environment.webPort,
+      resources: {
+        cpu: environment.resourcesCpu,
+        memory: environment.resourcesMemory,
+        storage: environment.resourcesStorage,
+      },
+      environmentVariables: environment.environmentVariables,
+      installationCompleted: environment.installationCompleted,
+      externalUrl: environment.externalUrl,
+      kubernetesNamespace: environment.kubernetesNamespace,
+      kubernetesPodName: environment.kubernetesPodName,
+      kubernetesServiceName: environment.kubernetesServiceName,
+      createdAt: environment.createdAt,
+      updatedAt: environment.updatedAt,
+      lastActivityAt: environment.lastActivityAt,
+      cpuUsage: environment.cpuUsage,
+      memoryUsage: environment.memoryUsage,
+      storageUsage: environment.storageUsage,
+      terminalSessions: environment.terminalSessions,
+    });
+  })
+);
 
 /**
  * @swagger
@@ -579,122 +625,130 @@ router.get('/:environmentId', authenticate, asyncHandler(async (req: Request, re
  *       404:
  *         description: Environment not found
  */
-router.put('/:environmentId', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  const authReq = req as AuthenticatedRequest;
-  const { environmentId } = req.params;
+router.put(
+  '/:environmentId',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthenticatedRequest;
+    const { environmentId } = req.params;
 
-  if (!environmentId) {
-    throw new ValidationError('Environment ID is required', []);
-  }
+    if (!environmentId) {
+      throw new ValidationError('Environment ID is required', []);
+    }
 
-  const validationResult = updateEnvironmentSchema.safeParse(req.body);
-  if (!validationResult.success) {
-    throw new ValidationError('Validation failed', validationResult.error.errors.map(err => ({
-      field: err.path.join('.'),
-      message: err.message,
-      code: err.code,
-    })));
-  }
+    const validationResult = updateEnvironmentSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      throw new ValidationError(
+        'Validation failed',
+        validationResult.error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message,
+          code: err.code,
+        }))
+      );
+    }
 
-  const updateData = validationResult.data;
+    const updateData = validationResult.data;
 
-  // Find environment and verify ownership
-  const environment = await prisma.environment.findFirst({
-    where: {
-      id: environmentId,
-      userId: authReq.user.id,
-    },
-  });
-
-  if (!environment) {
-    throw new NotFoundError('Environment not found');
-  }
-
-  // Check if new name conflicts with existing environment
-  if (updateData.name && updateData.name !== environment.name) {
-    const existingEnvironment = await prisma.environment.findFirst({
+    // Find environment and verify ownership
+    const environment = await prisma.environment.findFirst({
       where: {
+        id: environmentId,
         userId: authReq.user.id,
-        name: updateData.name,
-        status: { notIn: ['TERMINATED'] },
-        id: { not: environmentId },
       },
     });
 
-    if (existingEnvironment) {
-      throw new ConflictError('Environment with this name already exists');
+    if (!environment) {
+      throw new NotFoundError('Environment not found');
     }
-  }
 
-  // Prepare update data
-  const dbUpdateData: any = {};
-  if (updateData.name) dbUpdateData.name = updateData.name;
-  if (updateData.description !== undefined) dbUpdateData.description = updateData.description;
-  if (updateData.resources) {
-    if (updateData.resources.cpu) dbUpdateData.resourcesCpu = updateData.resources.cpu;
-    if (updateData.resources.memory) dbUpdateData.resourcesMemory = updateData.resources.memory;
-    if (updateData.resources.storage) dbUpdateData.resourcesStorage = updateData.resources.storage;
-  }
-  if (updateData.environmentVariables) {
-    dbUpdateData.environmentVariables = {
-      ...(environment.environmentVariables as Record<string, any> || {}),
-      ...updateData.environmentVariables,
-    };
-  }
+    // Check if new name conflicts with existing environment
+    if (updateData.name && updateData.name !== environment.name) {
+      const existingEnvironment = await prisma.environment.findFirst({
+        where: {
+          userId: authReq.user.id,
+          name: updateData.name,
+          status: { notIn: ['TERMINATED'] },
+          id: { not: environmentId },
+        },
+      });
 
-  // Update environment in database
-  const updatedEnvironment = await prisma.environment.update({
-    where: { id: environmentId },
-    data: dbUpdateData,
-    include: {
-      template: {
-        select: {
-          name: true,
-          displayName: true,
+      if (existingEnvironment) {
+        throw new ConflictError('Environment with this name already exists');
+      }
+    }
+
+    // Prepare update data
+    const dbUpdateData: any = {};
+    if (updateData.name) dbUpdateData.name = updateData.name;
+    if (updateData.description !== undefined) dbUpdateData.description = updateData.description;
+    if (updateData.resources) {
+      if (updateData.resources.cpu) dbUpdateData.resourcesCpu = updateData.resources.cpu;
+      if (updateData.resources.memory) dbUpdateData.resourcesMemory = updateData.resources.memory;
+      if (updateData.resources.storage)
+        dbUpdateData.resourcesStorage = updateData.resources.storage;
+    }
+    if (updateData.environmentVariables) {
+      dbUpdateData.environmentVariables = {
+        ...((environment.environmentVariables as Record<string, any>) || {}),
+        ...updateData.environmentVariables,
+      };
+    }
+
+    // Update environment in database
+    const updatedEnvironment = await prisma.environment.update({
+      where: { id: environmentId },
+      data: dbUpdateData,
+      include: {
+        template: {
+          select: {
+            name: true,
+            displayName: true,
+          },
+        },
+        cluster: {
+          select: {
+            name: true,
+          },
         },
       },
-      cluster: {
-        select: {
-          name: true,
-        },
+    });
+
+    logger.info('Environment updated', {
+      environmentId,
+      userId: authReq.user.id,
+      updatedFields: Object.keys(dbUpdateData),
+    });
+
+    res.json({
+      id: updatedEnvironment.id,
+      name: updatedEnvironment.name,
+      description: updatedEnvironment.description,
+      templateId: updatedEnvironment.templateId,
+      templateName: updatedEnvironment.template.displayName,
+      clusterId: updatedEnvironment.clusterId,
+      clusterName: updatedEnvironment.cluster.name,
+      status: updatedEnvironment.status,
+      dockerImage: updatedEnvironment.dockerImage,
+      port: updatedEnvironment.port,
+      webPort: updatedEnvironment.webPort,
+      resources: {
+        cpu: updatedEnvironment.resourcesCpu,
+        memory: updatedEnvironment.resourcesMemory,
+        storage: updatedEnvironment.resourcesStorage,
       },
-    },
-  });
-
-  logger.info('Environment updated', {
-    environmentId,
-    userId: authReq.user.id,
-    updatedFields: Object.keys(dbUpdateData),
-  });
-
-  res.json({
-    id: updatedEnvironment.id,
-    name: updatedEnvironment.name,
-    description: updatedEnvironment.description,
-    templateId: updatedEnvironment.templateId,
-    templateName: updatedEnvironment.template.displayName,
-    clusterId: updatedEnvironment.clusterId,
-    clusterName: updatedEnvironment.cluster.name,
-    status: updatedEnvironment.status,
-    dockerImage: updatedEnvironment.dockerImage,
-    port: updatedEnvironment.port,
-    webPort: updatedEnvironment.webPort,
-    resources: {
-      cpu: updatedEnvironment.resourcesCpu,
-      memory: updatedEnvironment.resourcesMemory,
-      storage: updatedEnvironment.resourcesStorage,
-    },
-    environmentVariables: updatedEnvironment.environmentVariables,
-    installationCompleted: updatedEnvironment.installationCompleted,
-    externalUrl: updatedEnvironment.externalUrl,
-    createdAt: updatedEnvironment.createdAt,
-    updatedAt: updatedEnvironment.updatedAt,
-    lastActivityAt: updatedEnvironment.lastActivityAt,
-    cpuUsage: updatedEnvironment.cpuUsage,
-    memoryUsage: updatedEnvironment.memoryUsage,
-    storageUsage: updatedEnvironment.storageUsage,
-  });
-}));
+      environmentVariables: updatedEnvironment.environmentVariables,
+      installationCompleted: updatedEnvironment.installationCompleted,
+      externalUrl: updatedEnvironment.externalUrl,
+      createdAt: updatedEnvironment.createdAt,
+      updatedAt: updatedEnvironment.updatedAt,
+      lastActivityAt: updatedEnvironment.lastActivityAt,
+      cpuUsage: updatedEnvironment.cpuUsage,
+      memoryUsage: updatedEnvironment.memoryUsage,
+      storageUsage: updatedEnvironment.storageUsage,
+    });
+  })
+);
 
 /**
  * @swagger
@@ -719,60 +773,67 @@ router.put('/:environmentId', authenticate, asyncHandler(async (req: Request, re
  *       404:
  *         description: Environment not found
  */
-router.delete('/:environmentId', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  const authReq = req as AuthenticatedRequest;
-  const { environmentId } = req.params;
+router.delete(
+  '/:environmentId',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthenticatedRequest;
+    const { environmentId } = req.params;
 
-  if (!environmentId) {
-    throw new ValidationError('Environment ID is required', []);
-  }
+    if (!environmentId) {
+      throw new ValidationError('Environment ID is required', []);
+    }
 
-  // Find environment and verify ownership
-  const environment = await prisma.environment.findFirst({
-    where: {
-      id: environmentId,
+    // Find environment and verify ownership
+    const environment = await prisma.environment.findFirst({
+      where: {
+        id: environmentId,
+        userId: authReq.user.id,
+      },
+    });
+
+    if (!environment) {
+      throw new NotFoundError('Environment not found');
+    }
+
+    // Prevent deletion of running environments
+    if (environment.status === 'RUNNING') {
+      throw new ValidationError(
+        'Cannot delete running environment. Please stop the environment first.',
+        []
+      );
+    }
+
+    // Delete from Kubernetes first
+    try {
+      await kubernetesService.deleteEnvironment(environmentId);
+    } catch (error) {
+      logger.error('Failed to delete environment from Kubernetes', { environmentId, error });
+      // Continue with database cleanup even if Kubernetes deletion fails
+    }
+
+    // Clean up terminal sessions
+    await prisma.terminalSession.updateMany({
+      where: { environmentId },
+      data: { status: 'TERMINATED' },
+    });
+
+    // Update environment status to TERMINATED
+    await prisma.environment.update({
+      where: { id: environmentId },
+      data: { status: 'TERMINATED' },
+    });
+
+    logger.info('Environment deleted', {
+      environmentId,
       userId: authReq.user.id,
-    },
-  });
+    });
 
-  if (!environment) {
-    throw new NotFoundError('Environment not found');
-  }
-
-  // Prevent deletion of running environments
-  if (environment.status === 'RUNNING') {
-    throw new ValidationError('Cannot delete running environment. Please stop the environment first.', []);
-  }
-
-  // Delete from Kubernetes first
-  try {
-    await kubernetesService.deleteEnvironment(environmentId);
-  } catch (error) {
-    logger.error('Failed to delete environment from Kubernetes', { environmentId, error });
-    // Continue with database cleanup even if Kubernetes deletion fails
-  }
-
-  // Clean up terminal sessions
-  await prisma.terminalSession.updateMany({
-    where: { environmentId },
-    data: { status: 'TERMINATED' },
-  });
-
-  // Update environment status to TERMINATED
-  await prisma.environment.update({
-    where: { id: environmentId },
-    data: { status: 'TERMINATED' },
-  });
-
-  logger.info('Environment deleted', {
-    environmentId,
-    userId: authReq.user.id,
-  });
-
-  res.json({
-    message: 'Environment deleted successfully',
-  });
-}));
+    res.json({
+      message: 'Environment deleted successfully',
+    });
+  })
+);
 
 /**
  * @swagger
@@ -797,47 +858,51 @@ router.delete('/:environmentId', authenticate, asyncHandler(async (req: Request,
  *       404:
  *         description: Environment not found
  */
-router.post('/:environmentId/start', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  const authReq = req as AuthenticatedRequest;
-  const { environmentId } = req.params;
+router.post(
+  '/:environmentId/start',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthenticatedRequest;
+    const { environmentId } = req.params;
 
-  if (!environmentId) {
-    throw new ValidationError('Environment ID is required', []);
-  }
+    if (!environmentId) {
+      throw new ValidationError('Environment ID is required', []);
+    }
 
-  // Find environment and verify ownership
-  const environment = await prisma.environment.findFirst({
-    where: {
-      id: environmentId,
-      userId: authReq.user.id,
-    },
-  });
-
-  if (!environment) {
-    throw new NotFoundError('Environment not found');
-  }
-
-  if (environment.status === 'RUNNING') {
-    return res.json({
-      message: 'Environment is already running',
-      status: environment.status,
+    // Find environment and verify ownership
+    const environment = await prisma.environment.findFirst({
+      where: {
+        id: environmentId,
+        userId: authReq.user.id,
+      },
     });
-  }
 
-  // Start environment in Kubernetes
-  try {
-    await kubernetesService.startEnvironment(environmentId);
-    
-    res.json({
-      message: 'Environment start initiated',
-      status: 'STARTING',
-    });
-    return;
-  } catch (error) {
-    logger.error('Failed to start environment', { environmentId, error });
-    throw error;
-  }
-}));
+    if (!environment) {
+      throw new NotFoundError('Environment not found');
+    }
+
+    if (environment.status === 'RUNNING') {
+      return res.json({
+        message: 'Environment is already running',
+        status: environment.status,
+      });
+    }
+
+    // Start environment in Kubernetes
+    try {
+      await kubernetesService.startEnvironment(environmentId);
+
+      res.json({
+        message: 'Environment start initiated',
+        status: 'STARTING',
+      });
+      return;
+    } catch (error) {
+      logger.error('Failed to start environment', { environmentId, error });
+      throw error;
+    }
+  })
+);
 
 /**
  * @swagger
@@ -862,47 +927,51 @@ router.post('/:environmentId/start', authenticate, asyncHandler(async (req: Requ
  *       404:
  *         description: Environment not found
  */
-router.post('/:environmentId/stop', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  const authReq = req as AuthenticatedRequest;
-  const { environmentId } = req.params;
+router.post(
+  '/:environmentId/stop',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthenticatedRequest;
+    const { environmentId } = req.params;
 
-  if (!environmentId) {
-    throw new ValidationError('Environment ID is required', []);
-  }
+    if (!environmentId) {
+      throw new ValidationError('Environment ID is required', []);
+    }
 
-  // Find environment and verify ownership
-  const environment = await prisma.environment.findFirst({
-    where: {
-      id: environmentId,
-      userId: authReq.user.id,
-    },
-  });
-
-  if (!environment) {
-    throw new NotFoundError('Environment not found');
-  }
-
-  if (environment.status === 'STOPPED') {
-    return res.json({
-      message: 'Environment is already stopped',
-      status: environment.status,
+    // Find environment and verify ownership
+    const environment = await prisma.environment.findFirst({
+      where: {
+        id: environmentId,
+        userId: authReq.user.id,
+      },
     });
-  }
 
-  // Stop environment in Kubernetes
-  try {
-    await kubernetesService.stopEnvironment(environmentId);
-    
-    res.json({
-      message: 'Environment stop initiated',
-      status: 'STOPPING',
-    });
-    return;
-  } catch (error) {
-    logger.error('Failed to stop environment', { environmentId, error });
-    throw error;
-  }
-}));
+    if (!environment) {
+      throw new NotFoundError('Environment not found');
+    }
+
+    if (environment.status === 'STOPPED') {
+      return res.json({
+        message: 'Environment is already stopped',
+        status: environment.status,
+      });
+    }
+
+    // Stop environment in Kubernetes
+    try {
+      await kubernetesService.stopEnvironment(environmentId);
+
+      res.json({
+        message: 'Environment stop initiated',
+        status: 'STOPPING',
+      });
+      return;
+    } catch (error) {
+      logger.error('Failed to stop environment', { environmentId, error });
+      throw error;
+    }
+  })
+);
 
 /**
  * @swagger
@@ -927,53 +996,57 @@ router.post('/:environmentId/stop', authenticate, asyncHandler(async (req: Reque
  *       404:
  *         description: Environment not found
  */
-router.post('/:environmentId/restart', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  const authReq = req as AuthenticatedRequest;
-  const { environmentId } = req.params;
+router.post(
+  '/:environmentId/restart',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthenticatedRequest;
+    const { environmentId } = req.params;
 
-  if (!environmentId) {
-    throw new ValidationError('Environment ID is required', []);
-  }
+    if (!environmentId) {
+      throw new ValidationError('Environment ID is required', []);
+    }
 
-  // Find environment and verify ownership
-  const environment = await prisma.environment.findFirst({
-    where: {
-      id: environmentId,
-      userId: authReq.user.id,
-    },
-  });
-
-  if (!environment) {
-    throw new NotFoundError('Environment not found');
-  }
-
-  // Restart environment in Kubernetes (stop then start)
-  try {
-    await kubernetesService.stopEnvironment(environmentId);
-    
-    // Wait a moment before starting
-    setTimeout(async () => {
-      try {
-        await kubernetesService.startEnvironment(environmentId);
-      } catch (error) {
-        logger.error('Failed to start environment after restart', { environmentId, error });
-      }
-    }, 2000);
-    
-    await prisma.environment.update({
-      where: { id: environmentId },
-      data: { status: 'RESTARTING' },
+    // Find environment and verify ownership
+    const environment = await prisma.environment.findFirst({
+      where: {
+        id: environmentId,
+        userId: authReq.user.id,
+      },
     });
-    
-    res.json({
-      message: 'Environment restart initiated',
-      status: 'RESTARTING',
-    });
-  } catch (error) {
-    logger.error('Failed to restart environment', { environmentId, error });
-    throw error;
-  }
-}));
+
+    if (!environment) {
+      throw new NotFoundError('Environment not found');
+    }
+
+    // Restart environment in Kubernetes (stop then start)
+    try {
+      await kubernetesService.stopEnvironment(environmentId);
+
+      // Wait a moment before starting
+      setTimeout(async () => {
+        try {
+          await kubernetesService.startEnvironment(environmentId);
+        } catch (error) {
+          logger.error('Failed to start environment after restart', { environmentId, error });
+        }
+      }, 2000);
+
+      await prisma.environment.update({
+        where: { id: environmentId },
+        data: { status: 'RESTARTING' },
+      });
+
+      res.json({
+        message: 'Environment restart initiated',
+        status: 'RESTARTING',
+      });
+    } catch (error) {
+      logger.error('Failed to restart environment', { environmentId, error });
+      throw error;
+    }
+  })
+);
 
 /**
  * @swagger
@@ -1012,50 +1085,54 @@ router.post('/:environmentId/restart', authenticate, asyncHandler(async (req: Re
  *       404:
  *         description: Environment not found
  */
-router.get('/:environmentId/logs', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  const authReq = req as AuthenticatedRequest;
-  const { environmentId } = req.params;
+router.get(
+  '/:environmentId/logs',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthenticatedRequest;
+    const { environmentId } = req.params;
 
-  if (!environmentId) {
-    throw new ValidationError('Environment ID is required', []);
-  }
-
-  const lines = Math.min(parseInt(req.query.lines as string) || 100, 1000);
-  const follow = req.query.follow === 'true';
-
-  // Find environment and verify ownership
-  const environment = await prisma.environment.findFirst({
-    where: {
-      id: environmentId,
-      userId: authReq.user.id,
-    },
-  });
-
-  if (!environment) {
-    throw new NotFoundError('Environment not found');
-  }
-
-  try {
-    const logs = await kubernetesService.getEnvironmentLogs(environmentId, lines, follow);
-    
-    if (follow) {
-      // For streaming logs, set appropriate headers
-      res.setHeader('Content-Type', 'text/plain');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
+    if (!environmentId) {
+      throw new ValidationError('Environment ID is required', []);
     }
-    
-    res.json({
-      environmentId,
-      logs,
-      lines: logs.split('\n').length,
-      timestamp: new Date().toISOString(),
+
+    const lines = Math.min(parseInt(req.query.lines as string) || 100, 1000);
+    const follow = req.query.follow === 'true';
+
+    // Find environment and verify ownership
+    const environment = await prisma.environment.findFirst({
+      where: {
+        id: environmentId,
+        userId: authReq.user.id,
+      },
     });
-  } catch (error) {
-    logger.error('Failed to get environment logs', { environmentId, error });
-    throw error;
-  }
-}));
+
+    if (!environment) {
+      throw new NotFoundError('Environment not found');
+    }
+
+    try {
+      const logs = await kubernetesService.getEnvironmentLogs(environmentId, lines, follow);
+
+      if (follow) {
+        // For streaming logs, set appropriate headers
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+      }
+
+      res.json({
+        environmentId,
+        logs,
+        lines: logs.split('\n').length,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Failed to get environment logs', { environmentId, error });
+      throw error;
+    }
+  })
+);
 
 /**
  * @swagger
@@ -1080,81 +1157,87 @@ router.get('/:environmentId/logs', authenticate, asyncHandler(async (req: Reques
  *       404:
  *         description: Environment not found
  */
-router.get('/:environmentId/metrics', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  const authReq = req as AuthenticatedRequest;
-  const { environmentId } = req.params;
+router.get(
+  '/:environmentId/metrics',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthenticatedRequest;
+    const { environmentId } = req.params;
 
-  if (!environmentId) {
-    throw new ValidationError('Environment ID is required', []);
-  }
-
-  // Find environment and verify ownership
-  const environment = await prisma.environment.findFirst({
-    where: {
-      id: environmentId,
-      userId: authReq.user.id,
-    },
-  });
-
-  if (!environment) {
-    throw new NotFoundError('Environment not found');
-  }
-
-  try {
-    // Get current metrics from Kubernetes
-    const kubernetesInfo = await kubernetesService.getEnvironmentInfo(environmentId);
-    
-    // Get historical metrics from database
-    const metrics = await prisma.environmentMetric.findMany({
-      where: { environmentId },
-      orderBy: { timestamp: 'desc' },
-      take: 100, // Last 100 data points
-    });
-
-    // Update environment with latest metrics
-    if (kubernetesInfo.cpuUsage !== undefined || kubernetesInfo.memoryUsage !== undefined) {
-      const updateData: any = {
-        lastActivityAt: new Date(),
-      };
-      if (kubernetesInfo.cpuUsage !== undefined) updateData.cpuUsage = kubernetesInfo.cpuUsage;
-      if (kubernetesInfo.memoryUsage !== undefined) updateData.memoryUsage = kubernetesInfo.memoryUsage;
-      if (kubernetesInfo.storageUsage !== undefined) updateData.storageUsage = kubernetesInfo.storageUsage;
-
-      await prisma.environment.update({
-        where: { id: environmentId },
-        data: updateData,
-      });
+    if (!environmentId) {
+      throw new ValidationError('Environment ID is required', []);
     }
 
-    res.json({
-      environmentId,
-      status: kubernetesInfo.status,
-      current: {
-        cpuUsage: kubernetesInfo.cpuUsage,
-        memoryUsage: kubernetesInfo.memoryUsage,
-        storageUsage: kubernetesInfo.storageUsage,
-        timestamp: new Date().toISOString(),
-      },
-      historical: metrics.map(metric => ({
-        cpuUsage: metric.cpuUsage,
-        memoryUsage: metric.memoryUsage,
-        storageUsage: metric.storageUsage,
-        networkIn: Number(metric.networkRx),
-        networkOut: Number(metric.networkTx),
-        timestamp: metric.timestamp,
-      })),
-      resources: {
-        limits: {
-          cpu: environment.resourcesCpu,
-          memory: environment.resourcesMemory,
-          storage: environment.resourcesStorage,
-        },
+    // Find environment and verify ownership
+    const environment = await prisma.environment.findFirst({
+      where: {
+        id: environmentId,
+        userId: authReq.user.id,
       },
     });
-  } catch (error) {
-    logger.error('Failed to get environment metrics', { environmentId, error });
-    throw error;
-  }
-}));
+
+    if (!environment) {
+      throw new NotFoundError('Environment not found');
+    }
+
+    try {
+      // Get current metrics from Kubernetes
+      const kubernetesInfo = await kubernetesService.getEnvironmentInfo(environmentId);
+
+      // Get historical metrics from database
+      const metrics = await prisma.environmentMetric.findMany({
+        where: { environmentId },
+        orderBy: { timestamp: 'desc' },
+        take: 100, // Last 100 data points
+      });
+
+      // Update environment with latest metrics
+      if (kubernetesInfo.cpuUsage !== undefined || kubernetesInfo.memoryUsage !== undefined) {
+        const updateData: any = {
+          lastActivityAt: new Date(),
+        };
+        if (kubernetesInfo.cpuUsage !== undefined) updateData.cpuUsage = kubernetesInfo.cpuUsage;
+        if (kubernetesInfo.memoryUsage !== undefined)
+          updateData.memoryUsage = kubernetesInfo.memoryUsage;
+        if (kubernetesInfo.storageUsage !== undefined)
+          updateData.storageUsage = kubernetesInfo.storageUsage;
+
+        await prisma.environment.update({
+          where: { id: environmentId },
+          data: updateData,
+        });
+      }
+
+      res.json({
+        environmentId,
+        status: kubernetesInfo.status,
+        current: {
+          cpuUsage: kubernetesInfo.cpuUsage,
+          memoryUsage: kubernetesInfo.memoryUsage,
+          storageUsage: kubernetesInfo.storageUsage,
+          timestamp: new Date().toISOString(),
+        },
+        historical: metrics.map(metric => ({
+          cpuUsage: metric.cpuUsage,
+          memoryUsage: metric.memoryUsage,
+          storageUsage: metric.storageUsage,
+          networkIn: Number(metric.networkRx),
+          networkOut: Number(metric.networkTx),
+          timestamp: metric.timestamp,
+        })),
+        resources: {
+          limits: {
+            cpu: environment.resourcesCpu,
+            memory: environment.resourcesMemory,
+            storage: environment.resourcesStorage,
+          },
+        },
+      });
+    } catch (error) {
+      logger.error('Failed to get environment metrics', { environmentId, error });
+      throw error;
+    }
+  })
+);
 
 export default router;

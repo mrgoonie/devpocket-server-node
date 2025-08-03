@@ -14,7 +14,7 @@ describe('Environments API', () => {
     const { user, token } = await createTestUserWithToken({
       subscriptionPlan: SubscriptionPlan.PRO,
     });
-    
+
     testUser = user;
     authHeaders = { Authorization: `Bearer ${token}` };
 
@@ -213,16 +213,13 @@ describe('Environments API', () => {
     });
 
     it('should list user environments', async () => {
-      const response = await request(app)
-        .get('/api/v1/environments')
-        .set(authHeaders)
-        .expect(200);
+      const response = await request(app).get('/api/v1/environments').set(authHeaders).expect(200);
 
       expect(response.body).toHaveProperty('environments');
       expect(response.body).toHaveProperty('pagination');
       expect(Array.isArray(response.body.environments)).toBe(true);
       expect(response.body.environments).toHaveLength(2);
-      
+
       // All environments should belong to the authenticated user
       response.body.environments.forEach((env: any) => {
         expect(env.id).toBeDefined();

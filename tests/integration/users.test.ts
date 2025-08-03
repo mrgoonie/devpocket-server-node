@@ -32,7 +32,7 @@ describe('Users API', () => {
       expect(response.body.user.username).toBe(testUser.username);
       expect(response.body.user.fullName).toBe(testUser.fullName);
       expect(response.body.user.subscriptionPlan).toBe(testUser.subscriptionPlan);
-      
+
       // Should not include sensitive fields
       expect(response.body.user).not.toHaveProperty('password');
       expect(response.body.user).not.toHaveProperty('failedLoginAttempts');
@@ -40,9 +40,7 @@ describe('Users API', () => {
     });
 
     it('should require authentication', async () => {
-      const response = await request(app)
-        .get('/api/v1/users/me')
-        .expect(401);
+      const response = await request(app).get('/api/v1/users/me').expect(401);
 
       expect(response.body).toHaveProperty('error');
       expect(response.body.message).toContain('Access token is required');
@@ -498,9 +496,7 @@ describe('Users API', () => {
     });
 
     it('should require authentication', async () => {
-      const response = await request(app)
-        .get('/api/v1/users/me/stats')
-        .expect(401);
+      const response = await request(app).get('/api/v1/users/me/stats').expect(401);
 
       expect(response.body).toHaveProperty('error');
     });
