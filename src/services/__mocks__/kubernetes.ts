@@ -83,7 +83,7 @@ class MockKubernetesService {
   async executeCommand(
     environmentId: string,
     command: string,
-    stdin?: boolean
+    _stdin?: boolean
   ): Promise<{ success: boolean; output?: string; error?: string }> {
     const env = this.environments.get(environmentId);
     if (!env) {
@@ -98,8 +98,8 @@ class MockKubernetesService {
 
   async getEnvironmentLogs(
     environmentId: string,
-    lines: number = 100,
-    follow: boolean = false
+    _lines: number = 100,
+    _follow: boolean = false
   ): Promise<string> {
     const env = this.environments.get(environmentId);
     if (!env) {
