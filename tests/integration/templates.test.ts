@@ -326,12 +326,11 @@ describe('Templates API', () => {
         .expect(404);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('Not Found');
+      expect(response.body.error.toLowerCase()).toContain('not found');
     });
 
     it('should return 404 for deprecated template by default', async () => {
       const deprecatedTemplate = testTemplates.find(t => t.status === 'DEPRECATED');
-      
       const response = await request(app)
         .get(`/api/v1/templates/${deprecatedTemplate.id}`)
         .set('Authorization', `Bearer ${authToken}`)

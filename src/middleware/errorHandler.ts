@@ -40,7 +40,7 @@ export const errorHandler = (
 
   // Handle known API errors
   if (error instanceof ApiError) {
-    statusCode = error.statusCode;
+    statusCode = error.statusCode; // Use the actual status code from the error
     message = error.message;
     errors = error.errors;
     

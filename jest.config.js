@@ -18,10 +18,16 @@ module.exports = {
     '!src/**/*.spec.ts',
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
+  coverageReporters: [
+    'text',
+    'text-summary',
+    // 'lcov',
+    // 'html'
+  ],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@/services/kubernetes$': '<rootDir>/src/services/__mocks__/kubernetes.ts',
   },
   testTimeout: 30000,
   clearMocks: true,

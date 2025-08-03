@@ -85,11 +85,18 @@ class KubernetesService {
         logger.debug('Kubeconfig decrypted successfully', { clusterId });
       } catch (decryptError) {
         // Fallback: assume it's plain text (backwards compatibility)
+        // In production, you might want to enforce encryption
         logger.warn('Failed to decrypt kubeconfig, assuming plain text', { 
           clusterId, 
-          error: decryptError instanceof Error ? decryptError.message : 'Unknown error'
+          error: decryptError instanceof Error ? decryptError.message : 'Unknown error',
+          kubeconfigLength: cluster.kubeconfig.length
         });
         kubeconfig = cluster.kubeconfig;
+        
+        // Validate that the plain text kubeconfig at least looks valid
+        if (!kubeconfig.includes('apiVersion') || !kubeconfig.includes('clusters')) {
+          throw new Error('Invalid kubeconfig format detected');
+        }
       }
       
       kc.loadFromString(kubeconfig);

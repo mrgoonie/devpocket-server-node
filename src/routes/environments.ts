@@ -717,6 +717,11 @@ router.delete('/:environmentId', authenticate, asyncHandler(async (req: Request,
     throw new NotFoundError('Environment not found');
   }
 
+  // Prevent deletion of running environments
+  if (environment.status === 'RUNNING') {
+    throw new ValidationError('Cannot delete running environment. Please stop the environment first.', []);
+  }
+
   // Delete from Kubernetes first
   try {
     await kubernetesService.deleteEnvironment(environmentId);
@@ -728,6 +733,12 @@ router.delete('/:environmentId', authenticate, asyncHandler(async (req: Request,
   // Clean up terminal sessions
   await prisma.terminalSession.updateMany({
     where: { environmentId },
+    data: { status: 'TERMINATED' },
+  });
+
+  // Update environment status to TERMINATED
+  await prisma.environment.update({
+    where: { id: environmentId },
     data: { status: 'TERMINATED' },
   });
 

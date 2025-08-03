@@ -98,7 +98,7 @@ describe('Environments API', () => {
       expect(dbEnvironment?.name).toBe(environmentData.name);
     });
 
-    it('should return 422 for missing required fields', async () => {
+    it('should return 400 for missing required fields', async () => {
       const response = await request(app)
         .post('/api/v1/environments')
         .set(authHeaders)
@@ -330,11 +330,12 @@ describe('Environments API', () => {
 
       expect(response.body).toHaveProperty('message');
 
-      // Verify environment was deleted
+      // Verify environment was soft-deleted (status set to TERMINATED)
       const deletedEnvironment = await prisma.environment.findUnique({
         where: { id: testEnvironment.id },
       });
-      expect(deletedEnvironment).toBeNull();
+      expect(deletedEnvironment).toBeTruthy();
+      expect(deletedEnvironment?.status).toBe('TERMINATED');
     });
 
     it('should return 404 for non-existent environment', async () => {
@@ -370,6 +371,13 @@ describe('Environments API', () => {
         .expect(400);
 
       expect(response.body.error).toContain('running');
+
+      // Verify environment was not deleted
+      const existingEnvironment = await prisma.environment.findUnique({
+        where: { id: testEnvironment.id },
+      });
+      expect(existingEnvironment).toBeTruthy();
+      expect(existingEnvironment?.status).toBe('RUNNING');
     });
   });
 });
