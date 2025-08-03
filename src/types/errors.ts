@@ -1,11 +1,13 @@
 export class ApiError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
-  public readonly errors: Array<{
-    field?: string;
-    message: string;
-    code?: string;
-  }> | undefined;
+  public readonly errors:
+    | Array<{
+        field?: string;
+        message: string;
+        code?: string;
+      }>
+    | undefined;
 
   constructor(
     message: string,
@@ -63,10 +65,7 @@ export class ConflictError extends ApiError {
 }
 
 export class RateLimitError extends ApiError {
-  constructor(
-    message: string = 'Too many requests',
-    retryAfter?: number
-  ) {
+  constructor(message: string = 'Too many requests', retryAfter?: number) {
     super(message, 429, true);
     this.name = 'RateLimitError';
     if (retryAfter) {

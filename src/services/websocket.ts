@@ -36,9 +36,9 @@ class WebSocketConnectionManager {
   public addConnection(ws: AuthenticatedWebSocket): void {
     const connectionId = this.generateConnectionId();
     ws.sessionId = connectionId;
-    
+
     this.connections.set(connectionId, ws);
-    
+
     // Track user connections
     if (!this.userConnections.has(ws.userId)) {
       this.userConnections.set(ws.userId, new Set());
@@ -57,7 +57,7 @@ class WebSocketConnectionManager {
     const ws = this.connections.get(connectionId);
     if (ws) {
       this.connections.delete(connectionId);
-      
+
       // Remove from user connections
       const userConnections = this.userConnections.get(ws.userId);
       if (userConnections) {
@@ -81,15 +81,13 @@ class WebSocketConnectionManager {
   }
 
   public getConnectionsByEnvironment(environmentId: string): AuthenticatedWebSocket[] {
-    return Array.from(this.connections.values()).filter(
-      ws => ws.environmentId === environmentId
-    );
+    return Array.from(this.connections.values()).filter(ws => ws.environmentId === environmentId);
   }
 
   public broadcastToEnvironment(environmentId: string, message: WebSocketMessage): void {
     const connections = this.getConnectionsByEnvironment(environmentId);
     const messageStr = JSON.stringify(message);
-    
+
     connections.forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(messageStr);
@@ -98,7 +96,9 @@ class WebSocketConnectionManager {
   }
 
   private generateConnectionId(): string {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    return (
+      Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+    );
   }
 
   private startPingInterval(): void {
@@ -132,12 +132,12 @@ class WebSocketConnectionManager {
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
     }
-    
+
     // Close all connections
     this.connections.forEach(ws => {
       ws.terminate();
     });
-    
+
     this.connections.clear();
     this.userConnections.clear();
   }
@@ -151,7 +151,7 @@ const connectionManager = new WebSocketConnectionManager();
 async function validateWebSocketUpgrade(request: IncomingMessage): Promise<void> {
   const url = new URL(request.url!, `http://${request.headers.host}`);
   const pathParts = url.pathname.split('/');
-  
+
   // Parse path: /api/v1/ws/terminal/{environmentId} or /api/v1/ws/logs/{environmentId}
   if (pathParts.length < 6) {
     throw new Error('Invalid WebSocket path');
@@ -230,24 +230,24 @@ async function validateWebSocketUpgrade(request: IncomingMessage): Promise<void>
  */
 export function initializeWebSocketServer(wss: WebSocketServer): void {
   wss.on('connection', async (ws: WebSocket, request: IncomingMessage) => {
-    // First validate the connection 
+    // First validate the connection
     try {
       await validateWebSocketUpgrade(request);
       // If validation passes, handle the connection normally
       await handleWebSocketConnection(ws as AuthenticatedWebSocket, request);
     } catch (error) {
-      logger.warn('WebSocket connection rejected', { 
+      logger.warn('WebSocket connection rejected', {
         url: request.url,
-        error: error instanceof Error ? error.message : error 
+        error: error instanceof Error ? error.message : error,
       });
-      
+
       // Close with 1008 (Policy Violation) immediately for authentication/authorization failures
       ws.close(1008, 'Authentication failed');
       return;
     }
   });
 
-  wss.on('error', (error) => {
+  wss.on('error', error => {
     logger.error('WebSocket server error', { error });
   });
 
@@ -268,7 +268,7 @@ async function handleWebSocketConnection(
 ): Promise<void> {
   const url = new URL(request.url!, `http://${request.headers.host}`);
   const pathParts = url.pathname.split('/');
-  
+
   // Parse path: /api/v1/ws/terminal/{environmentId} or /api/v1/ws/logs/{environmentId}
   if (pathParts.length < 6) {
     throw new Error('Invalid WebSocket path');
@@ -355,7 +355,7 @@ async function handleWebSocketConnection(
   connectionManager.addConnection(ws);
 
   // Set up event handlers
-  ws.on('message', async (data) => {
+  ws.on('message', async data => {
     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data as ArrayBuffer);
     await handleWebSocketMessage(ws, buffer);
   });
@@ -364,7 +364,7 @@ async function handleWebSocketConnection(
     handleWebSocketClose(ws, code, reason);
   });
 
-  ws.on('error', (error) => {
+  ws.on('error', error => {
     logger.error('WebSocket connection error', {
       userId: ws.userId,
       environmentId: ws.environmentId,
@@ -410,25 +410,25 @@ async function handleWebSocketConnection(
 async function handleWebSocketMessage(ws: AuthenticatedWebSocket, data: Buffer): Promise<void> {
   try {
     const message: WebSocketMessage = JSON.parse(data.toString());
-    
+
     switch (message.type) {
       case 'ping':
         ws.lastPing = Date.now();
         ws.send(JSON.stringify({ type: 'pong' }));
         break;
-        
+
       case 'input':
         if (ws.isTerminalConnection) {
           await handleTerminalInput(ws, message.data);
         }
         break;
-        
+
       case 'resize':
         if (ws.isTerminalConnection) {
           handleTerminalResize(ws, message.cols, message.rows);
         }
         break;
-        
+
       default:
         logger.warn('Unknown WebSocket message type', {
           type: message.type,
@@ -442,11 +442,13 @@ async function handleWebSocketMessage(ws: AuthenticatedWebSocket, data: Buffer):
       userId: ws.userId,
       environmentId: ws.environmentId,
     });
-    
-    ws.send(JSON.stringify({
-      type: 'error',
-      message: 'Failed to process message',
-    }));
+
+    ws.send(
+      JSON.stringify({
+        type: 'error',
+        message: 'Failed to process message',
+      })
+    );
   }
 }
 
@@ -490,15 +492,19 @@ async function handleTerminalInput(ws: AuthenticatedWebSocket, input: string): P
     );
 
     if (result.success && result.output) {
-      ws.send(JSON.stringify({
-        type: 'output',
-        data: result.output,
-      }));
+      ws.send(
+        JSON.stringify({
+          type: 'output',
+          data: result.output,
+        })
+      );
     } else if (result.error) {
-      ws.send(JSON.stringify({
-        type: 'error',
-        data: result.error,
-      }));
+      ws.send(
+        JSON.stringify({
+          type: 'error',
+          data: result.error,
+        })
+      );
     }
 
     // Update last activity
@@ -513,10 +519,12 @@ async function handleTerminalInput(ws: AuthenticatedWebSocket, input: string): P
       error,
     });
 
-    ws.send(JSON.stringify({
-      type: 'error',
-      data: 'Failed to execute command',
-    }));
+    ws.send(
+      JSON.stringify({
+        type: 'error',
+        data: 'Failed to execute command',
+      })
+    );
   }
 }
 
@@ -536,7 +544,10 @@ function handleTerminalResize(ws: AuthenticatedWebSocket, cols: number, rows: nu
 /**
  * Create or update terminal session
  */
-async function createOrUpdateTerminalSession(environmentId: string, sessionId: string): Promise<void> {
+async function createOrUpdateTerminalSession(
+  environmentId: string,
+  sessionId: string
+): Promise<void> {
   try {
     await prisma.terminalSession.upsert({
       where: {

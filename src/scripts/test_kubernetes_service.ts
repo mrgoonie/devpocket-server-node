@@ -8,7 +8,7 @@ import logger from '@/config/logger';
 async function testKubernetesService() {
   try {
     console.log('=== Testing Kubernetes Service with Real Cluster Data ===\n');
-    
+
     // Get clusters from database
     const clusters = await prisma.cluster.findMany({
       where: { status: 'ACTIVE' },
@@ -19,11 +19,11 @@ async function testKubernetesService() {
         region: true,
         status: true,
         nodeCount: true,
-      }
+      },
     });
-    
+
     console.log(`Found ${clusters.length} active cluster(s) in database:`);
-    
+
     for (const cluster of clusters) {
       console.log(`\n📋 Cluster: ${cluster.name}`);
       console.log(`   ID: ${cluster.id}`);
@@ -31,15 +31,15 @@ async function testKubernetesService() {
       console.log(`   Region: ${cluster.region}`);
       console.log(`   Status: ${cluster.status}`);
       console.log(`   Nodes: ${cluster.nodeCount}`);
-      
+
       // Test if we can access the cluster through the Kubernetes service
       try {
         console.log('   Testing service connectivity...');
-        
+
         // Get a real user and template for testing
         const user = await prisma.user.findFirst({ select: { id: true } });
         const template = await prisma.template.findFirst({ select: { id: true } });
-        
+
         if (!user || !template) {
           console.log('   ⚠️  Skipping service test - no user or template found');
           continue;
@@ -60,34 +60,34 @@ async function testKubernetesService() {
             resourcesStorage: '1Gi',
             status: 'STOPPED',
             installationCompleted: false,
-          }
+          },
         });
-        
+
         console.log(`   ✅ Test environment created: ${testEnvironment.id}`);
-        
+
         // Test environment info retrieval (this will test kubeconfig decryption)
         const envInfo = await kubernetesService.getEnvironmentInfo(testEnvironment.id);
         console.log(`   📊 Environment info: ${JSON.stringify(envInfo, null, 6)}`);
-        
+
         // Clean up test environment
         await prisma.environment.delete({
-          where: { id: testEnvironment.id }
+          where: { id: testEnvironment.id },
         });
-        
+
         console.log('   ✅ Test environment cleaned up');
         console.log('   🎉 Kubernetes service test passed!');
-        
       } catch (error) {
-        console.log(`   ❌ Kubernetes service test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.log(
+          `   ❌ Kubernetes service test failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     }
-    
+
     if (clusters.length === 0) {
       console.log('⚠️  No active clusters found. Please run database seeding first.');
     }
-    
+
     console.log('\n🎉 Kubernetes service testing completed!');
-    
   } catch (error) {
     console.error('❌ Test failed:', error);
     process.exit(1);
@@ -114,7 +114,7 @@ Example:
 
 // Run the test
 if (require.main === module) {
-  testKubernetesService().catch((error) => {
+  testKubernetesService().catch(error => {
     logger.error('Test failed:', error);
     process.exit(1);
   });

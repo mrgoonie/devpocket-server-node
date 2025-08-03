@@ -4,9 +4,7 @@ import app from '../../src/app';
 describe('Health API', () => {
   describe('GET /health', () => {
     it('should return health status', async () => {
-      const response = await request(app)
-        .get('/health')
-        .expect(200);
+      const response = await request(app).get('/health').expect(200);
 
       expect(response.body).toHaveProperty('status', 'healthy');
       expect(response.body).toHaveProperty('service', 'DevPocket API');
@@ -17,9 +15,7 @@ describe('Health API', () => {
     });
 
     it('should include system information', async () => {
-      const response = await request(app)
-        .get('/health')
-        .expect(200);
+      const response = await request(app).get('/health').expect(200);
 
       // The basic health endpoint only includes service info, not detailed system info
       expect(response.body).toHaveProperty('service');
@@ -30,9 +26,7 @@ describe('Health API', () => {
 
   describe('GET /health/ready', () => {
     it('should return readiness status', async () => {
-      const response = await request(app)
-        .get('/health/ready')
-        .expect(200);
+      const response = await request(app).get('/health/ready').expect(200);
 
       expect(response.body).toHaveProperty('status', 'ready');
       expect(response.body).toHaveProperty('checks');
@@ -41,9 +35,7 @@ describe('Health API', () => {
 
   describe('GET /health/live', () => {
     it('should return liveness status', async () => {
-      const response = await request(app)
-        .get('/health/live')
-        .expect(200);
+      const response = await request(app).get('/health/live').expect(200);
 
       expect(response.body).toHaveProperty('status', 'alive');
       // The live endpoint only returns status, no timestamp

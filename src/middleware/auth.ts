@@ -161,7 +161,7 @@ export const optionalAuthenticate = async (
     // Try to authenticate, but don't fail if it doesn't work
     try {
       const payload = jwtService.verifyToken(token);
-      
+
       if (payload.type === 'access') {
         const user = await prisma.user.findUnique({
           where: { id: payload.userId },
@@ -177,7 +177,11 @@ export const optionalAuthenticate = async (
           },
         });
 
-        if (user && user.isActive && (!user.accountLockedUntil || user.accountLockedUntil <= new Date())) {
+        if (
+          user &&
+          user.isActive &&
+          (!user.accountLockedUntil || user.accountLockedUntil <= new Date())
+        ) {
           req.user = {
             id: user.id,
             email: user.email,
@@ -204,11 +208,7 @@ export const optionalAuthenticate = async (
  * Email verification middleware
  * Requires user to have verified their email
  */
-export const requireEmailVerification = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
+export const requireEmailVerification = (req: Request, res: Response, next: NextFunction): void => {
   if (!req.user) {
     res.status(401).json({
       error: 'Unauthorized',
@@ -232,11 +232,7 @@ export const requireEmailVerification = (
  * Admin role middleware
  * Requires user to have admin privileges (pro plan for now)
  */
-export const requireAdmin = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
+export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
   if (!req.user) {
     res.status(401).json({
       error: 'Unauthorized',
@@ -264,7 +260,7 @@ export const requireAdmin = (
  */
 export const requireSubscription = (requiredPlan: string) => {
   const planHierarchy = ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'];
-  
+
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({

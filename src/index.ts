@@ -25,23 +25,23 @@ async function startServer(): Promise<void> {
     const server = createServer(app);
 
     // Initialize WebSocket server
-    const wss = new WebSocketServer({ 
-      noServer: true
+    const wss = new WebSocketServer({
+      noServer: true,
     });
-    
+
     // Handle upgrade requests manually for proper path routing
     server.on('upgrade', (request: IncomingMessage, socket: Socket, head: Buffer) => {
       const url = new URL(request.url!, `http://${request.headers.host}`);
-      
+
       if (url.pathname.startsWith('/api/v1/ws')) {
-        wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.handleUpgrade(request, socket, head, ws => {
           wss.emit('connection', ws, request);
         });
       } else {
         socket.destroy();
       }
     });
-    
+
     initializeWebSocketServer(wss);
     logger.info('WebSocket server initialized');
 
@@ -52,16 +52,17 @@ async function startServer(): Promise<void> {
         port: config.PORT,
         environment: config.NODE_ENV,
         pid: process.pid,
-        documentation: config.ENABLE_API_DOCS ? `http://${config.HOST}:${config.PORT}/api-docs` : null,
+        documentation: config.ENABLE_API_DOCS
+          ? `http://${config.HOST}:${config.PORT}/api-docs`
+          : null,
       });
     });
 
     // Handle server errors
-    server.on('error', (error) => {
+    server.on('error', error => {
       logger.error('Server error', { error });
       process.exit(1);
     });
-
   } catch (error) {
     logger.error('Failed to start server', { error });
     process.exit(1);

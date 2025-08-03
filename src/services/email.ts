@@ -51,7 +51,9 @@ class EmailService {
   /**
    * Send a generic email
    */
-  async sendEmail(options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  async sendEmail(
+    options: EmailOptions
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       const { data, error } = await resend.emails.send({
         from: this.fromEmail,
@@ -66,15 +68,15 @@ class EmailService {
         return { success: false, error: error.message };
       }
 
-      logger.info('Email sent successfully', { 
-        messageId: data?.id, 
-        to: options.to, 
-        subject: options.subject 
+      logger.info('Email sent successfully', {
+        messageId: data?.id,
+        to: options.to,
+        subject: options.subject,
       });
 
-      return { 
-        success: true, 
-        ...(data?.id && { messageId: data.id }) 
+      return {
+        success: true,
+        ...(data?.id && { messageId: data.id }),
       };
     } catch (error) {
       logger.error('Email service error', { error, to: options.to, subject: options.subject });
@@ -85,7 +87,9 @@ class EmailService {
   /**
    * Send email verification email
    */
-  async sendEmailVerification(options: EmailVerificationOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  async sendEmailVerification(
+    options: EmailVerificationOptions
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const html = this.generateEmailVerificationHtml(options);
     const text = this.generateEmailVerificationText(options);
 
@@ -100,7 +104,9 @@ class EmailService {
   /**
    * Send password reset email
    */
-  async sendPasswordReset(options: PasswordResetOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  async sendPasswordReset(
+    options: PasswordResetOptions
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const html = this.generatePasswordResetHtml(options);
     const text = this.generatePasswordResetText(options);
 
@@ -115,7 +121,9 @@ class EmailService {
   /**
    * Send welcome email
    */
-  async sendWelcomeEmail(options: WelcomeEmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  async sendWelcomeEmail(
+    options: WelcomeEmailOptions
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const html = this.generateWelcomeEmailHtml(options);
     const text = this.generateWelcomeEmailText(options);
 
@@ -130,7 +138,9 @@ class EmailService {
   /**
    * Send environment notification email
    */
-  async sendEnvironmentNotification(options: EnvironmentNotificationOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  async sendEnvironmentNotification(
+    options: EnvironmentNotificationOptions
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const html = this.generateEnvironmentNotificationHtml(options);
     const text = this.generateEnvironmentNotificationText(options);
 

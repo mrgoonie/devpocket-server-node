@@ -31,8 +31,8 @@ export const errorHandler = (
   _next: NextFunction
 ): void => {
   // Generate request ID for tracking
-  const requestId = req.headers['x-request-id'] as string || 
-    Math.random().toString(36).substring(2, 15);
+  const requestId =
+    (req.headers['x-request-id'] as string) || Math.random().toString(36).substring(2, 15);
 
   let statusCode = 500;
   let message = 'Internal Server Error';
@@ -43,13 +43,17 @@ export const errorHandler = (
     statusCode = error.statusCode; // Use the actual status code from the error
     message = error.message;
     errors = error.errors;
-    
+
     // For validation errors, include more specific error context in the main message
     if (error.name === 'ValidationError' && error.errors && error.errors.length > 0) {
       const firstError = error.errors[0];
       if (firstError && firstError.message.toLowerCase().includes('required')) {
         message = 'required fields are missing';
-      } else if (firstError && firstError.field === 'email' && firstError.message.toLowerCase().includes('email')) {
+      } else if (
+        firstError &&
+        firstError.field === 'email' &&
+        firstError.message.toLowerCase().includes('email')
+      ) {
         message = 'invalid email format';
       } else if (firstError && firstError.field === 'password') {
         message = 'invalid password format';
@@ -65,13 +69,17 @@ export const errorHandler = (
       message: err.message,
       code: err.code,
     }));
-    
+
     // Provide more specific error messages for common validation cases
     if (errors.length > 0) {
       const firstError = errors[0];
       if (firstError && firstError.message.toLowerCase().includes('required')) {
         message = 'required fields are missing';
-      } else if (firstError && firstError.field === 'email' && firstError.message.toLowerCase().includes('email')) {
+      } else if (
+        firstError &&
+        firstError.field === 'email' &&
+        firstError.message.toLowerCase().includes('email')
+      ) {
         message = 'invalid email format';
       } else if (firstError && firstError.field === 'password') {
         message = 'invalid password format';
@@ -81,20 +89,16 @@ export const errorHandler = (
   // Handle Prisma errors
   else if (error instanceof Prisma.PrismaClientKnownRequestError) {
     ({ statusCode, message, errors } = handlePrismaError(error));
-  }
-  else if (error instanceof Prisma.PrismaClientUnknownRequestError) {
+  } else if (error instanceof Prisma.PrismaClientUnknownRequestError) {
     statusCode = 500;
     message = 'Database error occurred';
-  }
-  else if (error instanceof Prisma.PrismaClientRustPanicError) {
+  } else if (error instanceof Prisma.PrismaClientRustPanicError) {
     statusCode = 500;
     message = 'Database connection error';
-  }
-  else if (error instanceof Prisma.PrismaClientInitializationError) {
+  } else if (error instanceof Prisma.PrismaClientInitializationError) {
     statusCode = 503;
     message = 'Database service unavailable';
-  }
-  else if (error instanceof Prisma.PrismaClientValidationError) {
+  } else if (error instanceof Prisma.PrismaClientValidationError) {
     statusCode = 400;
     message = 'Invalid database query';
   }
@@ -102,8 +106,7 @@ export const errorHandler = (
   else if (error.name === 'JsonWebTokenError') {
     statusCode = 401;
     message = 'Invalid token';
-  }
-  else if (error.name === 'TokenExpiredError') {
+  } else if (error.name === 'TokenExpiredError') {
     statusCode = 401;
     message = 'Token has expired';
   }
@@ -125,7 +128,10 @@ export const errorHandler = (
 
   // Create error response
   const errorResponse: ErrorResponse = {
-    error: error.name === 'ValidationError' || error instanceof ZodError ? message : getErrorName(statusCode),
+    error:
+      error.name === 'ValidationError' || error instanceof ZodError
+        ? message
+        : getErrorName(statusCode),
     message,
     timestamp: new Date().toISOString(),
     path: req.path,
@@ -181,11 +187,13 @@ function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): {
       return {
         statusCode: 409,
         message: 'Resource already exists',
-        errors: [{
-          field: (error.meta?.target as string[])?.join(', '),
-          message: 'This value is already taken',
-          code: 'unique_constraint_violation',
-        }],
+        errors: [
+          {
+            field: (error.meta?.target as string[])?.join(', '),
+            message: 'This value is already taken',
+            code: 'unique_constraint_violation',
+          },
+        ],
       };
 
     case 'P2025': // Record not found
@@ -198,44 +206,52 @@ function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): {
       return {
         statusCode: 400,
         message: 'Invalid reference to related resource',
-        errors: [{
-          field: error.meta?.field_name as string,
-          message: 'Referenced resource does not exist',
-          code: 'foreign_key_constraint_violation',
-        }],
+        errors: [
+          {
+            field: error.meta?.field_name as string,
+            message: 'Referenced resource does not exist',
+            code: 'foreign_key_constraint_violation',
+          },
+        ],
       };
 
     case 'P2014': // Required relation violation
       return {
         statusCode: 400,
         message: 'Required relation missing',
-        errors: [{
-          field: error.meta?.relation_name as string,
-          message: 'Required relation is missing',
-          code: 'required_relation_violation',
-        }],
+        errors: [
+          {
+            field: error.meta?.relation_name as string,
+            message: 'Required relation is missing',
+            code: 'required_relation_violation',
+          },
+        ],
       };
 
     case 'P2011': // Null constraint violation
       return {
         statusCode: 400,
         message: 'Required field missing',
-        errors: [{
-          field: error.meta?.column_name as string,
-          message: 'This field is required',
-          code: 'null_constraint_violation',
-        }],
+        errors: [
+          {
+            field: error.meta?.column_name as string,
+            message: 'This field is required',
+            code: 'null_constraint_violation',
+          },
+        ],
       };
 
     case 'P2012': // Missing required value
       return {
         statusCode: 400,
         message: 'Missing required value',
-        errors: [{
-          field: error.meta?.path as string,
-          message: 'Required value is missing',
-          code: 'missing_required_value',
-        }],
+        errors: [
+          {
+            field: error.meta?.path as string,
+            message: 'Required value is missing',
+            code: 'missing_required_value',
+          },
+        ],
       };
 
     case 'P2016': // Query interpretation error
@@ -289,13 +305,9 @@ function getErrorName(statusCode: number): string {
 /**
  * 404 handler for undefined routes
  */
-export const notFoundHandler = (
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): void => {
-  const requestId = req.headers['x-request-id'] as string || 
-    Math.random().toString(36).substring(2, 15);
+export const notFoundHandler = (req: Request, res: Response, _next: NextFunction): void => {
+  const requestId =
+    (req.headers['x-request-id'] as string) || Math.random().toString(36).substring(2, 15);
 
   const errorResponse = {
     error: 'Not found',

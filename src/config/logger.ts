@@ -6,9 +6,7 @@ const config = getConfig();
 const logFormat = winston.format.combine(
   winston.format.timestamp(),
   winston.format.errors({ stack: true }),
-  config.LOG_FORMAT === 'json'
-    ? winston.format.json()
-    : winston.format.simple()
+  config.LOG_FORMAT === 'json' ? winston.format.json() : winston.format.simple()
 );
 
 const logger = winston.createLogger({
@@ -34,7 +32,7 @@ if (config.NODE_ENV === 'production') {
       format: winston.format.json(),
     })
   );
-  
+
   logger.add(
     new winston.transports.File({
       filename: 'logs/combined.log',

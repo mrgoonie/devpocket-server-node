@@ -75,13 +75,7 @@ class PasswordService {
     }
 
     // Common password patterns (basic check)
-    const commonPatterns = [
-      /^password/i,
-      /^123456/,
-      /^admin/i,
-      /^qwerty/i,
-      /^letmein/i,
-    ];
+    const commonPatterns = [/^password/i, /^123456/, /^admin/i, /^qwerty/i, /^letmein/i];
 
     for (const pattern of commonPatterns) {
       if (pattern.test(password)) {

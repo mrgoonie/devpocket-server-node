@@ -1,13 +1,13 @@
-import { 
-  KubeConfig, 
-  CoreV1Api, 
-  AppsV1Api, 
+import {
+  KubeConfig,
+  CoreV1Api,
+  AppsV1Api,
   BatchV1Api,
   Exec,
-  V1Pod, 
-  V1Service, 
-  V1ConfigMap, 
-  V1PersistentVolumeClaim
+  V1Pod,
+  V1Service,
+  V1ConfigMap,
+  V1PersistentVolumeClaim,
 } from '@kubernetes/client-node';
 import { prisma } from '@/config/database';
 import { encryptionService } from '@/utils/encryption';
@@ -77,7 +77,7 @@ class KubernetesService {
 
       // Initialize Kubernetes configuration
       const kc = new KubeConfig();
-      
+
       // Decrypt the kubeconfig content
       let kubeconfig: string;
       try {
@@ -86,19 +86,19 @@ class KubernetesService {
       } catch (decryptError) {
         // Fallback: assume it's plain text (backwards compatibility)
         // In production, you might want to enforce encryption
-        logger.warn('Failed to decrypt kubeconfig, assuming plain text', { 
-          clusterId, 
+        logger.warn('Failed to decrypt kubeconfig, assuming plain text', {
+          clusterId,
           error: decryptError instanceof Error ? decryptError.message : 'Unknown error',
-          kubeconfigLength: cluster.kubeconfig.length
+          kubeconfigLength: cluster.kubeconfig.length,
         });
         kubeconfig = cluster.kubeconfig;
-        
+
         // Validate that the plain text kubeconfig at least looks valid
         if (!kubeconfig.includes('apiVersion') || !kubeconfig.includes('clusters')) {
           throw new Error('Invalid kubeconfig format detected');
         }
       }
-      
+
       kc.loadFromString(kubeconfig);
 
       // Create API clients
@@ -130,7 +130,7 @@ class KubernetesService {
     const {
       environmentId,
       userId,
-      name: _name,
+      name: _name, // eslint-disable-line @typescript-eslint/no-unused-vars
       dockerImage,
       port,
       resources,
@@ -207,7 +207,7 @@ class KubernetesService {
       };
     } catch (error) {
       logger.error('Failed to create environment in Kubernetes', { environmentId, error });
-      
+
       // Update environment status to error
       await prisma.environment.update({
         where: { id: environmentId },
@@ -292,7 +292,7 @@ class KubernetesService {
       }
 
       const client = await this.getKubernetesClient(environment.clusterId);
-      
+
       // For simplicity, we'll restart the pod by deleting it
       // Kubernetes will recreate it automatically if it's managed by a deployment
       await client.coreV1Api.deleteNamespacedPod(
@@ -331,7 +331,7 @@ class KubernetesService {
       }
 
       const client = await this.getKubernetesClient(environment.clusterId);
-      
+
       // Scale down by deleting the pod
       await client.coreV1Api.deleteNamespacedPod(
         environment.kubernetesPodName,
@@ -378,15 +378,24 @@ class KubernetesService {
 
       if (environment.kubernetesPodName) {
         resourceCleanup.push(
-          client.coreV1Api.deleteNamespacedPod(environment.kubernetesPodName, namespace)
-            .catch((err: any) => logger.warn('Failed to delete pod', { pod: environment.kubernetesPodName, err }))
+          client.coreV1Api
+            .deleteNamespacedPod(environment.kubernetesPodName, namespace)
+            .catch((err: any) =>
+              logger.warn('Failed to delete pod', { pod: environment.kubernetesPodName, err })
+            )
         );
       }
 
       if (environment.kubernetesServiceName) {
         resourceCleanup.push(
-          client.coreV1Api.deleteNamespacedService(environment.kubernetesServiceName, namespace)
-            .catch((err: any) => logger.warn('Failed to delete service', { service: environment.kubernetesServiceName, err }))
+          client.coreV1Api
+            .deleteNamespacedService(environment.kubernetesServiceName, namespace)
+            .catch((err: any) =>
+              logger.warn('Failed to delete service', {
+                service: environment.kubernetesServiceName,
+                err,
+              })
+            )
         );
       }
 
@@ -395,10 +404,14 @@ class KubernetesService {
       const configMapName = `config-${environmentId}`;
 
       resourceCleanup.push(
-        client.coreV1Api.deleteNamespacedPersistentVolumeClaim(pvcName, namespace)
+        client.coreV1Api
+          .deleteNamespacedPersistentVolumeClaim(pvcName, namespace)
           .catch((err: any) => logger.warn('Failed to delete PVC', { pvc: pvcName, err })),
-        client.coreV1Api.deleteNamespacedConfigMap(configMapName, namespace)
-          .catch((err: any) => logger.warn('Failed to delete ConfigMap', { configMap: configMapName, err }))
+        client.coreV1Api
+          .deleteNamespacedConfigMap(configMapName, namespace)
+          .catch((err: any) =>
+            logger.warn('Failed to delete ConfigMap', { configMap: configMapName, err })
+          )
       );
 
       await Promise.allSettled(resourceCleanup);
@@ -443,10 +456,10 @@ class KubernetesService {
       }
 
       const exec = new Exec(kc);
-      
-      return new Promise((resolve) => {
-        let output = '';
-        let error = '';
+
+      return new Promise(resolve => {
+        const output = '';
+        const error = '';
 
         exec.exec(
           environment.kubernetesNamespace!,
@@ -495,7 +508,7 @@ class KubernetesService {
       }
 
       const client = await this.getKubernetesClient(environment.clusterId);
-      
+
       const logsResponse = await client.coreV1Api.readNamespacedPodLog(
         environment.kubernetesPodName,
         environment.kubernetesNamespace,
@@ -506,7 +519,7 @@ class KubernetesService {
         undefined, // previous
         undefined, // sinceSeconds
         lines,
-        undefined  // timestamps
+        undefined // timestamps
       );
 
       return logsResponse.body;
@@ -627,7 +640,8 @@ class KubernetesService {
       configMapName: string;
     }
   ): Promise<V1Pod> {
-    const { podName, dockerImage, port, resources, environmentVariables, pvcName, configMapName } = options;
+    const { podName, dockerImage, port, resources, environmentVariables, pvcName, configMapName } =
+      options;
 
     const pod: V1Pod = {
       metadata: {

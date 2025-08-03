@@ -12,7 +12,7 @@ describe('JWT Utils - Isolated', () => {
   describe('generateTokens', () => {
     it('should generate access and refresh tokens', () => {
       const tokens = generateTokens(mockUserId);
-      
+
       expect(tokens).toHaveProperty('accessToken');
       expect(tokens).toHaveProperty('refreshToken');
       expect(typeof tokens.accessToken).toBe('string');
@@ -22,13 +22,13 @@ describe('JWT Utils - Isolated', () => {
 
     it('should generate tokens with correct payload', async () => {
       const tokens = generateTokens(mockUserId);
-      
+
       const accessPayload = await verifyToken(tokens.accessToken);
       const refreshPayload = await verifyToken(tokens.refreshToken);
-      
+
       expect(accessPayload.userId).toBe(mockUserId);
       expect(accessPayload.type).toBe(TokenType.ACCESS);
-      
+
       expect(refreshPayload.userId).toBe(mockUserId);
       expect(refreshPayload.type).toBe(TokenType.REFRESH);
     });
@@ -37,10 +37,10 @@ describe('JWT Utils - Isolated', () => {
   describe('verifyToken', () => {
     it('should verify valid tokens', async () => {
       const tokens = generateTokens(mockUserId);
-      
+
       const accessPayload = await verifyToken(tokens.accessToken);
       const refreshPayload = await verifyToken(tokens.refreshToken);
-      
+
       expect(accessPayload.userId).toBe(mockUserId);
       expect(refreshPayload.userId).toBe(mockUserId);
     });
@@ -56,12 +56,10 @@ describe('JWT Utils - Isolated', () => {
     it('should throw error for tokens with wrong secret', async () => {
       // Generate token with different secret
       const jwt = require('jsonwebtoken');
-      const invalidToken = jwt.sign(
-        { userId: mockUserId, type: 'access' },
-        'wrong-secret',
-        { expiresIn: '1h' }
-      );
-      
+      const invalidToken = jwt.sign({ userId: mockUserId, type: 'access' }, 'wrong-secret', {
+        expiresIn: '1h',
+      });
+
       await expect(verifyToken(invalidToken)).rejects.toThrow();
     });
   });

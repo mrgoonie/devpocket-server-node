@@ -17,12 +17,12 @@ describe('Authentication API', () => {
         password: 'SecurePassword123!',
       };
 
-      const response = await request(app)
-        .post('/api/v1/auth/register')
-        .send(userData)
-        .expect(201);
+      const response = await request(app).post('/api/v1/auth/register').send(userData).expect(201);
 
-      expect(response.body).toHaveProperty('message', 'Registration successful. Please check your email to verify your account.');
+      expect(response.body).toHaveProperty(
+        'message',
+        'Registration successful. Please check your email to verify your account.'
+      );
       expect(response.body.email).toBe(userData.email);
       expect(response.body.username).toBe(userData.username);
       expect(response.body).not.toHaveProperty('password');
@@ -162,24 +162,20 @@ describe('Authentication API', () => {
 
       // Make 5 failed login attempts (may hit rate limit)
       for (let i = 0; i < 5; i++) {
-        const response = await request(app)
-          .post('/api/v1/auth/login')
-          .send({
-            usernameOrEmail: user.email,
-            password: 'wrongpassword',
-          });
-        
+        const response = await request(app).post('/api/v1/auth/login').send({
+          usernameOrEmail: user.email,
+          password: 'wrongpassword',
+        });
+
         // Accept either 401 (invalid credentials) or 429 (rate limited)
         expect([401, 429]).toContain(response.status);
       }
 
       // 6th attempt should return either account locked or rate limited
-      const response = await request(app)
-        .post('/api/v1/auth/login')
-        .send({
-          usernameOrEmail: user.email,
-          password: 'wrongpassword',
-        });
+      const response = await request(app).post('/api/v1/auth/login').send({
+        usernameOrEmail: user.email,
+        password: 'wrongpassword',
+      });
 
       // Accept either 401 (account locked) or 429 (rate limited)
       expect([401, 429]).toContain(response.status);
@@ -204,9 +200,7 @@ describe('Authentication API', () => {
     });
 
     it('should return 401 without token', async () => {
-      await request(app)
-        .get('/api/v1/auth/me')
-        .expect(401);
+      await request(app).get('/api/v1/auth/me').expect(401);
     });
 
     it('should return 401 with invalid token', async () => {
@@ -267,9 +261,7 @@ describe('Authentication API', () => {
     });
 
     it('should return 401 without token', async () => {
-      await request(app)
-        .post('/api/v1/auth/logout')
-        .expect(401);
+      await request(app).post('/api/v1/auth/logout').expect(401);
     });
   });
 });

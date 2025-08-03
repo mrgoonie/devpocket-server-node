@@ -13,7 +13,7 @@ const prisma = new PrismaClient();
 
 async function seedUsers() {
   logger.info('Seeding users...');
-  
+
   // Create admin user
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@devpocket.app' },
@@ -63,20 +63,20 @@ async function seedUsers() {
   });
 
   logger.info(`Created/updated users: ${adminUser.id}, ${demoUser.id}, ${testUser.id}`);
-  
+
   return { adminUser, demoUser, testUser };
 }
 
 async function seedClusters() {
   logger.info('Seeding clusters from real kubeconfig data...');
-  
+
   try {
     // Path to the kubeconfig file
     const kubeconfigPath = path.join(process.cwd(), 'k8s', 'kube_config_ovh.yaml');
-    
+
     // Parse the kubeconfig file
     const clusterDataList = await kubeconfigService.parseKubeconfigFile(kubeconfigPath);
-    
+
     if (clusterDataList.length === 0) {
       logger.warn('No clusters found in kubeconfig, falling back to mock data');
       return await seedMockClusters();
@@ -84,16 +84,17 @@ async function seedClusters() {
 
     // Validate connectivity for all clusters
     const kubeconfigContent = require('fs').readFileSync(kubeconfigPath, 'utf8');
-    const validationResult = await kubeconfigService.validateKubeconfigConnectivity(kubeconfigContent);
-    
+    const validationResult =
+      await kubeconfigService.validateKubeconfigConnectivity(kubeconfigContent);
+
     logger.info('Cluster connectivity validation results:', {
       valid: validationResult.valid,
       clusters: validationResult.clusters.map(c => ({
         name: c.name,
         connected: c.connected,
         nodeCount: c.nodeCount,
-        error: c.error
-      }))
+        error: c.error,
+      })),
     });
 
     const seededClusters: any = {};
@@ -103,15 +104,15 @@ async function seedClusters() {
       try {
         // Encrypt the kubeconfig content
         const encryptedKubeconfig = encryptionService.encrypt(clusterData.kubeconfig);
-        
+
         // Find validation data for this cluster
         const validationData = validationResult.clusters.find(c => c.name === clusterData.name);
         const nodeCount = validationData?.nodeCount || 1;
         const isConnected = validationData?.connected || false;
-        
+
         // Determine cluster status based on connectivity
         const status = isConnected ? ClusterStatus.ACTIVE : ClusterStatus.INACTIVE;
-        
+
         const cluster = await prisma.cluster.upsert({
           where: { name: clusterData.name },
           update: {
@@ -134,39 +135,38 @@ async function seedClusters() {
         });
 
         seededClusters[clusterData.name] = cluster;
-        
+
         logger.info('Cluster seeded successfully', {
           name: cluster.name,
           provider: cluster.provider,
           region: cluster.region,
           status: cluster.status,
           nodeCount: cluster.nodeCount,
-          connected: isConnected
+          connected: isConnected,
         });
       } catch (error) {
         logger.error('Failed to seed cluster', {
           clusterName: clusterData.name,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
 
     const clusterCount = Object.keys(seededClusters).length;
     logger.info(`Successfully seeded ${clusterCount} clusters from kubeconfig`);
-    
+
     // Return in expected format for backwards compatibility
     const clusterEntries = Object.values(seededClusters);
     return {
       defaultCluster: clusterEntries[0] || null,
       stagingCluster: clusterEntries[1] || clusterEntries[0] || null,
-      allClusters: seededClusters
+      allClusters: seededClusters,
     };
-    
   } catch (error) {
     logger.error('Failed to seed clusters from kubeconfig, falling back to mock data', {
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
-    
+
     // Fallback to mock data if kubeconfig parsing fails
     return await seedMockClusters();
   }
@@ -174,7 +174,7 @@ async function seedClusters() {
 
 async function seedMockClusters() {
   logger.info('Seeding mock cluster data...');
-  
+
   // Create default mock cluster
   const defaultCluster = await prisma.cluster.upsert({
     where: { name: 'default-cluster-mock' },
@@ -184,7 +184,9 @@ async function seedMockClusters() {
       description: 'Mock Kubernetes cluster for development (kubeconfig unavailable)',
       provider: 'ovh',
       region: 'eu-west-1',
-      kubeconfig: encryptionService.encrypt('# Mock kubeconfig - replace with real cluster configuration'),
+      kubeconfig: encryptionService.encrypt(
+        '# Mock kubeconfig - replace with real cluster configuration'
+      ),
       status: ClusterStatus.INACTIVE,
       nodeCount: 1,
     },
@@ -199,37 +201,41 @@ async function seedMockClusters() {
       description: 'Mock staging cluster for testing (kubeconfig unavailable)',
       provider: 'ovh',
       region: 'eu-west-1',
-      kubeconfig: encryptionService.encrypt('# Mock kubeconfig - replace with real cluster configuration'),
+      kubeconfig: encryptionService.encrypt(
+        '# Mock kubeconfig - replace with real cluster configuration'
+      ),
       status: ClusterStatus.INACTIVE,
       nodeCount: 1,
     },
   });
 
   logger.info(`Created/updated mock clusters: ${defaultCluster.id}, ${stagingCluster.id}`);
-  
+
   return { defaultCluster, stagingCluster };
 }
 
 async function seedTemplates() {
   logger.info('Seeding templates...');
-  
+
   // Load all templates from YAML files in scripts/templates/
   await loadAllTemplates();
-  
+
   // Get all templates from database to return for other seeding functions
   const templates = await prisma.template.findMany();
-  
+
   logger.info(`Created/updated ${templates.length} templates`);
-  
+
   return templates;
 }
 
 async function seedUserClusters(users: any, clusters: any) {
   logger.info('Seeding user-cluster relationships...');
-  
+
   // Handle both new structure (with allClusters) and old structure
-  const clusterList = clusters.allClusters ? Object.values(clusters.allClusters) : Object.values(clusters);
-  
+  const clusterList = clusters.allClusters
+    ? Object.values(clusters.allClusters)
+    : Object.values(clusters);
+
   // Give admin access to all clusters
   for (const cluster of clusterList) {
     try {
@@ -247,15 +253,15 @@ async function seedUserClusters(users: any, clusters: any) {
           role: 'ADMIN',
         },
       });
-      
+
       logger.debug('Admin access granted to cluster', {
         clusterId: (cluster as any).id,
-        clusterName: (cluster as any).name
+        clusterName: (cluster as any).name,
       });
     } catch (error) {
       logger.error('Failed to grant admin access to cluster', {
         clusterId: (cluster as any).id,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -294,15 +300,15 @@ async function seedUserClusters(users: any, clusters: any) {
           role: 'USER',
         },
       });
-      
+
       logger.info('Demo and test users granted access to default cluster', {
         clusterId: clusters.defaultCluster.id,
-        clusterName: clusters.defaultCluster.name
+        clusterName: clusters.defaultCluster.name,
       });
     } catch (error) {
       logger.error('Failed to grant user access to default cluster', {
         clusterId: clusters.defaultCluster.id,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   } else {
@@ -314,7 +320,7 @@ async function seedUserClusters(users: any, clusters: any) {
 
 async function seedEnvironments(users: any, templates: any[], clusters: any) {
   logger.info('Seeding demo environments...');
-  
+
   // Create demo environment for demo user
   const demoEnvironment = await prisma.environment.upsert({
     where: {
@@ -328,7 +334,10 @@ async function seedEnvironments(users: any, templates: any[], clusters: any) {
       name: 'my-nodejs-app',
       description: 'Demo Node.js application environment',
       userId: users.demoUser.id,
-      templateId: templates.find(t => t.name === 'nodejs')?.id || templates.find(t => t.name.includes('node'))?.id || templates[0].id,
+      templateId:
+        templates.find(t => t.name === 'nodejs')?.id ||
+        templates.find(t => t.name.includes('node'))?.id ||
+        templates[0].id,
       clusterId: clusters.defaultCluster.id,
       dockerImage: 'node:18-alpine',
       port: 3000,
@@ -358,7 +367,11 @@ async function seedEnvironments(users: any, templates: any[], clusters: any) {
       name: 'python-playground',
       description: 'Python development playground',
       userId: users.testUser.id,
-      templateId: templates.find(t => t.name === 'python')?.id || templates.find(t => t.name.includes('python'))?.id || templates[1]?.id || templates[0].id,
+      templateId:
+        templates.find(t => t.name === 'python')?.id ||
+        templates.find(t => t.name.includes('python'))?.id ||
+        templates[1]?.id ||
+        templates[0].id,
       clusterId: clusters.defaultCluster.id,
       dockerImage: 'python:3.11-slim',
       port: 8000,
@@ -375,24 +388,24 @@ async function seedEnvironments(users: any, templates: any[], clusters: any) {
   });
 
   logger.info(`Created/updated environments: ${demoEnvironment.id}, ${testEnvironment.id}`);
-  
+
   return { demoEnvironment, testEnvironment };
 }
 
 async function main() {
   try {
     logger.info('Starting database seeding...');
-    
+
     // Seed in order due to foreign key dependencies
     const users = await seedUsers();
     const clusters = await seedClusters();
     const templates = await seedTemplates();
-    
+
     await seedUserClusters(users, clusters);
     const environments = await seedEnvironments(users, templates, clusters);
-    
+
     logger.info('Database seeding completed successfully');
-    
+
     // Print summary
     console.log('\n=== Seeding Summary ===');
     console.log(`✅ Users: ${Object.keys(users).length} created/updated`);
@@ -403,7 +416,6 @@ async function main() {
     console.log('Admin: admin@devpocket.app / AdminPassword123!');
     console.log('Demo:  demo@devpocket.app / DemoPassword123!');
     console.log('Test:  test@devpocket.app / TestPassword123!');
-    
   } catch (error) {
     logger.error('Database seeding failed:', error);
     throw error;
@@ -436,7 +448,7 @@ Example:
 
 // Run the script
 if (require.main === module) {
-  main().catch((error) => {
+  main().catch(error => {
     logger.error('Unhandled error:', error);
     process.exit(1);
   });
