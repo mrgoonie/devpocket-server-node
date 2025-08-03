@@ -43,6 +43,9 @@ COPY --from=builder --chown=devpocket:nodejs /app/dist ./dist
 COPY --from=builder --chown=devpocket:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=devpocket:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=devpocket:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=devpocket:nodejs /app/scripts ./scripts
+COPY --from=builder --chown=devpocket:nodejs /app/tsconfig.json ./tsconfig.json
+COPY --from=builder --chown=devpocket:nodejs /app/tsconfig.prod.json ./tsconfig.prod.json
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
@@ -64,7 +67,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # Start the application
-CMD ["node", "dist/index.js"]
+CMD ["node", "scripts/start-prod.js"]
 
 # Labels for metadata
 LABEL name="devpocket-server"
