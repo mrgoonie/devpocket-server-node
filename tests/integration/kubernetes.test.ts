@@ -1,20 +1,32 @@
-import { KubernetesService } from '@/services/kubernetes';
+import { kubernetesService } from '@/services/kubernetes';
 import { prisma } from '@/config/database';
 import { encryptionService } from '@/utils/encryption';
 import logger from '@/config/logger';
 
 // Mock the Kubernetes client
 jest.mock('@kubernetes/client-node');
-jest.mock('@/config/database');
-jest.mock('@/utils/encryption');
+jest.mock('@/config/database', () => ({
+  prisma: {
+    cluster: {
+      findUnique: jest.fn(),
+    },
+    environment: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+  },
+}));
+jest.mock('@/utils/encryption', () => ({
+  encryptionService: {
+    decrypt: jest.fn(),
+  },
+}));
 
 describe('KubernetesService Integration Tests', () => {
-  let kubernetesService: KubernetesService;
   const mockPrisma = prisma as jest.Mocked<typeof prisma>;
   const mockEncryption = encryptionService as jest.Mocked<typeof encryptionService>;
 
   beforeEach(() => {
-    kubernetesService = new (KubernetesService as any)();
     jest.clearAllMocks();
   });
 
@@ -27,7 +39,7 @@ describe('KubernetesService Integration Tests', () => {
     };
 
     beforeEach(() => {
-      mockPrisma.cluster.findUnique.mockResolvedValue(mockCluster as any);
+      (mockPrisma.cluster.findUnique as jest.Mock).mockResolvedValue(mockCluster as any);
     });
 
     it('should successfully decrypt and initialize client', async () => {
@@ -50,7 +62,7 @@ users:
 current-context: test-context
 `;
 
-      mockEncryption.decrypt.mockReturnValue(validKubeconfig);
+      (mockEncryption.decrypt as jest.Mock).mockReturnValue(validKubeconfig);
 
       // This would normally initialize the K8s client, but we're mocking it
       await expect(async () => {
@@ -78,12 +90,12 @@ users:
 current-context: test-context
 `;
 
-      mockPrisma.cluster.findUnique.mockResolvedValue({
+      (mockPrisma.cluster.findUnique as jest.Mock).mockResolvedValue({
         ...mockCluster,
         kubeconfig: validKubeconfig,
       } as any);
 
-      mockEncryption.decrypt.mockImplementation(() => {
+      (mockEncryption.decrypt as jest.Mock).mockImplementation(() => {
         throw new Error('Decryption failed');
       });
 
@@ -96,12 +108,12 @@ current-context: test-context
     it('should throw error for invalid kubeconfig format', async () => {
       const invalidKubeconfig = 'invalid-yaml-content';
 
-      mockPrisma.cluster.findUnique.mockResolvedValue({
+      (mockPrisma.cluster.findUnique as jest.Mock).mockResolvedValue({
         ...mockCluster,
         kubeconfig: invalidKubeconfig,
       } as any);
 
-      mockEncryption.decrypt.mockImplementation(() => {
+      (mockEncryption.decrypt as jest.Mock).mockImplementation(() => {
         throw new Error('Decryption failed');
       });
 
@@ -111,7 +123,7 @@ current-context: test-context
     });
 
     it('should throw error for inactive cluster', async () => {
-      mockPrisma.cluster.findUnique.mockResolvedValue({
+      (mockPrisma.cluster.findUnique as jest.Mock).mockResolvedValue({
         ...mockCluster,
         status: 'INACTIVE',
       } as any);
@@ -122,7 +134,7 @@ current-context: test-context
     });
 
     it('should throw error for non-existent cluster', async () => {
-      mockPrisma.cluster.findUnique.mockResolvedValue(null);
+      (mockPrisma.cluster.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect((kubernetesService as any).getKubernetesClient('test-cluster')).rejects.toThrow(
         /not found or inactive/
@@ -149,11 +161,11 @@ current-context: test-context
     };
 
     beforeEach(() => {
-      mockPrisma.environment.findUnique.mockResolvedValue({
+      (mockPrisma.environment.findUnique as jest.Mock).mockResolvedValue({
         clusterId: 'test-cluster',
       } as any);
 
-      mockPrisma.environment.update.mockResolvedValue({} as any);
+      (mockPrisma.environment.update as jest.Mock).mockResolvedValue({} as any);
     });
 
     it('should handle Kubernetes client initialization failure', async () => {
@@ -166,7 +178,7 @@ current-context: test-context
       );
 
       // Should update environment status to ERROR
-      expect(mockPrisma.environment.update).toHaveBeenCalledWith({
+      expect(mockPrisma.environment.update as jest.Mock).toHaveBeenCalledWith({
         where: { id: 'env-123' },
         data: expect.objectContaining({
           status: 'ERROR',
@@ -175,7 +187,7 @@ current-context: test-context
     });
 
     it('should handle missing environment in database', async () => {
-      mockPrisma.environment.findUnique.mockResolvedValue(null);
+      (mockPrisma.environment.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(kubernetesService.createEnvironment(mockEnvironmentOptions)).rejects.toThrow(
         /Environment not found/
@@ -258,7 +270,7 @@ contexts:
 
       jest.spyOn(logger, 'error');
 
-      mockPrisma.environment.findUnique.mockRejectedValue(mockError);
+      (mockPrisma.environment.findUnique as jest.Mock).mockRejectedValue(mockError);
 
       await expect(kubernetesService.getEnvironmentInfo('env-123')).resolves.toEqual({
         status: 'ERROR',
