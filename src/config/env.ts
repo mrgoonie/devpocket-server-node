@@ -61,8 +61,8 @@ const envSchema = z.object({
   CONTAINER_STORAGE_LIMIT: z.string().default('10Gi'),
 
   // Logging
-  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
-  LOG_FORMAT: z.enum(['json', 'simple']).default('json'),
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('warn'),
+  LOG_FORMAT: z.enum(['json', 'simple']).default('simple'),
 
   // Security
   BCRYPT_ROUNDS: z.coerce.number().default(12),
