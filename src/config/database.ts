@@ -42,7 +42,14 @@ class DatabaseManager {
       await this.prisma.$connect();
       logger.info('Database connected successfully');
     } catch (error) {
-      logger.error('Failed to connect to database', { error });
+      logger.error('Failed to connect to database', { 
+        error: error instanceof Error ? {
+          ...error,
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        } : error 
+      });
       throw error;
     }
   }
