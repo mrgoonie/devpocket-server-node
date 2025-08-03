@@ -141,7 +141,11 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ['./src/routes/*.ts', './src/types/*.ts'], // Path to the API files
+  apis: [
+    config.NODE_ENV === 'production' 
+      ? ['./dist/routes/*.js', './dist/types/*.js']
+      : ['./src/routes/*.ts', './src/types/*.ts']
+  ].flat(), // Path to the API files
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
