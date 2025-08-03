@@ -140,6 +140,7 @@ describe('WebSocket API', () => {
   });
 
   afterEach(async () => {
+    await new Promise(resolve => setTimeout(resolve, 100)); // Add a small delay
     await cleanupTestData();
   });
 
@@ -434,75 +435,33 @@ describe('WebSocket API', () => {
     });
 
     it('should enforce connection limits per user', async () => {
-      const maxConnections = 10; // Assuming this is the limit
       const connections: WebSocket[] = [];
-      
-      return new Promise<void>((resolve, reject) => {
-        let connectionCount = 0;
-        let rejectedConnection = false;
+      const maxConnections = 10;
+      let establishedConnections = 0;
 
-        for (let i = 0; i < maxConnections + 2; i++) {
-          const ws = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}?token=${authToken}`);
-          connections.push(ws);
+      for (let i = 0; i < maxConnections + 5; i++) {
+        const ws = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}?token=${authToken}`);
+        connections.push(ws);
 
-          ws.on('open', () => {
-            connectionCount++;
-            
-            if (connectionCount === maxConnections && !rejectedConnection) {
-              // All allowed connections established, try one more
-              setTimeout(() => {
-                if (!rejectedConnection) {
-                  reject(new Error('Connection limit not enforced'));
-                }
-              }, 2000);
-            }
-          });
+        ws.on('open', () => {
+          establishedConnections++;
+        });
+      }
 
-          ws.on('close', (code) => {
-            if (code === 1008 && connectionCount >= maxConnections - 1) {
-              // Connection rejected due to limit
-              rejectedConnection = true;
-              
-              // Clean up all connections
-              connections.forEach(conn => {
-                if (conn.readyState === WebSocket.OPEN) {
-                  conn.close();
-                }
-              });
-              
-              resolve();
-            }
-          });
+      // Wait for all connections to be established or rejected
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-          ws.on('error', () => {
-            // Connection might be rejected due to limits
-            if (connectionCount >= maxConnections - 1) {
-              rejectedConnection = true;
-              
-              // Clean up all connections
-              connections.forEach(conn => {
-                if (conn.readyState === WebSocket.OPEN) {
-                  conn.close();
-                }
-              });
-              
-              resolve();
-            }
-          });
+      const openConnections = connections.filter(ws => ws.readyState === WebSocket.OPEN);
+      const closedConnections = connections.filter(ws => ws.readyState === WebSocket.CLOSED);
+
+      expect(openConnections.length).toBe(maxConnections);
+      expect(closedConnections.length).toBe(5);
+
+      // Clean up all connections
+      connections.forEach(conn => {
+        if (conn.readyState === WebSocket.OPEN) {
+          conn.close();
         }
-
-        // Timeout fallback
-        setTimeout(() => {
-          connections.forEach(conn => {
-            if (conn.readyState === WebSocket.OPEN) {
-              conn.close();
-            }
-          });
-          
-          if (!rejectedConnection) {
-            reject(new Error('Test timeout - connection limits may not be working'));
-          }
-        }, 10000);
       });
     });
   });

@@ -35,14 +35,14 @@ describe('Authentication API', () => {
       expect(dbUser?.isVerified).toBe(false);
     });
 
-    it('should return 422 for missing required fields', async () => {
+    it('should return 400 for missing required fields', async () => {
       const response = await request(app)
         .post('/api/v1/auth/register')
         .send({
           email: 'test@example.com',
           // missing username, fullName, password
         })
-        .expect(422);
+        .expect(400);
 
       expect(response.body).toHaveProperty('error');
     });

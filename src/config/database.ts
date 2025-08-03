@@ -11,7 +11,7 @@ class DatabaseManager {
   private constructor() {
     this.prisma = new PrismaClient({
       log: config.DEBUG 
-        ? ['query', 'info', 'warn', 'error']
+        ? ['info', 'warn', 'error']
         : ['warn', 'error'],
     });
 

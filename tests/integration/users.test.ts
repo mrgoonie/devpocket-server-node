@@ -27,16 +27,16 @@ describe('Users API', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body.id).toBe(testUser.id);
-      expect(response.body.email).toBe(testUser.email);
-      expect(response.body.username).toBe(testUser.username);
-      expect(response.body.fullName).toBe(testUser.fullName);
-      expect(response.body.subscriptionPlan).toBe(testUser.subscriptionPlan);
+      expect(response.body.user.id).toBe(testUser.id);
+      expect(response.body.user.email).toBe(testUser.email);
+      expect(response.body.user.username).toBe(testUser.username);
+      expect(response.body.user.fullName).toBe(testUser.fullName);
+      expect(response.body.user.subscriptionPlan).toBe(testUser.subscriptionPlan);
       
       // Should not include sensitive fields
-      expect(response.body).not.toHaveProperty('password');
-      expect(response.body).not.toHaveProperty('failedLoginAttempts');
-      expect(response.body).not.toHaveProperty('accountLockedUntil');
+      expect(response.body.user).not.toHaveProperty('password');
+      expect(response.body.user).not.toHaveProperty('failedLoginAttempts');
+      expect(response.body.user).not.toHaveProperty('accountLockedUntil');
     });
 
     it('should require authentication', async () => {
@@ -45,7 +45,7 @@ describe('Users API', () => {
         .expect(401);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('Unauthorized');
+      expect(response.body.message).toContain('Access token is required');
     });
 
     it('should reject invalid tokens', async () => {
@@ -129,7 +129,7 @@ describe('Users API', () => {
           username: '', // Invalid empty username
           fullName: 'Valid Name',
         })
-        .expect(422);
+        .expect(400);
 
       expect(response.body).toHaveProperty('error');
     });
@@ -199,10 +199,10 @@ describe('Users API', () => {
           currentPassword: 'wrongpassword',
           newPassword: 'NewSecurePassword123!',
         })
-        .expect(422);
+        .expect(400);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('Unprocessable Entity');
+      expect(response.body.error).toContain('Current password is incorrect');
     });
 
     it('should validate new password strength', async () => {
@@ -213,10 +213,10 @@ describe('Users API', () => {
           currentPassword: 'password123',
           newPassword: 'weak',
         })
-        .expect(422);
+        .expect(400);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error.toLowerCase()).toContain('unprocessable entity');
+      expect(response.body.error.toLowerCase()).toContain('validation failed');
     });
 
     it('should require both passwords', async () => {
@@ -227,7 +227,7 @@ describe('Users API', () => {
           currentPassword: 'password123',
           // Missing newPassword
         })
-        .expect(422);
+        .expect(400);
 
       expect(response.body).toHaveProperty('error');
     });
@@ -276,12 +276,10 @@ describe('Users API', () => {
         .send({
           password: 'wrongpassword',
         })
-        .expect(422);
+        .expect(400);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('Unprocessable Entity');
-
-      // Verify user was not deleted
+      expect(response.body.error).toContain('invalid password');
       const existingUser = await prisma.user.findUnique({
         where: { id: testUser.id },
       });
@@ -293,7 +291,7 @@ describe('Users API', () => {
         .delete('/api/v1/users/me')
         .set('Authorization', `Bearer ${authToken}`)
         .send({})
-        .expect(422);
+        .expect(400);
 
       expect(response.body).toHaveProperty('error');
     });

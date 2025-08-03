@@ -1,0 +1,672 @@
+p test:coverage
+
+> devpocket-server-node@1.0.0 test:coverage /Users/duynguyen/www/devpocket-server-node
+> dotenv -e .env -- jest --coverage
+
+info: Database manager initialized {"debug":true,"service":"DevPocket API","timestamp":"2025-08-03T04:53:48.011Z"}
+
+ RUNS  tests/integration/environments.test.ts
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "devpocket_test", schema "public" at "localhost:5432"
+
+1 migration found in prisma/migrations
+
+  console.log
+    prisma:info Starting a postgresql pool with 17 connections.
+
+      at Object.mc (node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/runtime/library.js:21:432)
+
+error: Decryption failed {"error":{},"service":"DevPocket API","timestamp":"2025-08-03T04:53:51.534Z"}
+warn: Failed to decrypt kubeconfig, assuming plain text {"clusterId":"cmdv7i1rr000113i0kmy2cpwh","error":"Failed to decrypt data","service":"DevPocket API","timestamp":"2025-08-03T04:53:51.535Z"}
+error: Failed to initialize Kubernetes client {"clusterId":"cmdv7i1rr000113i0kmy2cpwh","error":{},"service":"DevPocket API","timestamp":"2025-08-03T04:53:51.537Z"}
+error: Failed to create environment in Kubernetes {"environmentId":"cmdv7i1v6000613i0na2suj88","error":{"isOperational":true,"name":"KubernetesError","statusCode":500},"service":"DevPocket API","timestamp":"2025-08-03T04:53:51.538Z"}
+error: Failed to create environment in Kubernetes {"environmentId":"cmdv7i1v6000613i0na2suj88","error":{"isOperational":true,"name":"KubernetesError","statusCode":500},"service":"DevPocket API","timestamp":"2025-08-03T04:53:51.547Z"}
+info: Environment created {"environmentId":"cmdv7i1v6000613i0na2suj88","name":"test-env","service":"DevPocket API","templateId":"cmdv7i1rx000213i0746l53y9","timestamp":"2025-08-03T04:53:51.548Z","userId":"cmdv7i1r9000013i06oe60fns"}
+info: HTTP Request {"duration":"140ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"l7hd1ta5wu","service":"DevPocket API","statusCode":201,"timestamp":"2025-08-03T04:53:51.553Z","url":"/"}
+error: Request error {"error":{"message":"Validation failed","name":"ValidationError","stack":"ValidationError: Validation failed\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/environments.ts:144:13\n    at fn (/Users/duynguyen/www/devpocket-server-node/src/middleware/errorHandler.ts:338:21)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/route.js:149:13)\n    at next (/Users/duynguyen/www/devpocket-server-node/src/middleware/auth.ts:228:3)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/route.js:149:13)\n    at next (/Users/duynguyen/www/devpocket-server-node/src/middleware/auth.ts:132:5)"},"request":{"body":{"name":"test-env"},"headers":{"accept-encoding":"gzip, deflate","authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2kyMG4wMDA3MTNpMDF3bG5xZ25sIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5NjgzMSwiZXhwIjoxNzU0MjAwNDMxfQ.d1JwQhqPLtHyXxLKqwFcu0GiDQxn_uLzFOG-HXGUfI0","connection":"close","content-length":"19","content-type":"application/json","host":"127.0.0.1:50449","x-request-id":"03s4dvincb3q"},"method":"POST","params":{},"query":{},"url":"/api/v1/environments"},"requestId":"03s4dvincb3q","response":{"message":"required fields are missing","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:53:51.725Z"}
+info: HTTP Request {"duration":"27ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"03s4dvincb3q","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:53:51.728Z","url":"/api/v1/environments"}
+error: Request error {"error":{"message":"Environment with this name already exists","name":"ConflictError","stack":"ConflictError: Environment with this name already exists\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/environments.ts:166:13"},"request":{"body":{"clusterId":"cmdv7i256000d13i07cdi61j9","description":"Duplicate environment","name":"duplicate-env","templateId":"cmdv7i25m000e13i00nvqh6cr"},"headers":{"accept-encoding":"gzip, deflate","authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2kyNHQwMDBjMTNpMDg5Y2U4dm5qIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5NjgzMSwiZXhwIjoxNzU0MjAwNDMxfQ.XNg8lFTYRsPs4Ae7aflSIt_Z_-rYm_ZDzxF_kkXDhlY","connection":"close","content-length":"143","content-type":"application/json","host":"127.0.0.1:50451","x-request-id":"619hxzjzxkj"},"method":"POST","params":{},"query":{},"url":"/api/v1/environments"},"requestId":"619hxzjzxkj","response":{"message":"Environment with this name already exists","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:53:51.908Z"}
+info: HTTP Request {"duration":"16ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"619hxzjzxkj","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:53:51.910Z","url":"/api/v1/environments"}
+error: Decryption failed {"error":{},"service":"DevPocket API","timestamp":"2025-08-03T04:53:52.040Z"}
+warn: Failed to decrypt kubeconfig, assuming plain text {"clusterId":"cmdv7i28z000k13i0dxz6tmb0","error":"Failed to decrypt data","service":"DevPocket API","timestamp":"2025-08-03T04:53:52.040Z"}
+error: Failed to initialize Kubernetes client {"clusterId":"cmdv7i28z000k13i0dxz6tmb0","error":{},"service":"DevPocket API","timestamp":"2025-08-03T04:53:52.041Z"}
+error: Failed to create environment in Kubernetes {"environmentId":"cmdv7i29p000s13i0fuik9k4n","error":{"isOperational":true,"name":"KubernetesError","statusCode":500},"service":"DevPocket API","timestamp":"2025-08-03T04:53:52.041Z"}
+error: Failed to create environment in Kubernetes {"environmentId":"cmdv7i29p000s13i0fuik9k4n","error":{"isOperational":true,"name":"KubernetesError","statusCode":500},"service":"DevPocket API","timestamp":"2025-08-03T04:53:52.050Z"}
+info: Environment created {"environmentId":"cmdv7i29p000s13i0fuik9k4n","name":"free-env-1","service":"DevPocket API","templateId":"cmdv7i292000l13i08ich274i","timestamp":"2025-08-03T04:53:52.051Z","userId":"cmdv7i297000o13i0v9tkr22f"}
+info: HTTP Request {"duration":"64ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"ky3rrja5nzd","service":"DevPocket API","statusCode":201,"timestamp":"2025-08-03T04:53:52.052Z","url":"/"}
+error: Request error {"error":{"message":"Environment limit reached. Your FREE plan allows 1 environments.","name":"ResourceLimitError","stack":"ResourceLimitError: Environment limit reached. Your FREE plan allows 1 environments.\n    at checkEnvironmentLimits (/Users/duynguyen/www/devpocket-server-node/src/routes/environments.ts:73:11)\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/environments.ts:154:5"},"request":{"body":{"clusterId":"cmdv7i28z000k13i0dxz6tmb0","description":"Second free environment","name":"free-env-2","templateId":"cmdv7i292000l13i08ich274i"},"headers":{"accept-encoding":"gzip, deflate","authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2kyOTcwMDBvMTNpMHY5dGtyMjJmIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5NjgzMSwiZXhwIjoxNzU0MjAwNDMxfQ.vXor9Q02winHWeqGJ0bq0vdjWz-HLFWNZIjx1WX7wtY","connection":"close","content-length":"142","content-type":"application/json","host":"127.0.0.1:50458","x-request-id":"wo40tn2red"},"method":"POST","params":{},"query":{},"url":"/api/v1/environments"},"requestId":"wo40tn2red","response":{"message":"Environment limit reached. Your FREE plan allows 1 environments.","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:53:52.065Z"}
+info: HTTP Request {"duration":"9ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"wo40tn2red","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:53:52.067Z","url":"/api/v1/environments"}
+info: HTTP Request {"duration":"47ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"o3ozaul61r","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:52.199Z","url":"/"}
+info: HTTP Request {"duration":"10ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"kjevdufh1p","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:52.292Z","url":"/?status=RUNNING"}
+info: HTTP Request {"duration":"8ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"l81i5pnq8e","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:52.392Z","url":"/"}
+info: HTTP Request {"duration":"10ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"msutsrv6149","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:52.473Z","url":"/cmdv7i2mi001l13i0jcwu99uk"}
+error: Request error {"error":{"message":"Environment not found","name":"NotFoundError","stack":"NotFoundError: Environment not found\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/environments.ts:469:11"},"request":{"body":{},"headers":{"accept-encoding":"gzip, deflate","authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2kyb2swMDFtMTNpMGRrbDY3a3R1IiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5NjgzMiwiZXhwIjoxNzU0MjAwNDMyfQ.TeE6f4WxIzDUFq3OjCXjy7tf-rWHWH_ulnnWk2ws3ao","connection":"close","host":"127.0.0.1:50474","x-request-id":"1quh3x10drh"},"method":"GET","params":{},"query":{},"url":"/api/v1/environments/non-existent-id"},"requestId":"1quh3x10drh","response":{"message":"Environment not found","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:53:52.561Z"}
+info: HTTP Request {"duration":"8ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"1quh3x10drh","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:53:52.563Z","url":"/api/v1/environments/non-existent-id"}
+error: Request error {"error":{"message":"Environment not found","name":"NotFoundError","stack":"NotFoundError: Environment not found\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/environments.ts:469:11"},"request":{"body":{},"headers":{"accept-encoding":"gzip, deflate","authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2kycm0wMDIwMTNpMGM2anc2a2hnIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5NjgzMiwiZXhwIjoxNzU0MjAwNDMyfQ.vYZ18-i8onUdiV6Zgy2aBMHHSIKtMBfP8H3kQKxHehE","connection":"close","host":"127.0.0.1:50477","x-request-id":"2b8jmaa58dy"},"method":"GET","params":{},"query":{},"url":"/api/v1/environments/cmdv7i2ri001z13i0viyeicxj"},"requestId":"2b8jmaa58dy","response":{"message":"Environment not found","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:53:52.660Z"}
+info: HTTP Request {"duration":"16ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"2b8jmaa58dy","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:53:52.662Z","url":"/api/v1/environments/cmdv7i2ri001z13i0viyeicxj"}
+warn: Environment not deployed to Kubernetes {"environmentId":"cmdv7i2u4002713i0c75nzp2m","service":"DevPocket API","timestamp":"2025-08-03T04:53:52.752Z"}
+info: Environment deleted {"environmentId":"cmdv7i2u4002713i0c75nzp2m","service":"DevPocket API","timestamp":"2025-08-03T04:53:52.755Z","userId":"cmdv7i2tn002113i08awkhsba"}
+info: HTTP Request {"duration":"17ms","ip":"::ffff:127.0.0.1","method":"DELETE","requestId":"locqyy0nxjf","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:52.756Z","url":"/cmdv7i2u4002713i0c75nzp2m"}
+error: Request error {"error":{"message":"Environment not found","name":"NotFoundError","stack":"NotFoundError: Environment not found\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/environments.ts:717:11"},"request":{"body":{},"headers":{"accept-encoding":"gzip, deflate","authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2kyd2EwMDI4MTNpMGdweXJmYmw3IiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5NjgzMiwiZXhwIjoxNzU0MjAwNDMyfQ.afCMuG4wNBmn2atMXIgBA_k4tmfacAIjtkONuflT13M","connection":"close","host":"127.0.0.1:50483","x-request-id":"yvqd88ww9jn"},"method":"DELETE","params":{},"query":{},"url":"/api/v1/environments/non-existent-id"},"requestId":"yvqd88ww9jn","response":{"message":"Environment not found","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:53:52.846Z"}
+info: HTTP Request {"duration":"8ms","ip":"::ffff:127.0.0.1","method":"DELETE","requestId":"yvqd88ww9jn","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:53:52.848Z","url":"/api/v1/environments/non-existent-id"}
+error: Request error {"error":{"message":"Environment not found","name":"NotFoundError","stack":"NotFoundError: Environment not found\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/environments.ts:717:11"},"request":{"body":{},"headers":{"accept-encoding":"gzip, deflate","authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2kyejAwMDJtMTNpMHdicXEwZnAxIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5NjgzMiwiZXhwIjoxNzU0MjAwNDMyfQ.A_o0xR9_V4pcxKvooWTdL8f2JyP3Zqtch5j_dgZ7U7s","connection":"close","host":"127.0.0.1:50486","x-request-id":"xh3suh4kjs"},"method":"DELETE","params":{},"query":{},"url":"/api/v1/environments/cmdv7i2yx002l13i0by0upev0"},"requestId":"xh3suh4kjs","response":{"message":"Environment not found","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:53:52.923Z"}
+info: HTTP Request {"duration":"12ms","ip":"::ffff:127.0.0.1","method":"DELETE","requestId":"xh3suh4kjs","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:53:52.925Z","url":"/api/v1/environments/cmdv7i2yx002l13i0by0upev0"}
+warn: Environment not deployed to Kubernetes {"environmentId":"cmdv7i31d002t13i08imijnxc","service":"DevPocket API","timestamp":"2025-08-03T04:53:53.010Z"}
+info: Environment deleted {"environmentId":"cmdv7i31d002t13i08imijnxc","service":"DevPocket API","timestamp":"2025-08-03T04:53:53.013Z","userId":"cmdv7i30x002n13i08guie1fb"}
+info: HTTP Request {"duration":"14ms","ip":"::ffff:127.0.0.1","method":"DELETE","requestId":"67426bnzfb8","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:53.015Z","url":"/cmdv7i31d002t13i08imijnxc"}
+ FAIL  tests/integration/environments.test.ts (8.454 s)
+  Environments API
+    POST /api/v1/environments
+      ✓ should create a new environment (455 ms)
+      ✓ should return 422 for missing required fields (134 ms)
+      ✓ should return 422 for duplicate environment name (180 ms)
+      ✓ should enforce resource limits based on subscription plan (156 ms)
+    GET /api/v1/environments
+      ✓ should list user environments (130 ms)
+      ✓ should filter environments by status (86 ms)
+      ✓ should return empty array for user with no environments (100 ms)
+    GET /api/v1/environments/:id
+      ✓ should get environment details (92 ms)
+      ✓ should return 422 for non-existent environment (91 ms)
+      ✓ should return 422 for environment owned by another user (88 ms)
+    DELETE /api/v1/environments/:id
+      ✕ should delete environment (100 ms)
+      ✓ should return 422 for non-existent environment (77 ms)
+      ✓ should return 422 for environment owned by another user (87 ms)
+      ✕ should prevent deletion of running environment (85 ms)
+
+  ● Environments API › DELETE /api/v1/environments/:id › should delete environment
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "TERMINATED"
+    Received: "STOPPED"
+
+      336 |       });
+      337 |       expect(deletedEnvironment).toBeTruthy();
+    > 338 |       expect(deletedEnvironment?.status).toBe('TERMINATED');
+          |                                          ^
+      339 |     });
+      340 |
+      341 |     it('should return 422 for non-existent environment', async () => {
+
+      at Object.<anonymous> (tests/integration/environments.test.ts:338:42)
+
+  ● Environments API › DELETE /api/v1/environments/:id › should prevent deletion of running environment
+
+    expected 400 "Bad Request", got 200 "OK"
+
+      369 |         .delete(`/api/v1/environments/${testEnvironment.id}`)
+      370 |         .set(authHeaders)
+    > 371 |         .expect(400);
+          |          ^
+      372 |
+      373 |       expect(response.body.error).toContain('running');
+      374 |
+
+      at Object.<anonymous> (tests/integration/environments.test.ts:371:10)
+      ----
+      at Test._assertStatus (node_modules/.pnpm/supertest@6.3.4/node_modules/supertest/lib/test.js:252:14)
+      at node_modules/.pnpm/supertest@6.3.4/node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/.pnpm/supertest@6.3.4/node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/.pnpm/supertest@6.3.4/node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/.pnpm/supertest@6.3.4/node_modules/supertest/lib/test.js:120:14)
+
+info: Database manager initialized {"debug":true,"service":"DevPocket API","timestamp":"2025-08-03T04:53:53.833Z"}
+
+ RUNS  tests/integration/templates.test.ts
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "devpocket_test", schema "public" at "localhost:5432"
+
+1 migration found in prisma/migrations
+
+  console.log
+    prisma:info Starting a postgresql pool with 17 connections.
+
+      at Object.mc (node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/runtime/library.js:21:432)
+
+info: HTTP Request {"duration":"346ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"vmjbfl9ra2d","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:56.394Z","url":"/"}
+info: HTTP Request {"duration":"7ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"lla3cy1vtom","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:56.865Z","url":"/?category=PROGRAMMING_LANGUAGE"}
+info: HTTP Request {"duration":"9ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"90w8cq3cov9","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:57.023Z","url":"/search?tags=nodejs"}
+info: HTTP Request {"duration":"7ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"j91zpzwudy","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:57.127Z","url":"/?search=node"}
+info: HTTP Request {"duration":"4ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"mz7oug3fed","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:57.245Z","url":"/?sortBy=popularity&sortOrder=desc"}
+info: HTTP Request {"duration":"4ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"svybicl8jb","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:57.318Z","url":"/?limit=2"}
+info: HTTP Request {"duration":"12ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"yttth5hcsb","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:57.471Z","url":"/?limit=2&page=1"}
+info: HTTP Request {"duration":"9ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"4uyr65giq1h","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:57.497Z","url":"/?limit=2&page=2"}
+info: HTTP Request {"duration":"4ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"ch45e847cog","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:57.663Z","url":"/"}
+info: HTTP Request {"duration":"4ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"u28jvhtqw2p","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:57.779Z","url":"/?includeDeprecated=true"}
+info: HTTP Request {"duration":"7ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"llzftgfdvl","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:57.866Z","url":"/cmdv7i6sb004513i028yp0hq0"}
+info: HTTP Request {"duration":"3ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"517m63dr2s5","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:57.950Z","url":"/cmdv7i6uq004a13i0lzqij9hv"}
+error: Request error {"error":{"message":"Template not found","name":"NotFoundError","stack":"NotFoundError: Template not found\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/templates.ts:405:11"},"request":{"body":{},"headers":{"accept-encoding":"gzip, deflate","authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2k2d3YwMDRlMTNpMGt3MjNjbXg1IiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5NjgzOCwiZXhwIjoxNzU0MjAwNDM4fQ.4JpDBW22qXvUPA6CcKiXtkIlU-5yCsv2zTJtg9hOBB0","connection":"close","host":"127.0.0.1:50574","x-request-id":"mh8xj3et0zp"},"method":"GET","params":{},"query":{},"url":"/api/v1/templates/non-existent-id"},"requestId":"mh8xj3et0zp","response":{"message":"Template not found","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:53:58.040Z"}
+info: HTTP Request {"duration":"16ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"mh8xj3et0zp","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:53:58.046Z","url":"/api/v1/templates/non-existent-id"}
+error: Request error {"error":{"message":"Template not found","name":"NotFoundError","stack":"NotFoundError: Template not found\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/templates.ts:411:11"},"request":{"body":{},"headers":{"accept-encoding":"gzip, deflate","authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2k2em0wMDRqMTNpMGduemp1azJ0IiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5NjgzOCwiZXhwIjoxNzU0MjAwNDM4fQ.Y99_746Uns7_vGjzkEjXzuIvPhYu8xEHeD1-HDrVeu0","connection":"close","host":"127.0.0.1:50576","x-request-id":"z33ad33nnb"},"method":"GET","params":{},"query":{},"url":"/api/v1/templates/cmdv7i6zs004n13i07yz0yf5g"},"requestId":"z33ad33nnb","response":{"message":"Template not found","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:53:58.137Z"}
+info: HTTP Request {"duration":"6ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"z33ad33nnb","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:53:58.139Z","url":"/api/v1/templates/cmdv7i6zs004n13i07yz0yf5g"}
+info: HTTP Request {"duration":"4ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"5kqz9flh1f","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:58.252Z","url":"/cmdv7i732004r13i0qzq6i9g2?includeDeprecated=true"}
+info: HTTP Request {"duration":"4ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"t5m32ac0u5c","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:58.350Z","url":"/cmdv7i75u004u13i0dqw8faq7"}
+info: HTTP Request {"duration":"4ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"05f4wm3yuh3d","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:58.434Z","url":"/categories"}
+info: HTTP Request {"duration":"2ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"eu2lss0pc4j","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:58.522Z","url":"/categories?includeCounts=true"}
+info: HTTP Request {"duration":"5ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"qiyauivggog","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:58.619Z","url":"/popular"}
+info: HTTP Request {"duration":"5ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"6x98xae61bm","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:58.727Z","url":"/popular?limit=2"}
+info: HTTP Request {"duration":"5ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"n32l8fb3m5q","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:59.015Z","url":"/search?q=javascript&category=PROGRAMMING_LANGUAGE"}
+info: HTTP Request {"duration":"6ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"o8ppps4mfaf","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:59.100Z","url":"/search?q=nonexistentlanguage"}
+info: HTTP Request {"duration":"10ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"h6gyxctae6t","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:59.195Z","url":"/search?q=nod"}
+info: HTTP Request {"duration":"8ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"isok6vs9bwh","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:59.276Z","url":"/cmdv7i7vf005y13i0qrh49y5i"}
+info: HTTP Request {"duration":"3ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"w3k9xvvt4vj","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:53:59.358Z","url":"/cmdv7i7xt006313i0pnze768v"}
+ FAIL  tests/integration/templates.test.ts (6.296 s)
+  Templates API
+    GET /api/v1/templates
+      ✓ should list all active templates (1085 ms)
+      ✓ should filter templates by category (458 ms)
+      ✓ should filter templates by tags using search (108 ms)
+      ✓ should search templates by name (115 ms)
+      ✓ should sort templates by popularity (100 ms)
+      ✓ should limit results with pagination (77 ms)
+      ✓ should handle pagination offset (236 ms)
+      ✓ should not require authentication for public templates (115 ms)
+      ✓ should include deprecated templates when specifically requested (110 ms)
+    GET /api/v1/templates/:id
+      ✓ should return template details (89 ms)
+      ✓ should include resource requirements (81 ms)
+      ✕ should return 422 for non-existent template (95 ms)
+      ✓ should return 422 for deprecated template by default (106 ms)
+      ✓ should return deprecated template when explicitly requested (99 ms)
+      ✓ should not require authentication for active templates (95 ms)
+    Template Categories
+      ✓ should return all available categories (91 ms)
+      ✓ should include category counts (87 ms)
+    Popular Templates
+      ✓ should return most popular templates (96 ms)
+      ✓ should limit popular templates count (233 ms)
+    Template Search
+      ✓ should search templates by multiple criteria (162 ms)
+      ✓ should handle empty search results (84 ms)
+      ✓ should support fuzzy search (97 ms)
+    Template Validation
+      ✓ should validate template compatibility with user subscription (85 ms)
+    Template Usage Statistics
+      ✓ should track template usage when creating environments (75 ms)
+
+  ● Templates API › GET /api/v1/templates/:id › should return 422 for non-existent template
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Not Found"
+    Received string:    "Unprocessable Entity"
+
+      327 |
+      328 |       expect(response.body).toHaveProperty('error');
+    > 329 |       expect(response.body.error).toContain('Not Found');
+          |                                   ^
+      330 |     });
+      331 |
+      332 |     it('should return 422 for deprecated template by default', async () => {
+
+      at Object.<anonymous> (tests/integration/templates.test.ts:329:35)
+
+info: Database manager initialized {"debug":true,"service":"DevPocket API","timestamp":"2025-08-03T04:54:00.389Z"}
+
+ RUNS  tests/integration/auth.test.ts
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "devpocket_test", schema "public" at "localhost:5432"
+
+1 migration found in prisma/migrations
+
+  console.log
+    prisma:info Starting a postgresql pool with 17 connections.
+
+      at Object.mc (node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/runtime/library.js:21:432)
+
+error: Failed to send email {"error":{"message":"API key is invalid","name":"validation_error","statusCode":401},"service":"DevPocket API","subject":"Verify your DevPocket account","timestamp":"2025-08-03T04:54:03.538Z","to":"newuser@example.com"}
+info: Verification email sent {"email":"newuser@example.com","service":"DevPocket API","timestamp":"2025-08-03T04:54:03.542Z","userId":"cmdv7ia85006813i0560fyimd"}
+info: User registered {"email":"newuser@example.com","service":"DevPocket API","timestamp":"2025-08-03T04:54:03.543Z","userId":"cmdv7ia85006813i0560fyimd","username":"newuser"}
+info: HTTP Request {"duration":"1673ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"mhf6m8czmoo","service":"DevPocket API","statusCode":201,"timestamp":"2025-08-03T04:54:03.547Z","url":"/register"}
+error: Request error {"error":{"message":"Validation failed","name":"ValidationError","stack":"ValidationError: Validation failed\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:89:11\n    at fn (/Users/duynguyen/www/devpocket-server-node/src/middleware/errorHandler.ts:338:21)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/route.js:149:13)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express-rate-limit@7.5.1_express@4.21.2/node_modules/express-rate-limit/dist/index.cjs:706:9\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express-rate-limit@7.5.1_express@4.21.2/node_modules/express-rate-limit/dist/index.cjs:691:5"},"request":{"body":{"email":"test@example.com"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"28","content-type":"application/json","host":"127.0.0.1:50659","x-request-id":"udango0b15g"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/register"},"requestId":"udango0b15g","response":{"message":"required fields are missing","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:03.802Z"}
+info: HTTP Request {"duration":"17ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"udango0b15g","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:03.805Z","url":"/api/v1/auth/register"}
+error: Request error {"error":{"message":"User with this email already exists","name":"ConflictError","stack":"ConflictError: User with this email already exists\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:120:11"},"request":{"body":{"email":"existing@example.com","fullName":"New User","password":"SecurePassword123!","username":"newusername"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"111","content-type":"application/json","host":"127.0.0.1:50662","x-request-id":"rw5ko5hup3"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/register"},"requestId":"rw5ko5hup3","response":{"message":"User with this email already exists","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:03.908Z"}
+info: HTTP Request {"duration":"11ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"rw5ko5hup3","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:03.910Z","url":"/api/v1/auth/register"}
+error: Request error {"error":{"message":"User with this username already exists","name":"ConflictError","stack":"ConflictError: User with this username already exists\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:120:11"},"request":{"body":{"email":"new@example.com","fullName":"New User","password":"SecurePassword123!","username":"existinguser"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"107","content-type":"application/json","host":"127.0.0.1:50664","x-request-id":"1p3gs04uyss"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/register"},"requestId":"1p3gs04uyss","response":{"message":"User with this username already exists","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:03.993Z"}
+info: HTTP Request {"duration":"5ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"1p3gs04uyss","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:03.996Z","url":"/api/v1/auth/register"}
+info: User logged in {"email":"login@example.com","service":"DevPocket API","timestamp":"2025-08-03T04:54:04.683Z","userId":"cmdv7ibl1006d13i0e2e3nv1y"}
+info: HTTP Request {"duration":"611ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"it4b0z59nkh","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:04.700Z","url":"/login"}
+error: Request error {"error":{"message":"Invalid credentials","name":"AuthenticationError","stack":"AuthenticationError: Invalid credentials\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:236:11"},"request":{"body":{"password":"password123","usernameOrEmail":"nonexistent@example.com"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"70","content-type":"application/json","host":"127.0.0.1:50676","x-request-id":"hubehhi49s"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/login"},"requestId":"hubehhi49s","response":{"message":"Invalid credentials","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:04.906Z"}
+info: HTTP Request {"duration":"9ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"hubehhi49s","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:04.911Z","url":"/api/v1/auth/login"}
+error: Request error {"error":{"message":"Invalid credentials","name":"AuthenticationError","stack":"AuthenticationError: Invalid credentials\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:272:11"},"request":{"body":{"password":"wrongpassword","usernameOrEmail":"login@example.com"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"66","content-type":"application/json","host":"127.0.0.1:50680","x-request-id":"qlvu7z87jpg"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/login"},"requestId":"qlvu7z87jpg","response":{"message":"Invalid credentials","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:05.513Z"}
+info: HTTP Request {"duration":"482ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"qlvu7z87jpg","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:05.533Z","url":"/api/v1/auth/login"}
+error: Request error {"error":{"message":"Account is not verified. Please check your email for verification instructions.","name":"AuthorizationError","stack":"AuthorizationError: Account is not verified. Please check your email for verification instructions.\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:282:11"},"request":{"body":{"password":"password123","usernameOrEmail":"unverified@example.com"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"69","content-type":"application/json","host":"127.0.0.1:50687","x-request-id":"nyttwj7a27s"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/login"},"requestId":"nyttwj7a27s","response":{"message":"Account is not verified. Please check your email for verification instructions.","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:06.040Z"}
+info: HTTP Request {"duration":"356ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"nyttwj7a27s","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:06.044Z","url":"/api/v1/auth/login"}
+error: Request error {"error":{"message":"Invalid credentials","name":"AuthenticationError","stack":"AuthenticationError: Invalid credentials\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:272:11"},"request":{"body":{"password":"wrongpassword","usernameOrEmail":"locktest@example.com"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"69","content-type":"application/json","host":"127.0.0.1:50695","x-request-id":"7yo92r6971l"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/login"},"requestId":"7yo92r6971l","response":{"message":"Invalid credentials","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:06.689Z"}
+info: HTTP Request {"duration":"453ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"7yo92r6971l","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:06.704Z","url":"/api/v1/auth/login"}
+error: Request error {"error":{"message":"Invalid credentials","name":"AuthenticationError","stack":"AuthenticationError: Invalid credentials\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:272:11"},"request":{"body":{"password":"wrongpassword","usernameOrEmail":"locktest@example.com"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"69","content-type":"application/json","host":"127.0.0.1:50699","x-request-id":"zkcsf1c5qr"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/login"},"requestId":"zkcsf1c5qr","response":{"message":"Invalid credentials","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:07.073Z"}
+info: HTTP Request {"duration":"371ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"zkcsf1c5qr","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:07.097Z","url":"/api/v1/auth/login"}
+error: Request error {"error":{"message":"Invalid credentials","name":"AuthenticationError","stack":"AuthenticationError: Invalid credentials\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:272:11"},"request":{"body":{"password":"wrongpassword","usernameOrEmail":"locktest@example.com"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"69","content-type":"application/json","host":"127.0.0.1:50707","x-request-id":"rpnrb4e8mzh"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/login"},"requestId":"rpnrb4e8mzh","response":{"message":"Invalid credentials","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:07.559Z"}
+info: HTTP Request {"duration":"413ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"rpnrb4e8mzh","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:07.562Z","url":"/api/v1/auth/login"}
+error: Request error {"error":{"message":"Invalid credentials","name":"AuthenticationError","stack":"AuthenticationError: Invalid credentials\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:272:11"},"request":{"body":{"password":"wrongpassword","usernameOrEmail":"locktest@example.com"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"69","content-type":"application/json","host":"127.0.0.1:50713","x-request-id":"mi9tx3m3xl"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/login"},"requestId":"mi9tx3m3xl","response":{"message":"Invalid credentials","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:08.040Z"}
+info: HTTP Request {"duration":"472ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"mi9tx3m3xl","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:08.048Z","url":"/api/v1/auth/login"}
+warn: Account locked due to failed login attempts {"attempts":5,"email":"locktest@example.com","service":"DevPocket API","timestamp":"2025-08-03T04:54:08.441Z","userId":"cmdv7id9b006i13i0zqrc8632"}
+error: Request error {"error":{"message":"Account has been locked due to multiple failed login attempts","name":"AuthenticationError","stack":"AuthenticationError: Account has been locked due to multiple failed login attempts\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:269:13"},"request":{"body":{"password":"wrongpassword","usernameOrEmail":"locktest@example.com"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"69","content-type":"application/json","host":"127.0.0.1:50720","x-request-id":"fcljjzl5no9"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/login"},"requestId":"fcljjzl5no9","response":{"message":"Account has been locked due to multiple failed login attempts","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:08.442Z"}
+info: HTTP Request {"duration":"370ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"fcljjzl5no9","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:08.446Z","url":"/api/v1/auth/login"}
+error: Request error {"error":{"message":"Account is locked. Try again in 15 minutes.","name":"AuthenticationError","stack":"AuthenticationError: Account is locked. Try again in 15 minutes.\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:242:11"},"request":{"body":{"password":"wrongpassword","usernameOrEmail":"locktest@example.com"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"69","content-type":"application/json","host":"127.0.0.1:50726","x-request-id":"2mfwtmuy8md"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/login"},"requestId":"2mfwtmuy8md","response":{"message":"Account is locked. Try again in 15 minutes.","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:08.493Z"}
+info: HTTP Request {"duration":"44ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"2mfwtmuy8md","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:08.502Z","url":"/api/v1/auth/login"}
+info: HTTP Request {"duration":"17ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"92c4grjzapb","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:08.638Z","url":"/me"}
+info: HTTP Request {"duration":"2ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"o9rcebl6gl","service":"DevPocket API","statusCode":401,"timestamp":"2025-08-03T04:54:08.718Z","url":"/me"}
+info: HTTP Request {"duration":"2ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"t9tof5zmkg","service":"DevPocket API","statusCode":401,"timestamp":"2025-08-03T04:54:08.798Z","url":"/me"}
+info: User logged in {"email":"refresh@example.com","service":"DevPocket API","timestamp":"2025-08-03T04:54:09.289Z","userId":"cmdv7ifaa006k13i0yttiq1bg"}
+info: HTTP Request {"duration":"417ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"q1ypc4a3rre","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:09.297Z","url":"/login"}
+info: HTTP Request {"duration":"28ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"n4e2ottfetq","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:09.341Z","url":"/refresh"}
+error: Request error {"error":{"message":"Invalid refresh token","name":"AuthenticationError","stack":"AuthenticationError: Invalid refresh token\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:370:11\n    at fn (/Users/duynguyen/www/devpocket-server-node/src/middleware/errorHandler.ts:338:21)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/route.js:149:13)\n    at Route.dispatch (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/route.js:119:3)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:284:15\n    at Function.process_params (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:346:12)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:280:10)\n    at Function.handle (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:175:3)\n    at router (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:47:12)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at trim_prefix (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:328:13)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:286:9\n    at Function.process_params (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:346:12)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:280:10)\n    at Function.handle (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:175:3)\n    at router (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:47:12)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at trim_prefix (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:328:13)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:286:9\n    at Function.process_params (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:346:12)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:280:10)\n    at next (/Users/duynguyen/www/devpocket-server-node/src/app.ts:104:3)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at trim_prefix (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:328:13)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:286:9\n    at Function.process_params (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:346:12)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:280:10)\n    at next (/Users/duynguyen/www/devpocket-server-node/src/app.ts:84:3)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at trim_prefix (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:328:13)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:286:9\n    at Function.process_params (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:346:12)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:280:10)\n    at urlencodedParser (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/body-parser@1.20.3/node_modules/body-parser/lib/types/urlencoded.js:85:7)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at trim_prefix (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:328:13)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:286:9\n    at Function.process_params (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:346:12)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:280:10)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/body-parser@1.20.3/node_modules/body-parser/lib/read.js:137:5\n    at AsyncResource.runInAsyncScope (node:async_hooks:206:9)\n    at invokeCallback (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/raw-body@2.5.2/node_modules/raw-body/index.js:238:16)\n    at done (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/raw-body@2.5.2/node_modules/raw-body/index.js:227:7)\n    at IncomingMessage.onEnd (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/raw-body@2.5.2/node_modules/raw-body/index.js:287:7)\n    at IncomingMessage.emit (node:events:518:28)\n    at endReadableNT (node:internal/streams/readable:1698:12)\n    at processTicksAndRejections (node:internal/process/task_queues:82:21)"},"request":{"body":{"refreshToken":"invalid.token.here"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"37","content-type":"application/json","host":"127.0.0.1:50758","x-request-id":"811eiw3q0c"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/refresh"},"requestId":"811eiw3q0c","response":{"message":"Invalid refresh token","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:09.466Z"}
+info: HTTP Request {"duration":"13ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"811eiw3q0c","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:09.473Z","url":"/api/v1/auth/refresh"}
+info: User logged out {"email":"test-1754196849556@example.com","service":"DevPocket API","timestamp":"2025-08-03T04:54:09.591Z","userId":"cmdv7ifth006p13i0w5uuw1oc"}
+info: HTTP Request {"duration":"18ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"auzovw9oj5m","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:09.594Z","url":"/logout"}
+info: HTTP Request {"duration":"2ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"p41nmhxd1df","service":"DevPocket API","statusCode":401,"timestamp":"2025-08-03T04:54:09.686Z","url":"/logout"}
+ PASS  tests/integration/auth.test.ts (10.284 s)
+  Authentication API
+    POST /api/v1/auth/register
+      ✓ should register a new user successfully (1919 ms)
+      ✓ should return 422 for missing required fields (161 ms)
+      ✓ should return 422 for existing email (100 ms)
+      ✓ should return 422 for existing username (99 ms)
+    POST /api/v1/auth/login
+      ✓ should login with valid credentials (788 ms)
+      ✓ should return 422 for invalid email (170 ms)
+      ✓ should return 422 for invalid password (635 ms)
+      ✓ should return 422 for unverified user (503 ms)
+      ✓ should lock account after 5 failed attempts (2425 ms)
+    GET /api/v1/auth/me
+      ✓ should return current user with valid token (111 ms)
+      ✓ should return 401 without token (70 ms)
+      ✓ should return 401 with invalid token (75 ms)
+    POST /api/v1/auth/refresh
+      ✓ should refresh tokens with valid refresh token (584 ms)
+      ✓ should return 422 for invalid refresh token (100 ms)
+    POST /api/v1/auth/logout
+      ✓ should logout and revoke refresh token (135 ms)
+      ✓ should return 401 without token (91 ms)
+
+info: Database manager initialized {"debug":true,"service":"DevPocket API","timestamp":"2025-08-03T04:54:10.907Z"}
+
+ RUNS  tests/integration/websocket.test.ts
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "devpocket_test", schema "public" at "localhost:5432"
+
+1 migration found in prisma/migrations
+
+info: WebSocket server initialized {"service":"DevPocket API","timestamp":"2025-08-03T04:54:13.301Z"}
+  console.log
+    prisma:info Starting a postgresql pool with 17 connections.
+
+      at Object.mc (node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/runtime/library.js:21:432)
+
+info: WebSocket connection added {"connectionId":"i7kula0vimd3lqrwkswii","environmentId":"cmdv7iitx006u13i01ywhpao9","service":"DevPocket API","timestamp":"2025-08-03T04:54:13.528Z","totalConnections":1,"userId":"cmdv7iisr006q13i0fmjf1g2l"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7iitx006u13i01ywhpao9","service":"DevPocket API","sessionId":"i7kula0vimd3lqrwkswii","timestamp":"2025-08-03T04:54:13.542Z","userId":"cmdv7iisr006q13i0fmjf1g2l"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7iitx006u13i01ywhpao9","reason":"","service":"DevPocket API","sessionId":"i7kula0vimd3lqrwkswii","timestamp":"2025-08-03T04:54:13.546Z","userId":"cmdv7iisr006q13i0fmjf1g2l"}
+info: WebSocket connection removed {"connectionId":"i7kula0vimd3lqrwkswii","environmentId":"cmdv7iitx006u13i01ywhpao9","service":"DevPocket API","timestamp":"2025-08-03T04:54:13.549Z","totalConnections":0,"userId":"cmdv7iisr006q13i0fmjf1g2l"}
+warn: WebSocket connection rejected {"error":"Authentication token is required","service":"DevPocket API","timestamp":"2025-08-03T04:54:13.779Z","url":"/api/v1/ws/terminal/cmdv7ij2c007313i0ou1ryqo0"}
+warn: WebSocket connection rejected {"error":"Invalid authentication token","service":"DevPocket API","timestamp":"2025-08-03T04:54:14.012Z","url":"/api/v1/ws/terminal/cmdv7ij8s007a13i09mrwo36b?token=invalid.jwt.token"}
+warn: WebSocket connection rejected {"error":"Environment not found","service":"DevPocket API","timestamp":"2025-08-03T04:54:14.305Z","url":"/api/v1/ws/terminal/non-existent-env?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2lqZmswMDdkMTNpMHNhZnQyeTNoIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5Njg1NCwiZXhwIjoxNzU0MjAwNDU0fQ.4mpQHbAjLlvCcdINgAzxExHZ45sQmzAp_Xs2Bs78_2k"}
+warn: WebSocket connection rejected {"error":"Environment not found","service":"DevPocket API","timestamp":"2025-08-03T04:54:14.668Z","url":"/api/v1/ws/terminal/cmdv7ijqo007t13i02tsvt89s?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2lqcDUwMDdrMTNpMHhqODdzaHdvIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5Njg1NCwiZXhwIjoxNzU0MjAwNDU0fQ.Reh5wzq9ui65D1YOrPj5cnpSOv50VJZs4Dqz4SjpE8w"}
+info: WebSocket connection added {"connectionId":"sk30liajp315t18eq02hx","environmentId":"cmdv7ik0c007y13i0r7li2ktw","service":"DevPocket API","timestamp":"2025-08-03T04:54:15.026Z","totalConnections":1,"userId":"cmdv7ijzi007u13i095h4xzkb"}
+info: WebSocket connection established {"connectionType":"logs","environmentId":"cmdv7ik0c007y13i0r7li2ktw","service":"DevPocket API","sessionId":"sk30liajp315t18eq02hx","timestamp":"2025-08-03T04:54:15.027Z","userId":"cmdv7ijzi007u13i095h4xzkb"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7ik0c007y13i0r7li2ktw","reason":"","service":"DevPocket API","sessionId":"sk30liajp315t18eq02hx","timestamp":"2025-08-03T04:54:15.032Z","userId":"cmdv7ijzi007u13i095h4xzkb"}
+info: WebSocket connection removed {"connectionId":"sk30liajp315t18eq02hx","environmentId":"cmdv7ik0c007y13i0r7li2ktw","service":"DevPocket API","timestamp":"2025-08-03T04:54:15.033Z","totalConnections":0,"userId":"cmdv7ijzi007u13i095h4xzkb"}
+info: WebSocket connection added {"connectionId":"hs04gixaw3dky66kklbkdi","environmentId":"cmdv7ika9008513i0bdxdstfd","service":"DevPocket API","timestamp":"2025-08-03T04:54:15.406Z","totalConnections":1,"userId":"cmdv7ik9a008113i0dpknzdwe"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7ika9008513i0bdxdstfd","service":"DevPocket API","sessionId":"hs04gixaw3dky66kklbkdi","timestamp":"2025-08-03T04:54:15.416Z","userId":"cmdv7ik9a008113i0dpknzdwe"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7ika9008513i0bdxdstfd","reason":"","service":"DevPocket API","sessionId":"hs04gixaw3dky66kklbkdi","timestamp":"2025-08-03T04:54:15.418Z","userId":"cmdv7ik9a008113i0dpknzdwe"}
+info: WebSocket connection removed {"connectionId":"hs04gixaw3dky66kklbkdi","environmentId":"cmdv7ika9008513i0bdxdstfd","service":"DevPocket API","timestamp":"2025-08-03T04:54:15.418Z","totalConnections":0,"userId":"cmdv7ik9a008113i0dpknzdwe"}
+info: WebSocket connection added {"connectionId":"tvcxxkturyh4afhqrhcx7","environmentId":"cmdv7iki5008e13i0n0mwm7wp","service":"DevPocket API","timestamp":"2025-08-03T04:54:15.659Z","totalConnections":1,"userId":"cmdv7ikhh008a13i0comfou1y"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7iki5008e13i0n0mwm7wp","service":"DevPocket API","sessionId":"tvcxxkturyh4afhqrhcx7","timestamp":"2025-08-03T04:54:15.668Z","userId":"cmdv7ikhh008a13i0comfou1y"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7iki5008e13i0n0mwm7wp","reason":"","service":"DevPocket API","sessionId":"tvcxxkturyh4afhqrhcx7","timestamp":"2025-08-03T04:54:15.718Z","userId":"cmdv7ikhh008a13i0comfou1y"}
+info: WebSocket connection removed {"connectionId":"tvcxxkturyh4afhqrhcx7","environmentId":"cmdv7iki5008e13i0n0mwm7wp","service":"DevPocket API","timestamp":"2025-08-03T04:54:15.718Z","totalConnections":0,"userId":"cmdv7ikhh008a13i0comfou1y"}
+info: WebSocket connection added {"connectionId":"66c83s16yj7918gmb4111","environmentId":"cmdv7ikrv008n13i0ftc965u9","service":"DevPocket API","timestamp":"2025-08-03T04:54:16.018Z","totalConnections":1,"userId":"cmdv7ikrc008j13i0lqf1lwl2"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7ikrv008n13i0ftc965u9","service":"DevPocket API","sessionId":"66c83s16yj7918gmb4111","timestamp":"2025-08-03T04:54:16.022Z","userId":"cmdv7ikrc008j13i0lqf1lwl2"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7ikrv008n13i0ftc965u9","reason":"","service":"DevPocket API","sessionId":"66c83s16yj7918gmb4111","timestamp":"2025-08-03T04:54:17.037Z","userId":"cmdv7ikrc008j13i0lqf1lwl2"}
+info: WebSocket connection removed {"connectionId":"66c83s16yj7918gmb4111","environmentId":"cmdv7ikrv008n13i0ftc965u9","service":"DevPocket API","timestamp":"2025-08-03T04:54:17.039Z","totalConnections":0,"userId":"cmdv7ikrc008j13i0lqf1lwl2"}
+info: WebSocket connection added {"connectionId":"rpd4m29dgzfmmzeo3glid","environmentId":"cmdv7ilu8008w13i0ugc31gvu","service":"DevPocket API","timestamp":"2025-08-03T04:54:17.435Z","totalConnections":1,"userId":"cmdv7iltb008s13i0z1phtd4b"}
+warn: Unknown WebSocket message type {"environmentId":"cmdv7ilu8008w13i0ugc31gvu","service":"DevPocket API","timestamp":"2025-08-03T04:54:17.438Z","type":"invalid_type","userId":"cmdv7iltb008s13i0z1phtd4b"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7ilu8008w13i0ugc31gvu","service":"DevPocket API","sessionId":"rpd4m29dgzfmmzeo3glid","timestamp":"2025-08-03T04:54:17.445Z","userId":"cmdv7iltb008s13i0z1phtd4b"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7ilu8008w13i0ugc31gvu","reason":"","service":"DevPocket API","sessionId":"rpd4m29dgzfmmzeo3glid","timestamp":"2025-08-03T04:54:19.458Z","userId":"cmdv7iltb008s13i0z1phtd4b"}
+info: WebSocket connection removed {"connectionId":"rpd4m29dgzfmmzeo3glid","environmentId":"cmdv7ilu8008w13i0ugc31gvu","service":"DevPocket API","timestamp":"2025-08-03T04:54:19.459Z","totalConnections":0,"userId":"cmdv7iltb008s13i0z1phtd4b"}
+info: WebSocket connection added {"connectionId":"w0xfq59456jbjfp0tx6lg","environmentId":"cmdv7innu009513i0b37j0bd0","service":"DevPocket API","timestamp":"2025-08-03T04:54:19.746Z","totalConnections":1,"userId":"cmdv7inna009113i0dv2longg"}
+error: Error handling WebSocket message {"environmentId":"cmdv7innu009513i0b37j0bd0","error":{},"service":"DevPocket API","timestamp":"2025-08-03T04:54:19.748Z","userId":"cmdv7inna009113i0dv2longg"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7innu009513i0b37j0bd0","service":"DevPocket API","sessionId":"w0xfq59456jbjfp0tx6lg","timestamp":"2025-08-03T04:54:19.752Z","userId":"cmdv7inna009113i0dv2longg"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7innu009513i0b37j0bd0","reason":"","service":"DevPocket API","sessionId":"w0xfq59456jbjfp0tx6lg","timestamp":"2025-08-03T04:54:19.754Z","userId":"cmdv7inna009113i0dv2longg"}
+info: WebSocket connection removed {"connectionId":"w0xfq59456jbjfp0tx6lg","environmentId":"cmdv7innu009513i0b37j0bd0","service":"DevPocket API","timestamp":"2025-08-03T04:54:19.755Z","totalConnections":0,"userId":"cmdv7inna009113i0dv2longg"}
+info: WebSocket connection added {"connectionId":"sapw7vsirc8m02hrfqh5pk","environmentId":"cmdv7invf009e13i0oqpw262i","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.045Z","totalConnections":1,"userId":"cmdv7inur009a13i01ns25sl2"}
+info: WebSocket connection added {"connectionId":"sxaqtcbtnahu8xx1js4a1","environmentId":"cmdv7invf009e13i0oqpw262i","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.050Z","totalConnections":2,"userId":"cmdv7inur009a13i01ns25sl2"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7invf009e13i0oqpw262i","service":"DevPocket API","sessionId":"sapw7vsirc8m02hrfqh5pk","timestamp":"2025-08-03T04:54:20.052Z","userId":"cmdv7inur009a13i01ns25sl2"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7invf009e13i0oqpw262i","service":"DevPocket API","sessionId":"sxaqtcbtnahu8xx1js4a1","timestamp":"2025-08-03T04:54:20.068Z","userId":"cmdv7inur009a13i01ns25sl2"}
+info: WebSocket connection added {"connectionId":"9s0h0sefl2y0zpolkhgsp","environmentId":"cmdv7io33009p13i0rp0pq3w8","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.305Z","totalConnections":3,"userId":"cmdv7io29009l13i031alqu5r"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7io33009p13i0rp0pq3w8","service":"DevPocket API","sessionId":"9s0h0sefl2y0zpolkhgsp","timestamp":"2025-08-03T04:54:20.313Z","userId":"cmdv7io29009l13i031alqu5r"}
+info: WebSocket connection added {"connectionId":"intuo498f2ijw2raxb2ye","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.617Z","totalConnections":4,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","sessionId":"intuo498f2ijw2raxb2ye","timestamp":"2025-08-03T04:54:20.635Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection added {"connectionId":"nb7q1ddq8tdxi72341wx3i","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.656Z","totalConnections":5,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection added {"connectionId":"4bxadwh4v6hdhkobbyw03k","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.658Z","totalConnections":6,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection added {"connectionId":"ohke7402ypr0verpgaqe4ho","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.668Z","totalConnections":7,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection added {"connectionId":"sqabq3ddw5l15le5g37bg2","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.676Z","totalConnections":8,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection added {"connectionId":"wf8h0asgcmud0kc4hqdpc","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.685Z","totalConnections":9,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection added {"connectionId":"lt5ntifre7es64bfngorc","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.688Z","totalConnections":10,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection added {"connectionId":"4u6v6karcziex34atya4ps","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.688Z","totalConnections":11,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","sessionId":"nb7q1ddq8tdxi72341wx3i","timestamp":"2025-08-03T04:54:20.690Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection added {"connectionId":"2kq87pw4m9twtj46vb6rch","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.692Z","totalConnections":12,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection added {"connectionId":"pdqopbsd991l9cyry977c","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.702Z","totalConnections":13,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+warn: WebSocket connection rejected {"error":"Too many connections","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.705Z","url":"/api/v1/ws/terminal/cmdv7iob1009y13i0j0pqsm6k?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2lvYTMwMDl1MTNpMHF0cDd0eW9mIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5Njg2MCwiZXhwIjoxNzU0MjAwNDYwfQ.nbMa2cWEuKqo0maoWe5ls88n9n_spI-0Vhxqhb-bDtM"}
+warn: WebSocket connection rejected {"error":"Too many connections","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.707Z","url":"/api/v1/ws/terminal/cmdv7iob1009y13i0j0pqsm6k?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2lvYTMwMDl1MTNpMHF0cDd0eW9mIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5Njg2MCwiZXhwIjoxNzU0MjAwNDYwfQ.nbMa2cWEuKqo0maoWe5ls88n9n_spI-0Vhxqhb-bDtM"}
+warn: WebSocket connection rejected {"error":"Too many connections","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.708Z","url":"/api/v1/ws/terminal/cmdv7iob1009y13i0j0pqsm6k?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2lvYTMwMDl1MTNpMHF0cDd0eW9mIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5Njg2MCwiZXhwIjoxNzU0MjAwNDYwfQ.nbMa2cWEuKqo0maoWe5ls88n9n_spI-0Vhxqhb-bDtM"}
+warn: WebSocket connection rejected {"error":"Too many connections","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.711Z","url":"/api/v1/ws/terminal/cmdv7iob1009y13i0j0pqsm6k?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2lvYTMwMDl1MTNpMHF0cDd0eW9mIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5Njg2MCwiZXhwIjoxNzU0MjAwNDYwfQ.nbMa2cWEuKqo0maoWe5ls88n9n_spI-0Vhxqhb-bDtM"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","sessionId":"4bxadwh4v6hdhkobbyw03k","timestamp":"2025-08-03T04:54:20.713Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","sessionId":"ohke7402ypr0verpgaqe4ho","timestamp":"2025-08-03T04:54:20.715Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","sessionId":"lt5ntifre7es64bfngorc","timestamp":"2025-08-03T04:54:20.716Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","sessionId":"wf8h0asgcmud0kc4hqdpc","timestamp":"2025-08-03T04:54:20.717Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","sessionId":"4u6v6karcziex34atya4ps","timestamp":"2025-08-03T04:54:20.718Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","sessionId":"sqabq3ddw5l15le5g37bg2","timestamp":"2025-08-03T04:54:20.718Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","sessionId":"2kq87pw4m9twtj46vb6rch","timestamp":"2025-08-03T04:54:20.720Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+warn: WebSocket connection rejected {"error":"Too many connections","service":"DevPocket API","timestamp":"2025-08-03T04:54:20.722Z","url":"/api/v1/ws/terminal/cmdv7iob1009y13i0j0pqsm6k?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2lvYTMwMDl1MTNpMHF0cDd0eW9mIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5Njg2MCwiZXhwIjoxNzU0MjAwNDYwfQ.nbMa2cWEuKqo0maoWe5ls88n9n_spI-0Vhxqhb-bDtM"}
+info: WebSocket connection established {"connectionType":"terminal","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","sessionId":"pdqopbsd991l9cyry977c","timestamp":"2025-08-03T04:54:20.724Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7iob1009y13i0j0pqsm6k","reason":"","service":"DevPocket API","sessionId":"4bxadwh4v6hdhkobbyw03k","timestamp":"2025-08-03T04:54:22.631Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection removed {"connectionId":"4bxadwh4v6hdhkobbyw03k","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:22.632Z","totalConnections":12,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7iob1009y13i0j0pqsm6k","reason":"","service":"DevPocket API","sessionId":"pdqopbsd991l9cyry977c","timestamp":"2025-08-03T04:54:22.635Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection removed {"connectionId":"pdqopbsd991l9cyry977c","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:22.635Z","totalConnections":11,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7iob1009y13i0j0pqsm6k","reason":"","service":"DevPocket API","sessionId":"nb7q1ddq8tdxi72341wx3i","timestamp":"2025-08-03T04:54:22.636Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection removed {"connectionId":"nb7q1ddq8tdxi72341wx3i","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:22.637Z","totalConnections":10,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7iob1009y13i0j0pqsm6k","reason":"","service":"DevPocket API","sessionId":"2kq87pw4m9twtj46vb6rch","timestamp":"2025-08-03T04:54:22.638Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection removed {"connectionId":"2kq87pw4m9twtj46vb6rch","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:22.639Z","totalConnections":9,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7iob1009y13i0j0pqsm6k","reason":"","service":"DevPocket API","sessionId":"sqabq3ddw5l15le5g37bg2","timestamp":"2025-08-03T04:54:22.640Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection removed {"connectionId":"sqabq3ddw5l15le5g37bg2","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:22.641Z","totalConnections":8,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7iob1009y13i0j0pqsm6k","reason":"","service":"DevPocket API","sessionId":"4u6v6karcziex34atya4ps","timestamp":"2025-08-03T04:54:22.643Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection removed {"connectionId":"4u6v6karcziex34atya4ps","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:22.644Z","totalConnections":7,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7iob1009y13i0j0pqsm6k","reason":"","service":"DevPocket API","sessionId":"wf8h0asgcmud0kc4hqdpc","timestamp":"2025-08-03T04:54:22.645Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection removed {"connectionId":"wf8h0asgcmud0kc4hqdpc","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:22.646Z","totalConnections":6,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7iob1009y13i0j0pqsm6k","reason":"","service":"DevPocket API","sessionId":"lt5ntifre7es64bfngorc","timestamp":"2025-08-03T04:54:22.651Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection removed {"connectionId":"lt5ntifre7es64bfngorc","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:22.652Z","totalConnections":5,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7iob1009y13i0j0pqsm6k","reason":"","service":"DevPocket API","sessionId":"ohke7402ypr0verpgaqe4ho","timestamp":"2025-08-03T04:54:22.655Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection removed {"connectionId":"ohke7402ypr0verpgaqe4ho","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:22.659Z","totalConnections":4,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection closed {"code":1005,"environmentId":"cmdv7iob1009y13i0j0pqsm6k","reason":"","service":"DevPocket API","sessionId":"intuo498f2ijw2raxb2ye","timestamp":"2025-08-03T04:54:22.659Z","userId":"cmdv7ioa3009u13i0qtp7tyof"}
+info: WebSocket connection removed {"connectionId":"intuo498f2ijw2raxb2ye","environmentId":"cmdv7iob1009y13i0j0pqsm6k","service":"DevPocket API","timestamp":"2025-08-03T04:54:22.660Z","totalConnections":3,"userId":"cmdv7ioa3009u13i0qtp7tyof"}
+warn: WebSocket connection rejected {"error":"Invalid authentication token","service":"DevPocket API","timestamp":"2025-08-03T04:54:22.854Z","url":"/api/v1/ws/terminal/cmdv7iq1y00ap13i0blqy8nwf?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2lxMWowMGFsMTNpMGc5Y29ycmJkIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5Njg2MiwiZXhwIjoxNzU0MTkzMjYyfQ.xmoMSHgKcFfDE6y9_vGXFHnHoOmTZ8Nbnu0qs1dX-OQ"}
+warn: WebSocket connection rejected {"error":"Invalid authentication token","service":"DevPocket API","timestamp":"2025-08-03T04:54:23.174Z","url":"/api/v1/ws/terminal/cmdv7iq9h00aw13i0uo83n1wi?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2lxOGwwMGFzMTNpMGlteHFwMGMzIiwidHlwZSI6InJlZnJlc2giLCJpYXQiOjE3NTQxOTY4NjMsImV4cCI6MTc1NDIwMDQ2M30.DIfS2aly_H9o1GTu4oxk5rWNaJDuvkc8_mIB02uvHtY"}
+warn: WebSocket connection rejected {"error":"User not found or inactive","service":"DevPocket API","timestamp":"2025-08-03T04:54:23.453Z","url":"/api/v1/ws/terminal/cmdv7iqif00b313i00pezzywu?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2lxaHYwMGF6MTNpMHhhdGprNng1IiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5Njg2MywiZXhwIjoxNzU0MjAwNDYzfQ.Td1FaH2yA8Nm0ausT9C21CfmnV7YFANY1FjJbDuNXAs"}
+warn: WebSocket connection rejected {"error":"Account is locked","service":"DevPocket API","timestamp":"2025-08-03T04:54:23.779Z","url":"/api/v1/ws/terminal/cmdv7iqrl00ba13i038trd128?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2lxcWcwMGI2MTNpMGswenJwaTUxIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5Njg2MywiZXhwIjoxNzU0MjAwNDYzfQ.L85Y16pRBRDxy34RZDerRyyFg2Bt9scHYDClh5elllU"}
+warn: WebSocket connection rejected {"error":"Invalid connection type","service":"DevPocket API","timestamp":"2025-08-03T04:54:24.018Z","url":"/api/v1/ws/invalid/cmdv7iqyg00bh13i03s9cx5do?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2lxeHUwMGJkMTNpMHVpeThlOTNwIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5Njg2MywiZXhwIjoxNzU0MjAwNDYzfQ.MXr3N3fKUhhMxnrWcOA-Zh49hKfbfAHrOhofnDErHs8"}
+warn: WebSocket connection rejected {"error":"Environment ID is required","service":"DevPocket API","timestamp":"2025-08-03T04:54:24.275Z","url":"/api/v1/ws/terminal/?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2lyNTkwMGJrMTNpMHVnanZicDJhIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5Njg2NCwiZXhwIjoxNzU0MjAwNDY0fQ.mQpQK_O451l3rzWeLQijoNUbTi18zjtr-kasUnIrfX8"}
+warn: WebSocket connection rejected {"error":"Environment not found","service":"DevPocket API","timestamp":"2025-08-03T04:54:24.551Z","url":"/api/v1/ws/terminal/extra/path/cmdv7ird900bv13i0hf14y87j?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWR2N2lyY3AwMGJyMTNpMG9xM2ZsNGJpIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1NDE5Njg2NCwiZXhwIjoxNzU0MjAwNDY0fQ.8yzDHY4biRZ1NOL7j9xJVPCv8Qd5ndByBQ02vTI1wq0"}
+ PASS  tests/integration/websocket.test.ts (14.933 s)
+  WebSocket API
+    Terminal WebSocket Connection
+      ✓ should establish terminal WebSocket connection with valid token (387 ms)
+      ✓ should reject connection without authentication token (234 ms)
+      ✓ should reject connection with invalid token (242 ms)
+      ✓ should reject connection to non-existent environment (338 ms)
+      ✓ should reject connection to environment owned by another user (380 ms)
+    Logs WebSocket Connection
+      ✓ should establish logs WebSocket connection (311 ms)
+    WebSocket Communication
+      ✓ should handle ping/pong messages (350 ms)
+      ✓ should handle terminal input messages (332 ms)
+      ✓ should handle terminal resize messages (1344 ms)
+      ✓ should handle invalid message types gracefully (2390 ms)
+      ✓ should handle malformed JSON messages (283 ms)
+    Connection Management
+      ✓ should handle multiple connections to same environment (261 ms)
+      ✓ should handle connection cleanup on close (285 ms)
+      ✓ should enforce connection limits per user (2277 ms)
+    Authentication Edge Cases
+      ✓ should reject expired tokens (274 ms)
+      ✓ should reject refresh tokens for WebSocket connection (332 ms)
+      ✓ should reject connections for inactive users (282 ms)
+      ✓ should reject connections for locked accounts (294 ms)
+    Invalid WebSocket Paths
+      ✓ should reject invalid connection types (266 ms)
+      ✓ should reject connections without environment ID (263 ms)
+      ✓ should reject connections with malformed paths (279 ms)
+
+
+ RUNS  tests/unit/utils/password.test.ts
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "devpocket_test", schema "public" at "localhost:5432"
+
+1 migration found in prisma/migrations
+
+ PASS  tests/unit/utils/password.test.ts (7.256 s)
+  Password Utils
+    hashPassword
+      ✓ should hash a password (446 ms)
+      ✓ should generate different hashes for the same password (1096 ms)
+      ✓ should handle empty password (587 ms)
+    comparePassword
+      ✓ should return true for correct password (756 ms)
+      ✓ should return false for incorrect password (848 ms)
+      ✓ should return false for empty password against hash (886 ms)
+      ✓ should return false for password against empty hash (222 ms)
+      ✓ should handle case sensitivity (853 ms)
+
+info: Database manager initialized {"debug":true,"service":"DevPocket API","timestamp":"2025-08-03T04:54:33.272Z"}
+
+ RUNS  tests/integration/api.test.ts
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "devpocket_test", schema "public" at "localhost:5432"
+
+1 migration found in prisma/migrations
+
+info: HTTP Request {"duration":"5ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"wpph3ss89g","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:35.545Z","url":"/info"}
+info: HTTP Request {"duration":"2ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"md8qffjouuh","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:35.641Z","url":"/info"}
+info: HTTP Request {"duration":"6ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"7haicktsk5g","service":"DevPocket API","statusCode":401,"timestamp":"2025-08-03T04:54:35.724Z","url":"/me"}
+info: HTTP Request {"duration":"2ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"euxc92o5bbe","service":"DevPocket API","statusCode":401,"timestamp":"2025-08-03T04:54:35.833Z","url":"/me"}
+info: HTTP Request {"duration":"3ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"wpn3xlj556","service":"DevPocket API","statusCode":401,"timestamp":"2025-08-03T04:54:35.902Z","url":"/me"}
+  console.log
+    prisma:info Starting a postgresql pool with 17 connections.
+
+      at Object.mc (node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/runtime/library.js:21:432)
+
+info: HTTP Request {"duration":"80ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"nw4fp55zz6o","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.057Z","url":"/me"}
+info: HTTP Request {"duration":"1ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"o18z56289i","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.320Z","url":"/info"}
+info: HTTP Request {"duration":"1ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"9xwbsy6d5zp","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.323Z","url":"/info"}
+info: HTTP Request {"duration":"4ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"d8xxp7978n","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.328Z","url":"/info"}
+info: HTTP Request {"duration":"2ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"81tr9v93tsy","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.332Z","url":"/info"}
+info: HTTP Request {"duration":"4ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"kz72vqjmp6n","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.337Z","url":"/info"}
+info: HTTP Request {"duration":"2ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"2h7bxtqc2kr","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.342Z","url":"/info"}
+info: HTTP Request {"duration":"2ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"1eyfsnv4hfr","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.347Z","url":"/info"}
+info: HTTP Request {"duration":"2ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"gp9fytzwy","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.350Z","url":"/info"}
+info: HTTP Request {"duration":"1ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"tdfn7strkn","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.352Z","url":"/info"}
+info: HTTP Request {"duration":"2ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"d8g00y46s3","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.355Z","url":"/info"}
+info: HTTP Request {"duration":"1ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"7tmvtia4a0d","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.357Z","url":"/info"}
+info: HTTP Request {"duration":"5ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"31ocm3tb0fs","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.362Z","url":"/info"}
+info: HTTP Request {"duration":"1ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"i5o5m7gs1id","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.365Z","url":"/info"}
+info: HTTP Request {"duration":"1ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"2er8bh0rqiq","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.367Z","url":"/info"}
+info: HTTP Request {"duration":"1ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"q9xrjd0yq","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.370Z","url":"/info"}
+info: HTTP Request {"duration":"1ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"keh6nhkef7","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:36.508Z","url":"/info"}
+error: Request error {"error":{"message":"Route GET /api/v1/nonexistent not found","name":"NotFoundError"},"request":{"headers":{"accept-encoding":"gzip, deflate","connection":"close","host":"127.0.0.1:51154","x-request-id":"ebr7r83ft6b"},"method":"GET","params":{},"query":{},"url":"/api/v1/nonexistent"},"requestId":"ebr7r83ft6b","response":{"message":"Route GET /api/v1/nonexistent not found","statusCode":404},"service":"DevPocket API","timestamp":"2025-08-03T04:54:36.768Z"}
+info: HTTP Request {"duration":"6ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"ebr7r83ft6b","service":"DevPocket API","statusCode":404,"timestamp":"2025-08-03T04:54:36.774Z","url":"/api/v1/nonexistent"}
+error: Request error {"error":{"message":"Route PATCH /api/v1/info not found","name":"NotFoundError"},"request":{"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"0","host":"127.0.0.1:51159","x-request-id":"136r9sbqaqe"},"method":"PATCH","params":{},"query":{},"url":"/api/v1/info"},"requestId":"136r9sbqaqe","response":{"message":"Route PATCH /api/v1/info not found","statusCode":404},"service":"DevPocket API","timestamp":"2025-08-03T04:54:36.847Z"}
+info: HTTP Request {"duration":"7ms","ip":"::ffff:127.0.0.1","method":"PATCH","requestId":"136r9sbqaqe","service":"DevPocket API","statusCode":404,"timestamp":"2025-08-03T04:54:36.854Z","url":"/api/v1/info"}
+error: Request error {"error":{"message":"Unexpected token 'j', \"{\"malformed\": json}\" is not valid JSON","name":"SyntaxError","stack":"SyntaxError: Unexpected token 'j', \"{\"malformed\": json}\" is not valid JSON\n    at JSON.parse (<anonymous>)\n    at parse (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/body-parser@1.20.3/node_modules/body-parser/lib/types/json.js:92:19)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/body-parser@1.20.3/node_modules/body-parser/lib/read.js:128:18\n    at AsyncResource.runInAsyncScope (node:async_hooks:206:9)\n    at invokeCallback (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/raw-body@2.5.2/node_modules/raw-body/index.js:238:16)\n    at done (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/raw-body@2.5.2/node_modules/raw-body/index.js:227:7)\n    at IncomingMessage.onEnd (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/raw-body@2.5.2/node_modules/raw-body/index.js:287:7)\n    at IncomingMessage.emit (node:events:518:28)\n    at endReadableNT (node:internal/streams/readable:1698:12)\n    at processTicksAndRejections (node:internal/process/task_queues:82:21)"},"request":{"body":{},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"19","content-type":"application/json","host":"127.0.0.1:51161"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/login"},"requestId":"sbsksmql84c","response":{"message":"Invalid JSON in request body","statusCode":400},"service":"DevPocket API","timestamp":"2025-08-03T04:54:36.940Z"}
+info: HTTP Request {"duration":"1ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"v7eh4gbpk7","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:37.006Z","url":"/info"}
+info: HTTP Request {"duration":"2ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"y2l64a42ry","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:37.074Z","url":"/info"}
+info: HTTP Request {"duration":"9ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"vswehrlbn3d","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:37.202Z","url":"/info"}
+error: Request error {"error":{"message":"Validation failed","name":"ValidationError","stack":"ValidationError: Validation failed\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:89:11\n    at fn (/Users/duynguyen/www/devpocket-server-node/src/middleware/errorHandler.ts:338:21)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/route.js:149:13)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express-rate-limit@7.5.1_express@4.21.2/node_modules/express-rate-limit/dist/index.cjs:706:9\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express-rate-limit@7.5.1_express@4.21.2/node_modules/express-rate-limit/dist/index.cjs:691:5"},"request":{"body":{"email":"test@example.com"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"28","content-type":"application/json","host":"127.0.0.1:51172","x-request-id":"mkrp6piga4l"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/register"},"requestId":"mkrp6piga4l","response":{"message":"required fields are missing","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:37.316Z"}
+info: HTTP Request {"duration":"22ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"mkrp6piga4l","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:37.319Z","url":"/api/v1/auth/register"}
+error: Request error {"error":{"message":"Validation failed","name":"ValidationError","stack":"ValidationError: Validation failed\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:89:11\n    at fn (/Users/duynguyen/www/devpocket-server-node/src/middleware/errorHandler.ts:338:21)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/route.js:149:13)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express-rate-limit@7.5.1_express@4.21.2/node_modules/express-rate-limit/dist/index.cjs:706:9\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express-rate-limit@7.5.1_express@4.21.2/node_modules/express-rate-limit/dist/index.cjs:691:5"},"request":{"body":{"email":"invalid-email","fullName":"Test User","password":"ValidPassword123!","username":"testuser"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"101","content-type":"application/json","host":"127.0.0.1:51175","x-request-id":"rm2kni5qb9n"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/register"},"requestId":"rm2kni5qb9n","response":{"message":"invalid email format","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:37.401Z"}
+info: HTTP Request {"duration":"5ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"rm2kni5qb9n","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:37.404Z","url":"/api/v1/auth/register"}
+error: Request error {"error":{"message":"Validation failed","name":"ValidationError","stack":"ValidationError: Validation failed\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:89:11\n    at fn (/Users/duynguyen/www/devpocket-server-node/src/middleware/errorHandler.ts:338:21)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/route.js:149:13)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express-rate-limit@7.5.1_express@4.21.2/node_modules/express-rate-limit/dist/index.cjs:706:9\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express-rate-limit@7.5.1_express@4.21.2/node_modules/express-rate-limit/dist/index.cjs:691:5"},"request":{"body":{"email":"test@example.com","fullName":"Test User","password":"weak","username":"testuser"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"91","content-type":"application/json","host":"127.0.0.1:51179","x-request-id":"za0wdkydgb"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/register"},"requestId":"za0wdkydgb","response":{"message":"invalid password format","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:37.489Z"}
+info: HTTP Request {"duration":"2ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"za0wdkydgb","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:37.490Z","url":"/api/v1/auth/register"}
+error: Request error {"error":{"message":"Invalid credentials","name":"AuthenticationError","stack":"AuthenticationError: Invalid credentials\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:236:11"},"request":{"body":{"password":"password123","usernameOrEmail":"test@example.com"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"63","content-type":"application/json","host":"127.0.0.1:51181","x-request-id":"0bx7vig96lm9"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/login"},"requestId":"0bx7vig96lm9","response":{"message":"Invalid credentials","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:37.576Z"}
+info: HTTP Request {"duration":"8ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"0bx7vig96lm9","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:37.577Z","url":"/api/v1/auth/login"}
+error: Request error {"error":{"message":"Invalid credentials","name":"AuthenticationError","stack":"AuthenticationError: Invalid credentials\n    at /Users/duynguyen/www/devpocket-server-node/src/routes/auth.ts:236:11"},"request":{"body":{"password":"password123","usernameOrEmail":"test@example.com"},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"53","content-type":"application/x-www-form-urlencoded","host":"127.0.0.1:51183","x-request-id":"2fa3rh6326c"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/login"},"requestId":"2fa3rh6326c","response":{"message":"Invalid credentials","statusCode":422},"service":"DevPocket API","timestamp":"2025-08-03T04:54:37.679Z"}
+info: HTTP Request {"duration":"5ms","ip":"::ffff:127.0.0.1","method":"POST","requestId":"2fa3rh6326c","service":"DevPocket API","statusCode":422,"timestamp":"2025-08-03T04:54:37.681Z","url":"/api/v1/auth/login"}
+error: Request error {"error":{"message":"request entity too large","name":"PayloadTooLargeError","stack":"PayloadTooLargeError: request entity too large\n    at readStream (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/raw-body@2.5.2/node_modules/raw-body/index.js:163:17)\n    at getRawBody (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/raw-body@2.5.2/node_modules/raw-body/index.js:116:12)\n    at read (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/body-parser@1.20.3/node_modules/body-parser/lib/read.js:79:3)\n    at jsonParser (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/body-parser@1.20.3/node_modules/body-parser/lib/types/json.js:138:5)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at trim_prefix (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:328:13)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:286:9\n    at Function.process_params (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:346:12)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:280:10)\n    at cors (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/cors@2.8.5/node_modules/cors/lib/index.js:188:7)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/cors@2.8.5/node_modules/cors/lib/index.js:224:17\n    at callback (/Users/duynguyen/www/devpocket-server-node/src/app.ts:56:25)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/cors@2.8.5/node_modules/cors/lib/index.js:219:13\n    at optionsCallback (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/cors@2.8.5/node_modules/cors/lib/index.js:199:9)\n    at corsMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/cors@2.8.5/node_modules/cors/lib/index.js:204:7)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at trim_prefix (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:328:13)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:286:9\n    at Function.process_params (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:346:12)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:280:10)\n    at internalNext (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:537:6)\n    at xXssProtectionMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:315:3)\n    at internalNext (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:535:6)\n    at xPoweredByMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:308:3)\n    at internalNext (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:535:6)\n    at xPermittedCrossDomainPoliciesMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:301:3)\n    at internalNext (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:535:6)\n    at xFrameOptionsMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:285:3)\n    at internalNext (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:535:6)\n    at xDownloadOptionsMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:265:3)\n    at internalNext (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:535:6)\n    at xDnsPrefetchControlMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:258:3)\n    at internalNext (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:535:6)\n    at xContentTypeOptionsMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:250:3)\n    at internalNext (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:535:6)\n    at strictTransportSecurityMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:243:3)\n    at internalNext (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:535:6)\n    at referrerPolicyMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:211:3)\n    at internalNext (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:535:6)\n    at originAgentClusterMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:186:3)\n    at internalNext (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:535:6)\n    at crossOriginResourcePolicyMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:179:3)\n    at internalNext (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:535:6)\n    at crossOriginOpenerPolicyMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:163:3)\n    at internalNext (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:535:6)\n    at contentSecurityPolicyMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:128:4)\n    at internalNext (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:535:6)\n    at helmetMiddleware (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/index.cjs:539:6)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at trim_prefix (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:328:13)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:286:9\n    at Function.process_params (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:346:12)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:280:10)\n    at expressInit (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/middleware/init.js:40:5)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at trim_prefix (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:328:13)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:286:9\n    at Function.process_params (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:346:12)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:280:10)\n    at query (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/middleware/query.js:45:5)\n    at Layer.handle [as handle_request] (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/layer.js:95:5)\n    at trim_prefix (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:328:13)\n    at /Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:286:9\n    at Function.process_params (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:346:12)\n    at next (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:280:10)\n    at Function.handle (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/router/index.js:175:3)\n    at Function.handle (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/application.js:181:10)\n    at Server.app (/Users/duynguyen/www/devpocket-server-node/node_modules/.pnpm/express@4.21.2/node_modules/express/lib/express.js:39:9)\n    at Server.emit (node:events:518:28)\n    at parserOnIncoming (node:_http_server:1141:12)\n    at HTTPParser.parserOnHeadersComplete (node:_http_common:118:17)"},"request":{"body":{},"headers":{"accept-encoding":"gzip, deflate","connection":"close","content-length":"11534456","content-type":"application/json","host":"127.0.0.1:51187"},"method":"POST","params":{},"query":{},"url":"/api/v1/auth/register"},"requestId":"mumollrfw9","response":{"message":"Request payload too large","statusCode":413},"service":"DevPocket API","timestamp":"2025-08-03T04:54:37.847Z"}
+info: HTTP Request {"duration":"1ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"0swie38v1t6","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:37.936Z","url":"/info"}
+error: Request error {"error":{"message":"Route GET /api/v2/info not found","name":"NotFoundError"},"request":{"headers":{"accept-encoding":"gzip, deflate","connection":"close","host":"127.0.0.1:51194","x-request-id":"oxkxfrbzb"},"method":"GET","params":{},"query":{},"url":"/api/v2/info"},"requestId":"oxkxfrbzb","response":{"message":"Route GET /api/v2/info not found","statusCode":404},"service":"DevPocket API","timestamp":"2025-08-03T04:54:38.046Z"}
+info: HTTP Request {"duration":"4ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"oxkxfrbzb","service":"DevPocket API","statusCode":404,"timestamp":"2025-08-03T04:54:38.051Z","url":"/api/v2/info"}
+ PASS  tests/integration/api.test.ts (5.939 s)
+  API Endpoints
+    GET /api/v1/info
+      ✓ should return API information (237 ms)
+      ✓ should not require authentication (74 ms)
+    Authentication Middleware
+      ✓ should require authentication for protected routes (101 ms)
+      ✓ should reject invalid JWT tokens (98 ms)
+      ✓ should reject malformed authorization headers (63 ms)
+      ✓ should accept valid JWT tokens (168 ms)
+    Rate Limiting
+      ✓ should not apply rate limiting in test environment (352 ms)
+      ✓ should not include rate limit headers in test environment (85 ms)
+    CORS
+      ✓ should include CORS headers (102 ms)
+      ✓ should handle preflight requests (82 ms)
+    Error Handling
+      ✓ should return 404 for undefined routes (79 ms)
+      ✓ should return 405 for unsupported methods (83 ms)
+      ✓ should handle malformed JSON (79 ms)
+      ✓ should include request ID in responses (69 ms)
+    Security Headers
+      ✓ should include security headers (83 ms)
+      ✓ should not expose sensitive headers (122 ms)
+    Input Validation
+      ✓ should validate required fields in POST requests (109 ms)
+      ✓ should validate email format (101 ms)
+      ✓ should validate password strength (65 ms)
+    Content-Type Handling
+      ✓ should handle JSON content type (86 ms)
+      ✓ should handle URL-encoded content type (105 ms)
+      ✓ should reject large payloads (175 ms)
+    API Versioning
+      ✓ should respond to v1 API paths (104 ms)
+      ✓ should return 404 for invalid API versions (109 ms)
+
+info: Database manager initialized {"debug":true,"service":"DevPocket API","timestamp":"2025-08-03T04:54:38.993Z"}
+
+ RUNS  tests/integration/health.test.ts
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "devpocket_test", schema "public" at "localhost:5432"
+
+1 migration found in prisma/migrations
+
+info: HTTP Request {"duration":"12ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"79qhtl5pdsh","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:41.056Z","url":"/"}
+info: HTTP Request {"duration":"2ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"dlg8usmzop5","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:41.209Z","url":"/"}
+  console.log
+    prisma:info Starting a postgresql pool with 17 connections.
+
+      at Object.mc (node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/runtime/library.js:21:432)
+
+info: HTTP Request {"duration":"30ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"fxzfu3ufhbb","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:41.305Z","url":"/ready"}
+info: HTTP Request {"duration":"1ms","ip":"::ffff:127.0.0.1","method":"GET","requestId":"w2pu9xj03","service":"DevPocket API","statusCode":200,"timestamp":"2025-08-03T04:54:41.347Z","url":"/live"}
+ PASS  tests/integration/health.test.ts
+  Health API
+    GET /health
+      ✓ should return health status (192 ms)
+      ✓ should include system information (148 ms)
+    GET /health/ready
+      ✓ should return readiness status (91 ms)
+    GET /health/live
+      ✓ should return liveness status (42 ms)
+
+
+ RUNS  tests/unit/utils/jwt.test.ts
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "devpocket_test", schema "public" at "localhost:5432"
+
+1 migration found in prisma/migrations
+
+ PASS  tests/unit/utils/jwt.test.ts
+  JWT Utils
+    generateTokens
+      ✓ should generate access and refresh tokens (109 ms)
+      ✓ should generate tokens with correct payload (50 ms)
+    verifyToken
+      ✓ should verify valid tokens (39 ms)
+      ✓ should throw error for invalid tokens (44 ms)
+      ✓ should throw error for malformed tokens (58 ms)
+      ✓ should throw error for tokens with wrong secret (55 ms)
+
+ PASS  tests/unit/utils/jwt.isolated.test.ts
+  JWT Utils - Isolated
+    generateTokens
+      ✓ should generate access and refresh tokens (5 ms)
+      ✓ should generate tokens with correct payload (3 ms)
+    verifyToken
+      ✓ should verify valid tokens (3 ms)
+      ✓ should throw error for invalid tokens (15 ms)
+      ✓ should throw error for malformed tokens (1 ms)
+      ✓ should throw error for tokens with wrong secret (1 ms)
+
+ PASS  tests/unit/utils/password.isolated.test.ts
+  Password Utils - Isolated
+    hashPassword
+      ✓ should hash a password (23 ms)
+      ✓ should generate different hashes for same password (11 ms)
+    comparePassword
+      ✓ should verify correct password against hash (13 ms)
+      ✓ should reject incorrect password against hash (6 ms)
+      ✓ should reject password against invalid hash (29 ms)
+
+ FAIL  tests/integration/users.test.ts
+  ● Test suite failed to run
+
+    tests/integration/users.test.ts:507:4 - error TS1005: '}' expected.
+
+    507 });
+           
+
+      tests/integration/users.test.ts:7:29
+        7 describe('Users API', () => {
+                                      ~
+        The parser expected to find a '}' to match the '{' token here.
+
+---------------------|---------|----------|---------|---------|-------------------
+File                 | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+---------------------|---------|----------|---------|---------|-------------------
+All files            |   41.49 |    32.52 |   38.32 |   41.99 |                   
+ src                 |   76.19 |    58.33 |   54.54 |    75.6 |                   
+  app.ts             |   76.19 |    58.33 |   54.54 |    75.6 | ...39-240,245-246 
+ src/config          |   62.19 |       55 |   57.14 |   62.19 |                   
+  database.ts        |   48.57 |       50 |    62.5 |   48.57 | 41-56,65-80       
+  env.ts             |   72.22 |    61.53 |      60 |   72.22 | ...02,104,128-136 
+  logger.ts          |   72.72 |    33.33 |       0 |   72.72 | 30-38,49          
+ src/middleware      |   48.58 |    43.84 |   31.03 |   46.79 |                   
+  auth.ts            |   39.53 |       12 |   33.33 |    35.8 | ...40-258,266-296 
+  errorHandler.ts    |      60 |    60.24 |   71.42 |   59.34 | ...12-113,179-260 
+  rateLimiter.ts     |    38.7 |    18.18 |    12.5 |    38.7 | ...79-182,201-204 
+ src/prisma          |       0 |        0 |       0 |       0 |                   
+  seed.ts            |       0 |        0 |       0 |       0 | 3-445             
+ src/routes          |    48.7 |       40 |   39.39 |   50.16 |                   
+  auth.ts            |      75 |    55.55 |   53.84 |   77.23 | ...33-580,605-637 
+  clusters.ts        |   31.25 |        0 |       0 |    32.6 | ...91-318,349-400 
+  environments.ts    |   39.15 |    36.48 |   43.75 |   40.29 | ...1023,1051-1123 
+  health.ts          |   95.45 |       50 |     100 |   95.23 | 89                
+  templates.ts       |   57.14 |    56.92 |   58.33 |   57.27 | ...30-754,793-832 
+  users.ts           |   22.91 |        0 |    7.14 |   24.71 | ...17-376,402-473 
+ src/scripts         |       0 |        0 |       0 |       0 |                   
+  load_templates.ts  |       0 |        0 |       0 |       0 | 3-215             
+  test_kubeconfig.ts |       0 |        0 |       0 |       0 | 3-131             
+  ...etes_service.ts |       0 |        0 |       0 |       0 | 3-119             
+ src/services        |   52.09 |    43.96 |   43.66 |   52.09 |                   
+  email.ts           |   43.47 |    36.36 |   35.71 |   43.47 | ...99-338,408-480 
+  kubernetes.ts      |   23.07 |    13.63 |   17.39 |   23.07 | ...66-407,433-765 
+  websocket.ts       |      80 |    67.21 |    64.7 |      80 | ...59,587,600,607 
+ src/types           |   68.62 |        0 |   53.33 |   68.62 |                   
+  errors.ts          |   68.62 |        0 |   53.33 |   68.62 | ...20-121,127-128 
+ src/utils           |   29.68 |    17.24 |   40.47 |   30.54 |                   
+  encryption.ts      |   26.08 |       50 |   44.44 |   26.08 | ...85-106,117-169 
+  jwt.ts             |   74.07 |    55.55 |      70 |   74.07 | 95-132            
+  kubeconfig.ts      |       0 |        0 |       0 |       0 | 1-345             
+  password.ts        |   50.98 |        0 |   66.66 |      52 | ...,88-89,103-132 
+---------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 41.49% ( 849/2046 )
+Branches     : 32.52% ( 228/701 )
+Functions    : 38.32% ( 105/274 )
+Lines        : 41.99% ( 834/1986 )
+================================================================================
+Test Suites: 3 failed, 8 passed, 11 total
+Tests:       3 failed, 125 passed, 128 total
+Snapshots:   0 total
+Time:        60.479 s, estimated 61 s
+Ran all test suites.
+ ELIFECYCLE  Command failed with exit code 1.
