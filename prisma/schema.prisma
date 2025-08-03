@@ -150,6 +150,7 @@ model Environment {
   cpuUsage              Float             @default(0.0) @map("cpu_usage")
   memoryUsage           Float             @default(0.0) @map("memory_usage")
   storageUsage          Float             @default(0.0) @map("storage_usage")
+  lastError             String?           @map("last_error") // Store last error details for debugging
   lastActivityAt        DateTime?         @map("last_activity_at")
   createdAt             DateTime          @default(now()) @map("created_at")
   updatedAt             DateTime          @updatedAt @map("updated_at")

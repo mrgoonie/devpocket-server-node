@@ -59,25 +59,31 @@ async function startServer(): Promise<void> {
     });
 
     // Handle server errors
-    server.on('error', (error) => {
-      logger.error('Server error', { 
-        error: error instanceof Error ? {
-          ...error,
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-        } : error 
+    server.on('error', error => {
+      logger.error('Server error', {
+        error:
+          error instanceof Error
+            ? {
+                ...error,
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+              }
+            : error,
       });
       process.exit(1);
     });
   } catch (error) {
-    logger.error('Failed to start server', { 
-      error: error instanceof Error ? {
-        ...error,
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      } : error 
+    logger.error('Failed to start server', {
+      error:
+        error instanceof Error
+          ? {
+              ...error,
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            }
+          : error,
     });
     process.exit(1);
   }

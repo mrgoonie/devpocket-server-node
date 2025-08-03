@@ -27,6 +27,7 @@
     "db:studio:prod": "dotenv -e .env.prod -- prisma studio",
     "db:seed:prod": "dotenv -e .env.prod -- tsx src/prisma/seed.ts",
     "templates:load": "tsx scripts/load_templates.ts",
+    "test:k8s-fix": "tsx scripts/test_kubernetes_fix.ts",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run",
     "docker:build": "docker build -t devpocket-server .",

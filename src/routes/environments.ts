@@ -4,7 +4,13 @@ import { prisma } from '@/config/database';
 import { asyncHandler } from '@/middleware/errorHandler';
 import { authenticate, AuthenticatedRequest, requireEmailVerification } from '@/middleware/auth';
 import { environmentRateLimiter } from '@/middleware/rateLimiter';
-import { ValidationError, NotFoundError, ConflictError, ResourceLimitError } from '@/types/errors';
+import {
+  ValidationError,
+  NotFoundError,
+  ConflictError,
+  ResourceLimitError,
+  KubernetesError,
+} from '@/types/errors';
 import logger from '@/config/logger';
 import { getConfig } from '@/config/env';
 import kubernetesService from '@/services/kubernetes';
@@ -291,12 +297,44 @@ router.post(
         environmentVariables: environment.environmentVariables as Record<string, string>,
         startupCommands: template.startupCommands,
       });
+
+      logger.info('Environment Kubernetes resources created successfully', {
+        environmentId: environment.id,
+        userId: authReq.user.id,
+      });
     } catch (error) {
+      const errorDetails = {
+        name: error instanceof Error ? error.name : 'UnknownError',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      };
+
       logger.error('Failed to create environment in Kubernetes', {
         environmentId: environment.id,
-        error,
+        userId: authReq.user.id,
+        error: errorDetails,
       });
-      // Environment status will be updated to ERROR by the Kubernetes service
+
+      // Delete the database record since K8s creation failed
+      try {
+        await prisma.environment.delete({
+          where: { id: environment.id },
+        });
+        logger.info('Cleaned up failed environment from database', {
+          environmentId: environment.id,
+        });
+      } catch (cleanupError) {
+        logger.error('Failed to cleanup failed environment', {
+          environmentId: environment.id,
+          error: {
+            name: cleanupError instanceof Error ? cleanupError.name : 'UnknownError',
+            message: cleanupError instanceof Error ? cleanupError.message : 'Unknown error',
+          },
+        });
+      }
+
+      // Return proper error response instead of 201 success
+      throw new KubernetesError(`Failed to create Kubernetes resources: ${errorDetails.message}`);
     }
 
     logger.info('Environment created', {

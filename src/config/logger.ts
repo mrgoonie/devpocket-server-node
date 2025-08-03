@@ -48,4 +48,26 @@ export const logStream = {
   },
 };
 
+/**
+ * Utility function to serialize errors for logging
+ * Handles the fact that Error objects don't serialize well with JSON.stringify
+ */
+export const serializeError = (error: unknown): Record<string, any> => {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause,
+      ...(error as any), // Include any additional properties
+    };
+  }
+
+  if (typeof error === 'object' && error !== null) {
+    return { ...error };
+  }
+
+  return { error: String(error) };
+};
+
 export default logger;

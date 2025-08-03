@@ -11,7 +11,7 @@ import {
 } from '@kubernetes/client-node';
 import { prisma } from '@/config/database';
 import { encryptionService } from '@/utils/encryption';
-import logger from '@/config/logger';
+import logger, { serializeError } from '@/config/logger';
 import { KubernetesError } from '@/types/errors';
 
 interface KubernetesClient {
@@ -50,6 +50,8 @@ interface EnvironmentInfo {
 class KubernetesService {
   private clients: Map<string, KubernetesClient> = new Map();
   private kubeConfigs: Map<string, KubeConfig> = new Map();
+  private readonly maxRetries = 3;
+  private readonly retryDelayMs = 1000;
 
   /**
    * Initialize Kubernetes client for a cluster
@@ -88,18 +90,58 @@ class KubernetesService {
         // In production, you might want to enforce encryption
         logger.warn('Failed to decrypt kubeconfig, assuming plain text', {
           clusterId,
-          error: decryptError instanceof Error ? decryptError.message : 'Unknown error',
+          error: {
+            name: decryptError instanceof Error ? decryptError.name : 'UnknownError',
+            message: decryptError instanceof Error ? decryptError.message : 'Unknown error',
+            stack: decryptError instanceof Error ? decryptError.stack : undefined,
+          },
           kubeconfigLength: cluster.kubeconfig.length,
         });
         kubeconfig = cluster.kubeconfig;
 
-        // Validate that the plain text kubeconfig at least looks valid
-        if (!kubeconfig.includes('apiVersion') || !kubeconfig.includes('clusters')) {
-          throw new Error('Invalid kubeconfig format detected');
+        // Enhanced validation for plain text kubeconfig
+        if (!this.validateKubeconfigFormat(kubeconfig)) {
+          throw new Error(
+            `Invalid kubeconfig format detected for cluster ${clusterId}. Expected YAML with apiVersion and clusters sections.`
+          );
         }
+
+        logger.info('Using plain text kubeconfig', {
+          clusterId,
+          hasApiVersion: kubeconfig.includes('apiVersion'),
+          hasClusters: kubeconfig.includes('clusters'),
+          hasContexts: kubeconfig.includes('contexts'),
+        });
       }
 
-      kc.loadFromString(kubeconfig);
+      // Validate kubeconfig before loading
+      try {
+        kc.loadFromString(kubeconfig);
+
+        // Verify the kubeconfig has at least one context
+        const contexts = kc.getContexts();
+        if (contexts.length === 0) {
+          throw new Error('No contexts found in kubeconfig');
+        }
+
+        logger.debug('Kubeconfig loaded successfully', {
+          clusterId,
+          contextsCount: contexts.length,
+          currentContext: kc.getCurrentContext(),
+        });
+      } catch (loadError) {
+        logger.error('Failed to load kubeconfig', {
+          clusterId,
+          error: {
+            name: loadError instanceof Error ? loadError.name : 'UnknownError',
+            message: loadError instanceof Error ? loadError.message : 'Unknown error',
+          },
+          kubeconfigSample: kubeconfig.slice(0, 200) + (kubeconfig.length > 200 ? '...' : ''),
+        });
+        throw new Error(
+          `Invalid kubeconfig format: ${loadError instanceof Error ? loadError.message : 'Unknown error'}`
+        );
+      }
 
       // Create API clients
       const coreV1Api = kc.makeApiClient(CoreV1Api);
@@ -118,8 +160,18 @@ class KubernetesService {
       logger.info('Kubernetes client initialized', { clusterId, clusterName: cluster.name });
       return client;
     } catch (error) {
-      logger.error('Failed to initialize Kubernetes client', { clusterId, error });
-      throw new KubernetesError(`Failed to connect to cluster ${clusterId}`);
+      logger.error('Failed to initialize Kubernetes client', {
+        clusterId,
+        error: {
+          name: error instanceof Error ? error.name : 'UnknownError',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          cause: error instanceof Error ? error.cause : undefined,
+        },
+      });
+      throw new KubernetesError(
+        `Failed to connect to cluster ${clusterId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -157,27 +209,47 @@ class KubernetesService {
       const configMapName = `config-${environmentId}`;
 
       // Ensure namespace exists
-      await this.ensureNamespace(client, namespace);
-
-      // Create persistent volume claim for workspace storage
-      await this.createPersistentVolumeClaim(client, namespace, pvcName, resources.storage);
-
-      // Create ConfigMap with startup scripts
-      await this.createConfigMap(client, namespace, configMapName, startupCommands);
-
-      // Create pod for the environment
-      await this.createPod(client, namespace, {
-        podName,
-        dockerImage,
-        port,
-        resources,
-        environmentVariables,
-        pvcName,
-        configMapName,
+      await this.retryOperation(() => this.ensureNamespace(client, namespace), 'Create namespace', {
+        environmentId,
+        namespace,
       });
 
+      // Create persistent volume claim for workspace storage
+      await this.retryOperation(
+        () => this.createPersistentVolumeClaim(client, namespace, pvcName, resources.storage),
+        'Create PVC',
+        { environmentId, pvcName, storage: resources.storage }
+      );
+
+      // Create ConfigMap with startup scripts
+      await this.retryOperation(
+        () => this.createConfigMap(client, namespace, configMapName, startupCommands),
+        'Create ConfigMap',
+        { environmentId, configMapName }
+      );
+
+      // Create pod for the environment
+      await this.retryOperation(
+        () =>
+          this.createPod(client, namespace, {
+            podName,
+            dockerImage,
+            port,
+            resources,
+            environmentVariables,
+            pvcName,
+            configMapName,
+          }),
+        'Create Pod',
+        { environmentId, podName, dockerImage }
+      );
+
       // Create service to expose the pod
-      await this.createService(client, namespace, serviceName, podName, port);
+      await this.retryOperation(
+        () => this.createService(client, namespace, serviceName, podName, port),
+        'Create Service',
+        { environmentId, serviceName, port }
+      );
 
       // Update environment with Kubernetes details
       await prisma.environment.update({
@@ -206,15 +278,40 @@ class KubernetesService {
         internalUrl: `http://${serviceName}.${namespace}.svc.cluster.local:${port}`,
       };
     } catch (error) {
-      logger.error('Failed to create environment in Kubernetes', { environmentId, error });
+      const errorDetails = {
+        name: error instanceof Error ? error.name : 'UnknownError',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        cause: error instanceof Error ? error.cause : undefined,
+      };
 
-      // Update environment status to error
-      await prisma.environment.update({
-        where: { id: environmentId },
-        data: { status: 'ERROR' },
+      logger.error('Failed to create environment in Kubernetes', {
+        environmentId,
+        userId,
+        error: errorDetails,
       });
 
-      throw new KubernetesError('Failed to create environment');
+      // Update environment status to error
+      try {
+        await prisma.environment.update({
+          where: { id: environmentId },
+          data: {
+            status: 'ERROR',
+            // Store error details for debugging
+            lastError: JSON.stringify(errorDetails),
+          },
+        });
+      } catch (dbError) {
+        logger.error('Failed to update environment status', {
+          environmentId,
+          error: {
+            name: dbError instanceof Error ? dbError.name : 'UnknownError',
+            message: dbError instanceof Error ? dbError.message : 'Unknown error',
+          },
+        });
+      }
+
+      throw new KubernetesError(`Failed to create environment: ${errorDetails.message}`);
     }
   }
 
@@ -268,7 +365,14 @@ class KubernetesService {
         memoryUsage,
       };
     } catch (error) {
-      logger.error('Failed to get environment info from Kubernetes', { environmentId, error });
+      logger.error('Failed to get environment info from Kubernetes', {
+        environmentId,
+        error: {
+          name: error instanceof Error ? error.name : 'UnknownError',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+      });
       return { status: 'ERROR', namespace: 'unknown' };
     }
   }
@@ -307,8 +411,17 @@ class KubernetesService {
 
       logger.info('Environment start initiated', { environmentId });
     } catch (error) {
-      logger.error('Failed to start environment', { environmentId, error });
-      throw new KubernetesError('Failed to start environment');
+      logger.error('Failed to start environment', {
+        environmentId,
+        error: {
+          name: error instanceof Error ? error.name : 'UnknownError',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+      });
+      throw new KubernetesError(
+        `Failed to start environment: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -345,8 +458,17 @@ class KubernetesService {
 
       logger.info('Environment stop initiated', { environmentId });
     } catch (error) {
-      logger.error('Failed to stop environment', { environmentId, error });
-      throw new KubernetesError('Failed to stop environment');
+      logger.error('Failed to stop environment', {
+        environmentId,
+        error: {
+          name: error instanceof Error ? error.name : 'UnknownError',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+      });
+      throw new KubernetesError(
+        `Failed to stop environment: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -423,8 +545,17 @@ class KubernetesService {
 
       logger.info('Environment deleted from Kubernetes', { environmentId });
     } catch (error) {
-      logger.error('Failed to delete environment from Kubernetes', { environmentId, error });
-      throw new KubernetesError('Failed to delete environment');
+      logger.error('Failed to delete environment from Kubernetes', {
+        environmentId,
+        error: {
+          name: error instanceof Error ? error.name : 'UnknownError',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+      });
+      throw new KubernetesError(
+        `Failed to delete environment: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -480,8 +611,19 @@ class KubernetesService {
         );
       });
     } catch (error) {
-      logger.error('Failed to execute command in environment', { environmentId, command, error });
-      return { success: false, error: 'Failed to execute command' };
+      logger.error('Failed to execute command in environment', {
+        environmentId,
+        command,
+        error: {
+          name: error instanceof Error ? error.name : 'UnknownError',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+      });
+      return {
+        success: false,
+        error: `Failed to execute command: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
     }
   }
 
@@ -524,12 +666,119 @@ class KubernetesService {
 
       return logsResponse.body;
     } catch (error) {
-      logger.error('Failed to get environment logs', { environmentId, error });
-      return `Error retrieving logs: ${error}`;
+      logger.error('Failed to get environment logs', {
+        environmentId,
+        error: {
+          name: error instanceof Error ? error.name : 'UnknownError',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+      });
+      return `Error retrieving logs: ${error instanceof Error ? error.message : 'Unknown error'}`;
     }
   }
 
   // Private helper methods
+
+  /**
+   * Retry mechanism for Kubernetes operations
+   */
+  private async retryOperation<T>(
+    operation: () => Promise<T>,
+    operationName: string,
+    context: Record<string, any> = {}
+  ): Promise<T> {
+    let lastError: Error | undefined;
+
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        if (attempt === this.maxRetries) {
+          logger.error(`${operationName} failed after ${this.maxRetries} attempts`, {
+            ...context,
+            error: serializeError(lastError),
+            attempts: attempt,
+          });
+          throw lastError;
+        }
+
+        const isRetryable = this.isRetryableError(lastError);
+        if (!isRetryable) {
+          logger.error(`${operationName} failed with non-retryable error`, {
+            ...context,
+            error: serializeError(lastError),
+            attempt,
+          });
+          throw lastError;
+        }
+
+        const delay = this.retryDelayMs * attempt;
+        logger.warn(`${operationName} failed, retrying in ${delay}ms`, {
+          ...context,
+          error: serializeError(lastError),
+          attempt,
+          nextRetryIn: delay,
+        });
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    throw lastError;
+  }
+
+  /**
+   * Determine if an error is retryable
+   */
+  private isRetryableError(error: Error): boolean {
+    const retryablePatterns = [
+      /connection.*(refused|timeout|reset)/i,
+      /timeout/i,
+      /temporarily unavailable/i,
+      /service unavailable/i,
+      /too many requests/i,
+      /etcd cluster is unavailable/i,
+    ];
+
+    const errorMessage = error.message.toLowerCase();
+    return retryablePatterns.some(pattern => pattern.test(errorMessage));
+  }
+
+  private validateKubeconfigFormat(kubeconfig: string): boolean {
+    try {
+      // Basic structure validation
+      if (!kubeconfig || typeof kubeconfig !== 'string') {
+        return false;
+      }
+
+      // Check for required YAML structure
+      if (
+        !kubeconfig.includes('apiVersion') ||
+        !kubeconfig.includes('clusters') ||
+        !kubeconfig.includes('contexts')
+      ) {
+        return false;
+      }
+
+      // Try to parse as YAML to ensure it's valid
+      const yaml = require('yaml');
+      const parsed = yaml.parse(kubeconfig);
+
+      if (!parsed || parsed.kind !== 'Config') {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      logger.debug('Kubeconfig format validation failed', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      return false;
+    }
+  }
 
   private async ensureNamespace(client: KubernetesClient, namespace: string): Promise<void> {
     try {

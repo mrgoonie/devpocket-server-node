@@ -65,8 +65,16 @@ class EncryptionService {
       logger.debug('Data encrypted successfully');
       return result;
     } catch (error) {
-      logger.error('Encryption failed', { error });
-      throw new Error('Failed to encrypt data');
+      logger.error('Encryption failed', {
+        error: {
+          name: error instanceof Error ? error.name : 'UnknownError',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+      });
+      throw new Error(
+        `Failed to encrypt data: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -105,8 +113,21 @@ class EncryptionService {
       logger.debug('Data decrypted successfully');
       return decrypted;
     } catch (error) {
-      logger.error('Decryption failed', { error });
-      throw new Error('Failed to decrypt data');
+      logger.error('Decryption failed', {
+        error: {
+          name: error instanceof Error ? error.name : 'UnknownError',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+        dataFormat: {
+          length: encryptedData?.length || 0,
+          parts: encryptedData?.split(':')?.length || 0,
+          startsWithHex: /^[0-9a-fA-F]/.test(encryptedData || ''),
+        },
+      });
+      throw new Error(
+        `Failed to decrypt data: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -124,8 +145,15 @@ class EncryptionService {
 
       return iv.toString('hex') + ':' + encrypted;
     } catch (error) {
-      logger.error('Simple encryption failed', { error });
-      throw new Error('Failed to encrypt data');
+      logger.error('Simple encryption failed', {
+        error: {
+          name: error instanceof Error ? error.name : 'UnknownError',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+      });
+      throw new Error(
+        `Failed to encrypt data: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -150,8 +178,19 @@ class EncryptionService {
 
       return decrypted;
     } catch (error) {
-      logger.error('Simple decryption failed', { error });
-      throw new Error('Failed to decrypt data');
+      logger.error('Simple decryption failed', {
+        error: {
+          name: error instanceof Error ? error.name : 'UnknownError',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+        dataFormat: {
+          length: encryptedData?.length || 0,
+          parts: encryptedData?.split(':')?.length || 0,
+        },
+      });
+      throw new Error(
+        `Failed to decrypt data: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
