@@ -21,9 +21,7 @@ describe('API Endpoints', () => {
 
   describe('GET /api/v1/info', () => {
     it('should return API information', async () => {
-      const response = await request(app)
-        .get('/api/v1/info')
-        .expect(200);
+      const response = await request(app).get('/api/v1/info').expect(200);
 
       expect(response.body).toHaveProperty('name');
       expect(response.body).toHaveProperty('version');
@@ -45,9 +43,7 @@ describe('API Endpoints', () => {
     });
 
     it('should not require authentication', async () => {
-      const response = await request(app)
-        .get('/api/v1/info')
-        .expect(200);
+      const response = await request(app).get('/api/v1/info').expect(200);
 
       expect(response.body).toHaveProperty('name');
     });
@@ -55,9 +51,7 @@ describe('API Endpoints', () => {
 
   describe('Authentication Middleware', () => {
     it('should require authentication for protected routes', async () => {
-      const response = await request(app)
-        .get('/api/v1/users/me')
-        .expect(401);
+      const response = await request(app).get('/api/v1/users/me').expect(401);
 
       expect(response.body).toHaveProperty('error');
       expect(response.body.error).toContain('authentication');
@@ -94,9 +88,9 @@ describe('API Endpoints', () => {
 
   describe('Rate Limiting', () => {
     it('should not apply rate limiting in test environment', async () => {
-      const requests = Array(15).fill(0).map(() => 
-        request(app).get('/api/v1/info')
-      );
+      const requests = Array(15)
+        .fill(0)
+        .map(() => request(app).get('/api/v1/info'));
 
       const responses = await Promise.all(requests);
       const successCount = responses.filter(res => res.status === 200).length;
@@ -107,9 +101,7 @@ describe('API Endpoints', () => {
     });
 
     it('should not include rate limit headers in test environment', async () => {
-      const response = await request(app)
-        .get('/api/v1/info')
-        .expect(200);
+      const response = await request(app).get('/api/v1/info').expect(200);
 
       expect(response.headers).not.toHaveProperty('x-ratelimit-limit');
       expect(response.headers).not.toHaveProperty('x-ratelimit-remaining');
@@ -143,18 +135,14 @@ describe('API Endpoints', () => {
 
   describe('Error Handling', () => {
     it('should return 404 for undefined routes', async () => {
-      const response = await request(app)
-        .get('/api/v1/nonexistent')
-        .expect(404);
+      const response = await request(app).get('/api/v1/nonexistent').expect(404);
 
       expect(response.body).toHaveProperty('error');
       expect(response.body.error).toContain('Not found');
     });
 
     it('should return 405 for unsupported methods', async () => {
-      const response = await request(app)
-        .patch('/api/v1/info')
-        .expect(404); // Express returns 404 for unsupported methods on existing routes
+      const response = await request(app).patch('/api/v1/info').expect(404); // Express returns 404 for unsupported methods on existing routes
 
       expect(response.body).toHaveProperty('error');
     });
@@ -170,9 +158,7 @@ describe('API Endpoints', () => {
     });
 
     it('should include request ID in responses', async () => {
-      const response = await request(app)
-        .get('/api/v1/info')
-        .expect(200);
+      const response = await request(app).get('/api/v1/info').expect(200);
 
       expect(response.headers).toHaveProperty('x-request-id');
       expect(response.headers['x-request-id']).toMatch(/^[a-z0-9]+$/);
@@ -181,9 +167,7 @@ describe('API Endpoints', () => {
 
   describe('Security Headers', () => {
     it('should include security headers', async () => {
-      const response = await request(app)
-        .get('/api/v1/info')
-        .expect(200);
+      const response = await request(app).get('/api/v1/info').expect(200);
 
       // Helmet security headers
       expect(response.headers).toHaveProperty('x-content-type-options', 'nosniff');
@@ -193,9 +177,7 @@ describe('API Endpoints', () => {
     });
 
     it('should not expose sensitive headers', async () => {
-      const response = await request(app)
-        .get('/api/v1/info')
-        .expect(200);
+      const response = await request(app).get('/api/v1/info').expect(200);
 
       expect(response.headers['x-powered-by']).toBeUndefined();
       expect(response.headers['server']).toBeUndefined();
@@ -290,17 +272,13 @@ describe('API Endpoints', () => {
 
   describe('API Versioning', () => {
     it('should respond to v1 API paths', async () => {
-      const response = await request(app)
-        .get('/api/v1/info')
-        .expect(200);
+      const response = await request(app).get('/api/v1/info').expect(200);
 
       expect(response.body).toHaveProperty('version');
     });
 
     it('should return 404 for invalid API versions', async () => {
-      const response = await request(app)
-        .get('/api/v2/info')
-        .expect(404);
+      const response = await request(app).get('/api/v2/info').expect(404);
 
       expect(response.body).toHaveProperty('error');
     });

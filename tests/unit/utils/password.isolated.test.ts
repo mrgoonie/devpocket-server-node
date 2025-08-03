@@ -4,7 +4,7 @@ process.env.BCRYPT_ROUNDS = '4';
 process.env.LOG_LEVEL = 'error';
 process.env.SKIP_DB_SETUP = 'true';
 
-import { hashPassword, comparePassword } from '@/utils/password';
+import { hashPassword, comparePassword } from '../../../src/utils/password';
 
 describe('Password Utils - Isolated', () => {
   const testPassword = 'TestPassword123!';
