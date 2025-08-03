@@ -4,6 +4,9 @@
 # Stage 1: Build stage
 FROM node:20-alpine AS builder
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl openssl-dev libc6-compat
+
 # Set working directory
 WORKDIR /app
 
@@ -47,8 +50,8 @@ COPY --from=builder --chown=devpocket:nodejs /app/scripts ./scripts
 COPY --from=builder --chown=devpocket:nodejs /app/tsconfig.json ./tsconfig.json
 COPY --from=builder --chown=devpocket:nodejs /app/tsconfig.prod.json ./tsconfig.prod.json
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Install dumb-init for proper signal handling and OpenSSL for Prisma
+RUN apk add --no-cache dumb-init openssl openssl-dev libc6-compat
 
 # Create logs directory
 RUN mkdir -p /app/logs && chown devpocket:nodejs /app/logs
