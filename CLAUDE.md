@@ -125,7 +125,7 @@ The application includes production-ready Docker configuration with:
 - Non-root user execution
 - Health checks for orchestrators
 - Nginx reverse proxy with rate limiting
-- MongoDB with authentication and indexing
+- PostgreSQL with authentication and indexing
 - Redis for caching and rate limiting
 
 ## Development rules
