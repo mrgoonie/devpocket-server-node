@@ -78,10 +78,23 @@ const emailVerificationSchema = z.object({
  *     responses:
  *       201:
  *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RegisterResponse'
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
  *       409:
  *         description: User already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *     security: []
  */
 router.post('/register', authRateLimiter, asyncHandler(async (req: Request, res: Response) => {
   const validationResult = registerSchema.safeParse(req.body);
@@ -174,8 +187,43 @@ router.post('/register', authRateLimiter, asyncHandler(async (req: Request, res:
 
   logger.info('User registered', { userId: user.id, email: user.email, username: user.username });
 
+  // Generate tokens for immediate login
+  const tokenPair = jwtService.generateTokenPair({
+    userId: user.id,
+    username: user.username,
+    email: user.email,
+  });
+
+  // Store refresh token
+  await prisma.refreshToken.create({
+    data: {
+      token: tokenPair.refreshToken,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+    },
+  });
+
   res.status(201).json({
-    ...user,
+    user: {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      fullName: user.fullName,
+      emailVerified: user.isVerified,
+      subscription: {
+        plan: user.subscriptionPlan,
+        status: 'ACTIVE',
+        startDate: user.createdAt,
+      },
+      createdAt: user.createdAt,
+      updatedAt: user.createdAt,
+    },
+    tokens: {
+      accessToken: tokenPair.accessToken,
+      refreshToken: tokenPair.refreshToken,
+      tokenType: 'Bearer',
+      expiresIn: tokenPair.expiresIn,
+    },
     message: 'Registration successful. Please check your email to verify your account.',
   });
 }));
@@ -205,10 +253,23 @@ router.post('/register', authRateLimiter, asyncHandler(async (req: Request, res:
  *     responses:
  *       200:
  *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/LoginResponse'
  *       401:
  *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Account locked
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *     security: []
  */
 router.post('/login', authRateLimiter, asyncHandler(async (req: Request, res: Response) => {
   const validationResult = loginSchema.safeParse(req.body);
@@ -311,17 +372,25 @@ router.post('/login', authRateLimiter, asyncHandler(async (req: Request, res: Re
   logger.info('User logged in', { userId: user.id, email: user.email });
 
   res.json({
-    accessToken: tokenPair.accessToken,
-    refreshToken: tokenPair.refreshToken,
-    tokenType: 'bearer',
-    expiresIn: tokenPair.expiresIn,
     user: {
       id: user.id,
-      username: user.username,
       email: user.email,
+      username: user.username,
       fullName: user.fullName,
-      isVerified: user.isVerified,
-      subscriptionPlan: user.subscriptionPlan,
+      emailVerified: user.isVerified,
+      subscription: {
+        plan: user.subscriptionPlan,
+        status: 'ACTIVE',
+        startDate: user.createdAt,
+      },
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    },
+    tokens: {
+      accessToken: tokenPair.accessToken,
+      refreshToken: tokenPair.refreshToken,
+      tokenType: 'Bearer',
+      expiresIn: tokenPair.expiresIn,
     },
   });
 }));
@@ -347,8 +416,17 @@ router.post('/login', authRateLimiter, asyncHandler(async (req: Request, res: Re
  *     responses:
  *       200:
  *         description: Token refreshed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthTokens'
  *       401:
  *         description: Invalid refresh token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *     security: []
  */
 router.post('/refresh', asyncHandler(async (req: Request, res: Response) => {
   const validationResult = refreshTokenSchema.safeParse(req.body);
@@ -427,7 +505,7 @@ router.post('/refresh', asyncHandler(async (req: Request, res: Response) => {
   res.json({
     accessToken: newTokenPair.accessToken,
     refreshToken: newTokenPair.refreshToken,
-    tokenType: 'bearer',
+    tokenType: 'Bearer',
     expiresIn: newTokenPair.expiresIn,
   });
 }));
@@ -443,8 +521,16 @@ router.post('/refresh', asyncHandler(async (req: Request, res: Response) => {
  *     responses:
  *       200:
  *         description: User information retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response) => {
   const authReq = req as AuthenticatedRequest;
@@ -468,7 +554,20 @@ router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response)
     throw new NotFoundError('User not found');
   }
 
-  res.json(user);
+  res.json({
+    id: user.id,
+    email: user.email,
+    username: user.username,
+    fullName: user.fullName,
+    emailVerified: user.isVerified,
+    subscription: {
+      plan: user.subscriptionPlan,
+      status: 'ACTIVE',
+      startDate: user.createdAt,
+    },
+    createdAt: user.createdAt,
+    updatedAt: user.lastLoginAt || user.createdAt,
+  });
 }));
 
 /**
@@ -482,8 +581,16 @@ router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response)
  *     responses:
  *       200:
  *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/logout', authenticate, asyncHandler(async (req: Request, res: Response) => {
   const authReq = req as AuthenticatedRequest;
@@ -526,8 +633,17 @@ router.post('/logout', authenticate, asyncHandler(async (req: Request, res: Resp
  *     responses:
  *       200:
  *         description: Email verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
  *       400:
  *         description: Invalid or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *     security: []
  */
 router.post('/verify-email', asyncHandler(async (req: Request, res: Response) => {
   const validationResult = emailVerificationSchema.safeParse(req.body);
@@ -593,10 +709,22 @@ router.post('/verify-email', asyncHandler(async (req: Request, res: Response) =>
  *     responses:
  *       200:
  *         description: Verification email sent
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
  *       400:
  *         description: Email already verified or too many requests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/resend-verification', 
   emailVerificationRateLimiter,
