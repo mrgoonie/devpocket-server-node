@@ -79,8 +79,21 @@ const createTemplateSchema = z.object({
  *     responses:
  *       200:
  *         description: Templates retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PaginatedResponse'
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Template'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const { category, status, search } = req.query;

@@ -36,6 +36,7 @@ const config = getConfig();
  *                 timestamp:
  *                   type: number
  *                   example: 1672531200.0
+ *     security: []
  */
 router.get('/', asyncHandler(async (_req: Request, res: Response) => {
   const health = {
@@ -75,6 +76,21 @@ router.get('/', asyncHandler(async (_req: Request, res: Response) => {
  *                       example: healthy
  *       503:
  *         description: Service is not ready
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: not ready
+ *                 checks:
+ *                   type: object
+ *                   properties:
+ *                     database:
+ *                       type: string
+ *                       example: unhealthy
+ *     security: []
  */
 router.get('/ready', asyncHandler(async (_req: Request, res: Response) => {
   const checks = {
@@ -116,6 +132,7 @@ router.get('/ready', asyncHandler(async (_req: Request, res: Response) => {
  *                 status:
  *                   type: string
  *                   example: alive
+ *     security: []
  */
 router.get('/live', asyncHandler(async (_req: Request, res: Response) => {
   res.json({

@@ -31,10 +31,33 @@ const createClusterSchema = z.object({
  *     responses:
  *       200:
  *         description: Clusters retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 clusters:
+ *                   type: array
+ *                   items:
+ *                     allOf:
+ *                       - $ref: '#/components/schemas/Cluster'
+ *                       - type: object
+ *                         properties:
+ *                           activeEnvironments:
+ *                             type: number
+ *                             description: Number of active environments
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get('/', authenticate, requireAdmin, asyncHandler(async (_req: Request, res: Response) => {
   const clusters = await prisma.cluster.findMany({
@@ -75,7 +98,20 @@ router.get('/', authenticate, requireAdmin, asyncHandler(async (_req: Request, r
   }));
 
   res.json({
-    clusters: formattedClusters,
+    clusters: formattedClusters.map(cluster => ({
+      id: cluster.id,
+      name: cluster.name,
+      region: cluster.region,
+      status: cluster.status,
+      provider: cluster.provider,
+      metadata: {
+        description: cluster.description,
+        nodeCount: cluster.nodeCount,
+        activeEnvironments: cluster.activeEnvironments,
+      },
+      createdAt: cluster.createdAt,
+      updatedAt: cluster.updatedAt,
+    })),
   });
 }));
 

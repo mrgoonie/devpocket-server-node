@@ -47,8 +47,25 @@ const deleteUserSchema = z.object({
  *     responses:
  *       200:
  *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   allOf:
+ *                     - $ref: '#/components/schemas/User'
+ *                     - type: object
+ *                       properties:
+ *                         environmentCount:
+ *                           type: number
+ *                           description: Number of active environments
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response) => {
   const authReq = req as AuthenticatedRequest;
@@ -111,10 +128,9 @@ router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response)
  *               fullName:
  *                 type: string
  *                 example: John Updated Doe
- *               email:
+ *               username:
  *                 type: string
- *                 format: email
- *                 example: updated@example.com
+ *                 example: newusername
  *               avatarUrl:
  *                 type: string
  *                 format: url
@@ -122,12 +138,31 @@ router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response)
  *     responses:
  *       200:
  *         description: User profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       409:
- *         description: Email already exists
+ *         description: Username already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.put('/me', authenticate, asyncHandler(async (req: Request, res: Response) => {
   const authReq = req as AuthenticatedRequest;
@@ -184,12 +219,27 @@ router.put('/me', authenticate, asyncHandler(async (req: Request, res: Response)
     updatedFields: Object.keys(updateData),
   });
 
-  res.json(updatedUser);
+  res.json({
+    user: {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      username: updatedUser.username,
+      fullName: updatedUser.fullName,
+      emailVerified: updatedUser.isVerified,
+      subscription: {
+        plan: updatedUser.subscriptionPlan,
+        status: 'ACTIVE',
+        startDate: updatedUser.createdAt,
+      },
+      createdAt: updatedUser.createdAt,
+      updatedAt: new Date(),
+    },
+  });
 }));
 
 /**
  * @swagger
- * /api/v1/users/me/change-password:
+ * /api/v1/users/change-password:
  *   post:
  *     summary: Change user password
  *     tags: [Users]
@@ -214,10 +264,22 @@ router.put('/me', authenticate, asyncHandler(async (req: Request, res: Response)
  *     responses:
  *       200:
  *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
  *       400:
  *         description: Validation error or incorrect current password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/change-password', 
   authenticate, 
