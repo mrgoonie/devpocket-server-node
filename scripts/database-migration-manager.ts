@@ -19,8 +19,24 @@
 
 import { PrismaClient } from '@prisma/client';
 import { execSync } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
+
+// Simple logging for script execution
+/* eslint-disable no-console */
+const log = {
+  info: (message: string, data?: any) => {
+    console.log(`ℹ️  ${message}`, data ? JSON.stringify(data, null, 2) : '');
+  },
+  success: (message: string, data?: any) => {
+    console.log(`✅ ${message}`, data ? JSON.stringify(data, null, 2) : '');
+  },
+  error: (message: string, data?: any) => {
+    console.error(`❌ ${message}`, data ? JSON.stringify(data, null, 2) : '');
+  },
+  warn: (message: string, data?: any) => {
+    console.warn(`⚠️  ${message}`, data ? JSON.stringify(data, null, 2) : '');
+  },
+};
+/* eslint-enable no-console */
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -36,10 +52,10 @@ class DatabaseMigrationManager {
   async checkDatabaseConnection(): Promise<boolean> {
     try {
       await prisma.$queryRaw`SELECT 1`;
-      console.log('✅ Database connection successful');
+      log.success('Database connection successful');
       return true;
     } catch (error) {
-      console.error('❌ Database connection failed:', error);
+      log.error('Database connection failed', error);
       return false;
     }
   }
@@ -57,14 +73,14 @@ class DatabaseMigrationManager {
       const columnData = Array.isArray(result) ? result[0] : null;
 
       if (columnData) {
-        console.log('✅ last_error column exists:', columnData);
+        log.success('last_error column exists', columnData);
         return { exists: true, details: columnData };
       } else {
-        console.log('❌ last_error column does not exist');
+        log.info('last_error column does not exist');
         return { exists: false };
       }
     } catch (error) {
-      console.error('❌ Error checking column existence:', error);
+      log.error('Error checking column existence', error);
       return { exists: false, details: error };
     }
   }
@@ -82,14 +98,14 @@ class DatabaseMigrationManager {
       const migrationData = Array.isArray(result) ? result[0] : null;
 
       if (migrationData) {
-        console.log('✅ Migration applied:', migrationData);
+        log.success('Migration applied', migrationData);
         return { applied: true, details: migrationData };
       } else {
-        console.log('❌ Migration not applied yet');
+        log.info('Migration not applied yet');
         return { applied: false };
       }
     } catch (error) {
-      console.error('❌ Error checking migration status:', error);
+      log.error('Error checking migration status', error);
       return { applied: false, details: error };
     }
   }
@@ -104,17 +120,17 @@ class DatabaseMigrationManager {
         ORDER BY ordinal_position
       `;
 
-      console.log('📋 Current environments table schema:');
-      console.table(result);
+      log.info('Current environments table schema');
+      console.table(result); // eslint-disable-line no-console
       return Array.isArray(result) ? result : [];
     } catch (error) {
-      console.error('❌ Error retrieving table schema:', error);
+      log.error('Error retrieving table schema', error);
       return [];
     }
   }
 
   async performHealthCheck(): Promise<MigrationStatus> {
-    console.log('🔍 Performing database health check...\n');
+    log.info('Performing database health check...');
 
     const status: MigrationStatus = {
       migrationApplied: false,
@@ -143,24 +159,24 @@ class DatabaseMigrationManager {
       await this.getEnvironmentTableSchema();
 
       // Summary
-      console.log('\n📊 Migration Status Summary:');
-      console.log(`Database Connected: ${status.databaseConnected ? '✅' : '❌'}`);
-      console.log(`Column Exists: ${status.columnExists ? '✅' : '❌'}`);
-      console.log(`Migration Applied: ${status.migrationApplied ? '✅' : '❌'}`);
+      log.info('Migration Status Summary');
+      log.info(`Database Connected: ${status.databaseConnected ? '✅' : '❌'}`);
+      log.info(`Column Exists: ${status.columnExists ? '✅' : '❌'}`);
+      log.info(`Migration Applied: ${status.migrationApplied ? '✅' : '❌'}`);
 
       if (status.columnExists && status.migrationApplied) {
-        console.log('\n🎉 Everything looks good! The migration has been applied successfully.');
+        log.success('Everything looks good! The migration has been applied successfully.');
       } else if (status.columnExists && !status.migrationApplied) {
-        console.log(
-          '\n⚠️  Column exists but migration not recorded. This might indicate manual intervention.'
+        log.warn(
+          'Column exists but migration not recorded. This might indicate manual intervention.'
         );
       } else if (!status.columnExists && status.migrationApplied) {
-        console.log('\n🚨 Migration recorded but column missing. This indicates a problem!');
+        log.error('Migration recorded but column missing. This indicates a problem!');
       } else {
-        console.log('\n📋 Migration needs to be applied.');
+        log.info('Migration needs to be applied.');
       }
     } catch (error) {
-      console.error('❌ Health check failed:', error);
+      log.error('Health check failed', error);
       status.lastError = error instanceof Error ? error.message : 'Unknown error';
     }
 
@@ -168,7 +184,7 @@ class DatabaseMigrationManager {
   }
 
   async applyMigration(): Promise<boolean> {
-    console.log('🚀 Starting database migration process...\n');
+    log.info('Starting database migration process...');
 
     try {
       // Pre-migration health check
@@ -179,40 +195,40 @@ class DatabaseMigrationManager {
       }
 
       if (preStatus.columnExists && preStatus.migrationApplied) {
-        console.log('✅ Migration already applied successfully. No action needed.');
+        log.success('Migration already applied successfully. No action needed.');
         return true;
       }
 
       if (preStatus.columnExists && !preStatus.migrationApplied) {
-        console.log('⚠️  Column exists but migration not recorded. Proceeding with caution...');
+        log.warn('Column exists but migration not recorded. Proceeding with caution...');
       }
 
       // Create backup point
-      console.log('💾 Creating migration backup point...');
+      log.info('Creating migration backup point...');
       const backupTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      console.log(`Backup timestamp: ${backupTimestamp}`);
+      log.info(`Backup timestamp: ${backupTimestamp}`);
 
       // Apply migration using Prisma
-      console.log('📦 Applying Prisma migration...');
+      log.info('📦 Applying Prisma migration...');
 
       const migrationCommand =
         process.env.NODE_ENV === 'production' ? 'prisma migrate deploy' : 'prisma migrate dev';
 
-      console.log(`Running: ${migrationCommand}`);
+      log.info(`Running: ${migrationCommand}`);
 
       const output = execSync(migrationCommand, {
         encoding: 'utf8',
         cwd: process.cwd(),
       });
 
-      console.log('Migration output:', output);
+      log.info('Migration output:', output);
 
       // Post-migration verification
-      console.log('\n🔍 Post-migration verification...');
+      log.info('\n🔍 Post-migration verification...');
       const postStatus = await this.performHealthCheck();
 
       if (postStatus.columnExists && postStatus.migrationApplied) {
-        console.log('\n🎉 Migration completed successfully!');
+        log.info('\n🎉 Migration completed successfully!');
 
         // Test the column
         await this.testColumnFunctionality();
@@ -222,9 +238,9 @@ class DatabaseMigrationManager {
         throw new Error('Migration verification failed');
       }
     } catch (error) {
-      console.error('❌ Migration failed:', error);
-      console.log('\n🚨 MIGRATION FAILED - Please check the error above');
-      console.log(
+      log.error('❌ Migration failed:', error);
+      log.info('\n🚨 MIGRATION FAILED - Please check the error above');
+      log.info(
         '💡 If you need to rollback, run: pnpm tsx scripts/database-migration-manager.ts rollback'
       );
       return false;
@@ -233,13 +249,13 @@ class DatabaseMigrationManager {
 
   async testColumnFunctionality(): Promise<boolean> {
     try {
-      console.log('🧪 Testing last_error column functionality...');
+      log.info('🧪 Testing last_error column functionality...');
 
       // Try to update an environment with last_error (if any exists)
       const testEnvironment = await prisma.environment.findFirst();
 
       if (testEnvironment) {
-        console.log(`Testing with environment: ${testEnvironment.id}`);
+        log.info(`Testing with environment: ${testEnvironment.id}`);
 
         // Test writing to the column
         await prisma.environment.update({
@@ -253,7 +269,7 @@ class DatabaseMigrationManager {
           select: { id: true, lastError: true },
         });
 
-        console.log('✅ Column test successful:', updated);
+        log.info('✅ Column test successful:', updated);
 
         // Clean up test data
         await prisma.environment.update({
@@ -261,25 +277,23 @@ class DatabaseMigrationManager {
           data: { lastError: null },
         });
 
-        console.log('✅ Test cleanup completed');
+        log.info('✅ Test cleanup completed');
         return true;
       } else {
-        console.log(
+        log.info(
           '⚠️  No environments found to test with. Column should work when environments are created.'
         );
         return true;
       }
     } catch (error) {
-      console.error('❌ Column functionality test failed:', error);
+      log.error('❌ Column functionality test failed:', error);
       return false;
     }
   }
 
   async rollbackMigration(): Promise<boolean> {
-    console.log('🚨 EMERGENCY ROLLBACK - Removing last_error column...\n');
-    console.log(
-      '⚠️  WARNING: This will permanently delete the last_error column and all its data!'
-    );
+    log.info('🚨 EMERGENCY ROLLBACK - Removing last_error column...\n');
+    log.info('⚠️  WARNING: This will permanently delete the last_error column and all its data!');
 
     try {
       // Check current status
@@ -290,23 +304,23 @@ class DatabaseMigrationManager {
       }
 
       if (!status.columnExists) {
-        console.log('✅ Column does not exist. Nothing to rollback.');
+        log.info('✅ Column does not exist. Nothing to rollback.');
         return true;
       }
 
       // Perform rollback
-      console.log('🔄 Executing rollback...');
+      log.info('🔄 Executing rollback...');
 
       await prisma.$executeRaw`ALTER TABLE "environments" DROP COLUMN IF EXISTS "last_error"`;
 
-      console.log('✅ Column dropped successfully');
+      log.info('✅ Column dropped successfully');
 
       // Verify rollback
       const postRollbackStatus = await this.checkColumnExists();
 
       if (!postRollbackStatus.exists) {
-        console.log('✅ Rollback completed successfully');
-        console.log(
+        log.info('✅ Rollback completed successfully');
+        log.info(
           '⚠️  Note: You may need to manually remove the migration record from _prisma_migrations'
         );
         return true;
@@ -314,7 +328,7 @@ class DatabaseMigrationManager {
         throw new Error('Rollback verification failed - column still exists');
       }
     } catch (error) {
-      console.error('❌ Rollback failed:', error);
+      log.error('❌ Rollback failed:', error);
       return false;
     }
   }
@@ -342,13 +356,13 @@ async function main() {
         break;
 
       case 'rollback':
-        console.log('⚠️  This is an EMERGENCY rollback operation!');
-        console.log('Please confirm you want to proceed by typing "yes":');
+        log.info('⚠️  This is an EMERGENCY rollback operation!');
+        log.info('Please confirm you want to proceed by typing "yes":');
 
         // In a real scenario, you'd want to add interactive confirmation
         // For now, we'll require explicit confirmation via environment variable
         if (process.env.CONFIRM_ROLLBACK !== 'yes') {
-          console.log('❌ Rollback cancelled. Set CONFIRM_ROLLBACK=yes to proceed.');
+          log.info('❌ Rollback cancelled. Set CONFIRM_ROLLBACK=yes to proceed.');
           process.exit(1);
         }
 
@@ -361,13 +375,13 @@ async function main() {
         break;
 
       default:
-        console.log('Usage: pnpm tsx scripts/database-migration-manager.ts <command>');
-        console.log('Commands:');
-        console.log('  check    - Check database state and migration status');
-        console.log('  verify   - Same as check');
-        console.log('  migrate  - Apply the migration with safety checks');
-        console.log('  rollback - Emergency rollback (requires CONFIRM_ROLLBACK=yes)');
-        console.log('  test     - Test column functionality');
+        log.info('Usage: pnpm tsx scripts/database-migration-manager.ts <command>');
+        log.info('Commands:');
+        log.info('  check    - Check database state and migration status');
+        log.info('  verify   - Same as check');
+        log.info('  migrate  - Apply the migration with safety checks');
+        log.info('  rollback - Emergency rollback (requires CONFIRM_ROLLBACK=yes)');
+        log.info('  test     - Test column functionality');
         process.exit(1);
     }
   } finally {
@@ -376,7 +390,10 @@ async function main() {
 }
 
 if (require.main === module) {
-  main().catch(console.error);
+  main().catch(error => {
+    console.error('Script failed:', error); // eslint-disable-line no-console
+    process.exit(1);
+  });
 }
 
 export { DatabaseMigrationManager };

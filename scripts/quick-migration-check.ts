@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+/* eslint-disable no-console */
 
 /**
  * Quick Migration Check
@@ -110,7 +111,7 @@ async function quickCheck() {
     console.log('📊 SUMMARY');
     console.log('==========');
 
-    const issues = [];
+    // Issues tracking removed - not needed for this simple check
 
     // Re-check column for summary
     const finalColumnCheck = await prisma.$queryRaw`

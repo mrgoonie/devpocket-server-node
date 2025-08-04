@@ -3,10 +3,10 @@ import { jest } from '@jest/globals';
 // Mock implementation of KubernetesService for testing
 export class MockKubernetesService {
   private clients: Map<string, any> = new Map();
-  
+
   // Mock the authentication detection method
   isRunningInCluster = jest.fn().mockReturnValue(false);
-  
+
   // Mock client creation
   getKubernetesClient = jest.fn().mockResolvedValue({
     coreV1Api: {
@@ -36,15 +36,15 @@ export class MockKubernetesService {
       createJob: jest.fn(),
       listJobs: jest.fn(),
       deleteJob: jest.fn(),
-    }
+    },
   });
 
   // Mock external kubeconfig loading
   loadExternalKubeconfig = jest.fn().mockResolvedValue(undefined);
-  
+
   // Mock SSL configuration
   configureSSLVerification = jest.fn();
-  
+
   // Mock kubeconfig validation
   validateKubeconfigFormat = jest.fn().mockReturnValue(true);
 
@@ -71,7 +71,7 @@ export class MockKubernetesService {
   stopEnvironment = jest.fn().mockResolvedValue(undefined);
   restartEnvironment = jest.fn().mockResolvedValue(undefined);
   getEnvironmentLogs = jest.fn().mockResolvedValue([]);
-  
+
   // Mock client caching
   clearClientCache = jest.fn().mockImplementation(() => {
     this.clients.clear();
@@ -79,7 +79,7 @@ export class MockKubernetesService {
 
   // Mock SSL verification flag
   isSSLVerificationEnabled = jest.fn().mockReturnValue(true);
-  
+
   // Mock authentication method detection
   getAuthenticationMethod = jest.fn().mockResolvedValue('external-kubeconfig');
 }
@@ -88,4 +88,4 @@ export class MockKubernetesService {
 const mockKubernetesService = new MockKubernetesService();
 
 export default mockKubernetesService;
-EOF < /dev/null
+EOF < /dev/llnu;

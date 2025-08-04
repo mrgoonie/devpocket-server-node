@@ -125,17 +125,25 @@ router.get(
     }
 
     const where: Prisma.TemplateWhereInput = {};
-    
+
     // Only show active templates by default (unless includeDeprecated query param is true)
     if (req.query.includeDeprecated !== 'true') {
       where.status = TemplateStatus.ACTIVE;
     }
 
-    if (category && typeof category === 'string' && Object.values(TemplateCategory).includes(category as TemplateCategory)) {
+    if (
+      category &&
+      typeof category === 'string' &&
+      Object.values(TemplateCategory).includes(category as TemplateCategory)
+    ) {
       where.category = category as TemplateCategory;
     }
 
-    if (status && typeof status === 'string' && Object.values(TemplateStatus).includes(status as TemplateStatus)) {
+    if (
+      status &&
+      typeof status === 'string' &&
+      Object.values(TemplateStatus).includes(status as TemplateStatus)
+    ) {
       where.status = status as TemplateStatus;
     }
 
@@ -322,7 +330,11 @@ router.get(
       status: TemplateStatus.ACTIVE,
     };
 
-    if (category && typeof category === 'string' && Object.values(TemplateCategory).includes(category as TemplateCategory)) {
+    if (
+      category &&
+      typeof category === 'string' &&
+      Object.values(TemplateCategory).includes(category as TemplateCategory)
+    ) {
       where.category = category as TemplateCategory;
     }
 

@@ -199,6 +199,7 @@ async function main() {
 // Handle CLI arguments
 const args = process.argv.slice(2);
 if (args.includes('--help') || args.includes('-h')) {
+  // eslint-disable-next-line no-console
   console.log(`
 Usage: tsx scripts/load_templates.ts [options]
 

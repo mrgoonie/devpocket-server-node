@@ -1,9 +1,9 @@
 /**
  * Multi-Environment Consistency and Isolation Tests
- * 
+ *
  * Tests validate:
  * - Environment isolation (namespace separation)
- * - Domain routing configuration per environment  
+ * - Domain routing configuration per environment
  * - Resource allocation per environment
  * - Secret management isolation
  * - Configuration consistency across environments
@@ -30,7 +30,7 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
       cpuLimit: '300m',
       workflow: 'deploy-dev.yml',
       branch: 'dev/*',
-      kubeconfig: 'KUBECONFIG_DEV'
+      kubeconfig: 'KUBECONFIG_DEV',
     },
     {
       name: 'beta',
@@ -46,7 +46,7 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
       cpuLimit: '500m',
       workflow: 'deploy-beta.yml',
       branch: 'beta',
-      kubeconfig: 'KUBECONFIG_BETA'
+      kubeconfig: 'KUBECONFIG_BETA',
     },
     {
       name: 'production',
@@ -62,8 +62,8 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
       cpuLimit: '500m',
       workflow: 'deploy-production.yml',
       branch: 'main',
-      kubeconfig: 'KUBECONFIG'
-    }
+      kubeconfig: 'KUBECONFIG',
+    },
   ];
 
   describe('Namespace Isolation', () => {
@@ -108,7 +108,7 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
     test('workflows should configure correct domains', () => {
       environments.forEach(env => {
         if (env.name === 'production') return; // Production doesn't set DOMAIN env var explicitly
-        
+
         const workflowPath = path.join(process.cwd(), '.github', 'workflows', env.workflow);
         if (fs.existsSync(workflowPath)) {
           const content = fs.readFileSync(workflowPath, 'utf8');
@@ -121,14 +121,14 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
     test('ingress configuration should support environment-specific TLS', () => {
       const k8sIngressPath = path.join(process.cwd(), 'k8s', 'ingress.yaml');
       if (fs.existsSync(k8sIngressPath)) {
-        const content = fs.readFileSync(k8sIngressPath, 'utf8');
-        
+        // Validate ingress file exists
+
         // Check that workflows modify TLS names appropriately
         environments.forEach(env => {
           const workflowPath = path.join(process.cwd(), '.github', 'workflows', env.workflow);
           if (fs.existsSync(workflowPath)) {
             const workflowContent = fs.readFileSync(workflowPath, 'utf8');
-            
+
             if (env.name === 'dev') {
               expect(workflowContent).toContain('tls-api-dev-devpocket-app');
               expect(workflowContent).toContain('tls-devpocket-nodejs-dev-diginext-site');
@@ -146,7 +146,7 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
     test('development should have reduced resource requirements', () => {
       const devEnv = environments.find(e => e.name === 'dev')!;
       const betaEnv = environments.find(e => e.name === 'beta')!;
-      
+
       expect(devEnv.memoryRequest).toBe('128Mi');
       expect(betaEnv.memoryRequest).toBe('256Mi');
       expect(devEnv.cpuRequest).toBe('100m');
@@ -157,7 +157,7 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
       const prodEnv = environments.find(e => e.name === 'production')!;
       const devEnv = environments.find(e => e.name === 'dev')!;
       const betaEnv = environments.find(e => e.name === 'beta')!;
-      
+
       expect(prodEnv.replicas).toBeGreaterThan(devEnv.replicas);
       expect(prodEnv.replicas).toBeGreaterThanOrEqual(betaEnv.replicas);
     });
@@ -167,7 +167,7 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
         const workflowPath = path.join(process.cwd(), '.github', 'workflows', env.workflow);
         if (fs.existsSync(workflowPath)) {
           const content = fs.readFileSync(workflowPath, 'utf8');
-          
+
           if (env.name === 'dev') {
             expect(content).toContain('memory: "128Mi"');
             expect(content).toContain('cpu: "100m"');
@@ -203,7 +203,7 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
 
     test('semantic release workflows should use GitHub and NPM tokens', () => {
       const semanticReleaseEnvs = environments.filter(e => e.name !== 'dev');
-      
+
       semanticReleaseEnvs.forEach(env => {
         const workflowPath = path.join(process.cwd(), '.github', 'workflows', env.workflow);
         if (fs.existsSync(workflowPath)) {
@@ -222,7 +222,7 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
         if (fs.existsSync(workflowPath)) {
           const content = fs.readFileSync(workflowPath, 'utf8');
           const workflow = yaml.load(content) as any;
-          
+
           expect(workflow.env.DOCKER_REGISTRY).toBe('docker.io');
           expect(workflow.env.DOCKER_IMAGE).toBe('digitop/devpocket-nodejs');
         }
@@ -251,17 +251,17 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
 
     test('all environments should have consistent job structure', () => {
       const expectedJobs = ['test', 'build-and-push', 'deploy', 'notify'];
-      
+
       environments.forEach(env => {
         const workflowPath = path.join(process.cwd(), '.github', 'workflows', env.workflow);
         if (fs.existsSync(workflowPath)) {
           const content = fs.readFileSync(workflowPath, 'utf8');
           const workflow = yaml.load(content) as any;
-          
+
           expectedJobs.forEach(job => {
             expect(workflow.jobs[job]).toBeDefined();
           });
-          
+
           // Beta and production should also have semantic-release job
           if (env.name !== 'dev') {
             expect(workflow.jobs['semantic-release']).toBeDefined();
@@ -283,7 +283,7 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
 
     test('beta and production should have strict health checks', () => {
       const strictEnvs = ['deploy-beta.yml', 'deploy-production.yml'];
-      
+
       strictEnvs.forEach(workflow => {
         const workflowPath = path.join(process.cwd(), '.github', 'workflows', workflow);
         if (fs.existsSync(workflowPath)) {
@@ -298,7 +298,7 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
         const workflowPath = path.join(process.cwd(), '.github', 'workflows', env.workflow);
         if (fs.existsSync(workflowPath)) {
           const content = fs.readFileSync(workflowPath, 'utf8');
-          
+
           if (env.name === 'dev') {
             expect(content).toContain('value: "development"');
             expect(content).toContain('value: "debug"');
@@ -321,7 +321,7 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
         if (fs.existsSync(workflowPath)) {
           const content = fs.readFileSync(workflowPath, 'utf8');
           const workflow = yaml.load(content) as any;
-          
+
           expect(workflow.on.push.branches).toContain(env.branch);
         }
       });
@@ -331,7 +331,7 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
       const envProtections = {
         'deploy-dev.yml': 'development',
         'deploy-beta.yml': 'beta',
-        'deploy-production.yml': 'production'
+        'deploy-production.yml': 'production',
       };
 
       Object.entries(envProtections).forEach(([workflow, environment]) => {
@@ -349,7 +349,12 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
     test('each environment should have unique tagging strategy', () => {
       const devWorkflow = path.join(process.cwd(), '.github', 'workflows', 'deploy-dev.yml');
       const betaWorkflow = path.join(process.cwd(), '.github', 'workflows', 'deploy-beta.yml');
-      const prodWorkflow = path.join(process.cwd(), '.github', 'workflows', 'deploy-production.yml');
+      const prodWorkflow = path.join(
+        process.cwd(),
+        '.github',
+        'workflows',
+        'deploy-production.yml'
+      );
 
       if (fs.existsSync(devWorkflow)) {
         const content = fs.readFileSync(devWorkflow, 'utf8');
@@ -381,11 +386,11 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
 
           // Build should depend on test
           expect(workflow.jobs['build-and-push'].needs).toContain('test');
-          
+
           // Deploy should depend on test and build
           expect(workflow.jobs.deploy.needs).toContain('test');
           expect(workflow.jobs.deploy.needs).toContain('build-and-push');
-          
+
           // Notify should depend on all jobs and run always
           expect(workflow.jobs.notify.needs).toContain('test');
           expect(workflow.jobs.notify.needs).toContain('build-and-push');
@@ -397,7 +402,7 @@ describe('Multi-Environment Consistency and Isolation Tests', () => {
 
     test('semantic release environments should have correct dependency chain', () => {
       const semanticEnvs = ['deploy-beta.yml', 'deploy-production.yml'];
-      
+
       semanticEnvs.forEach(workflow => {
         const workflowPath = path.join(process.cwd(), '.github', 'workflows', workflow);
         if (fs.existsSync(workflowPath)) {

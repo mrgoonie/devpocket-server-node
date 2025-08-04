@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+/* eslint-disable no-console */
 
 /**
  * Test script to verify Kubernetes service fixes
@@ -8,7 +9,6 @@
 import { kubernetesService } from '@/services/kubernetes';
 import { prisma } from '@/config/database';
 import { encryptionService } from '@/utils/encryption';
-import logger from '@/config/logger';
 
 interface TestResult {
   test: string;

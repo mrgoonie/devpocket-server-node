@@ -211,13 +211,13 @@ async function seedMockClusters() {
 
   logger.info(`Created/updated mock clusters: ${defaultCluster.id}, ${stagingCluster.id}`);
 
-  return { 
-    defaultCluster, 
-    stagingCluster, 
-    allClusters: { 
-      [defaultCluster.name]: defaultCluster, 
-      [stagingCluster.name]: stagingCluster 
-    } 
+  return {
+    defaultCluster,
+    stagingCluster,
+    allClusters: {
+      [defaultCluster.name]: defaultCluster,
+      [stagingCluster.name]: stagingCluster,
+    },
   };
 }
 
@@ -237,7 +237,11 @@ async function seedTemplates() {
 
 async function seedUserClusters(
   users: { adminUser: User; demoUser: User; testUser: User },
-  clusters: { defaultCluster?: Cluster | undefined; stagingCluster?: Cluster | undefined; allClusters: Record<string, Cluster> }
+  clusters: {
+    defaultCluster?: Cluster | undefined;
+    stagingCluster?: Cluster | undefined;
+    allClusters: Record<string, Cluster>;
+  }
 ) {
   logger.info('Seeding user-cluster relationships...');
 
@@ -251,24 +255,24 @@ async function seedUserClusters(
         where: {
           userId_clusterId: {
             userId: users.adminUser.id,
-            clusterId: (cluster as Cluster).id,
+            clusterId: cluster.id,
           },
         },
         update: {},
         create: {
           userId: users.adminUser.id,
-          clusterId: (cluster as Cluster).id,
+          clusterId: cluster.id,
           role: 'ADMIN',
         },
       });
 
       logger.debug('Admin access granted to cluster', {
-        clusterId: (cluster as Cluster).id,
-        clusterName: (cluster as Cluster).name,
+        clusterId: cluster.id,
+        clusterName: cluster.name,
       });
     } catch (error) {
       logger.error('Failed to grant admin access to cluster', {
-        clusterId: (cluster as Cluster).id,
+        clusterId: cluster.id,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -329,14 +333,17 @@ async function seedUserClusters(
 async function seedEnvironments(
   users: { adminUser: User; demoUser: User; testUser: User },
   templates: Array<{ id: string; name: string }>,
-  clusters: { defaultCluster?: Cluster | undefined; stagingCluster?: Cluster | undefined; allClusters: Record<string, Cluster> }
+  clusters: {
+    defaultCluster?: Cluster | undefined;
+    stagingCluster?: Cluster | undefined;
+    allClusters: Record<string, Cluster>;
+  }
 ) {
   logger.info('Seeding demo environments...');
 
   // Get the first available cluster
-  const availableCluster = clusters.defaultCluster || 
-                          clusters.stagingCluster || 
-                          Object.values(clusters.allClusters)[0];
+  const availableCluster =
+    clusters.defaultCluster || clusters.stagingCluster || Object.values(clusters.allClusters)[0];
 
   if (!availableCluster) {
     logger.warn('No clusters available for seeding environments');

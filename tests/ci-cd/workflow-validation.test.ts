@@ -1,6 +1,6 @@
 /**
  * GitHub Actions Workflow Validation Tests
- * 
+ *
  * Tests validate:
  * - YAML syntax correctness
  * - Environment-specific configurations
@@ -15,11 +15,7 @@ import * as yaml from 'js-yaml';
 
 describe('GitHub Actions Workflow Validation', () => {
   const workflowsDir = path.join(process.cwd(), '.github', 'workflows');
-  const expectedWorkflows = [
-    'deploy-dev.yml',
-    'deploy-beta.yml', 
-    'deploy-production.yml'
-  ];
+  const expectedWorkflows = ['deploy-dev.yml', 'deploy-beta.yml', 'deploy-production.yml'];
 
   beforeAll(() => {
     expect(fs.existsSync(workflowsDir)).toBe(true);
@@ -39,7 +35,7 @@ describe('GitHub Actions Workflow Validation', () => {
       test(`${workflowFile} should have valid YAML syntax`, () => {
         const workflowPath = path.join(workflowsDir, workflowFile);
         const content = fs.readFileSync(workflowPath, 'utf8');
-        
+
         expect(() => {
           yaml.load(content);
         }).not.toThrow();
@@ -119,9 +115,11 @@ describe('GitHub Actions Workflow Validation', () => {
 
       const buildJob = workflow.jobs['build-and-push'];
       const metaStep = buildJob.steps.find((step: any) => step.id === 'meta');
-      
+
       expect(metaStep.with.tags).toContain('type=raw,value=dev-latest');
-      expect(metaStep.with.tags).toContain('type=raw,value=dev-${{ env.BRANCH_SAFE }}-${{ github.run_number }}-${{ env.SHORT_SHA }}');
+      expect(metaStep.with.tags).toContain(
+        'type=raw,value=dev-${{ env.BRANCH_SAFE }}-${{ github.run_number }}-${{ env.SHORT_SHA }}'
+      );
     });
 
     test('deploy-beta.yml should have correct beta tagging strategy', () => {
@@ -131,10 +129,14 @@ describe('GitHub Actions Workflow Validation', () => {
 
       const buildJob = workflow.jobs['build-and-push'];
       const metaStep = buildJob.steps.find((step: any) => step.id === 'meta');
-      
+
       expect(metaStep.with.tags).toContain('type=raw,value=beta-latest');
-      expect(metaStep.with.tags).toContain('type=raw,value=${{ env.TAG_PREFIX }}${{ env.VERSION }}');
-      expect(metaStep.with.tags).toContain('type=raw,value=beta-${{ github.run_number }}-${{ env.SHORT_SHA }}');
+      expect(metaStep.with.tags).toContain(
+        'type=raw,value=${{ env.TAG_PREFIX }}${{ env.VERSION }}'
+      );
+      expect(metaStep.with.tags).toContain(
+        'type=raw,value=beta-${{ github.run_number }}-${{ env.SHORT_SHA }}'
+      );
     });
 
     test('deploy-production.yml should have correct production tagging strategy', () => {
@@ -144,10 +146,12 @@ describe('GitHub Actions Workflow Validation', () => {
 
       const buildJob = workflow.jobs['build-and-push'];
       const metaStep = buildJob.steps.find((step: any) => step.id === 'meta');
-      
+
       expect(metaStep.with.tags).toContain('type=raw,value=latest,enable={{is_default_branch}}');
       expect(metaStep.with.tags).toContain('type=raw,value=${{ env.SEMANTIC_TAG }}');
-      expect(metaStep.with.tags).toContain('type=raw,value=main-${{ github.run_number }}-${{ env.SHORT_SHA }}');
+      expect(metaStep.with.tags).toContain(
+        'type=raw,value=main-${{ github.run_number }}-${{ env.SHORT_SHA }}'
+      );
     });
   });
 
@@ -159,17 +163,17 @@ describe('GitHub Actions Workflow Validation', () => {
         const workflow = yaml.load(content) as any;
 
         const jobs = workflow.jobs;
-        
+
         // Test job should exist
         expect(jobs.test).toBeDefined();
-        
+
         // Build job should depend on test
         expect(jobs['build-and-push'].needs).toContain('test');
-        
+
         // Deploy job should depend on test and build
         expect(jobs.deploy.needs).toContain('test');
         expect(jobs.deploy.needs).toContain('build-and-push');
-        
+
         // Notify job should depend on all jobs
         expect(jobs.notify.needs).toContain('test');
         expect(jobs.notify.needs).toContain('build-and-push');
@@ -197,7 +201,7 @@ describe('GitHub Actions Workflow Validation', () => {
       const configs = [
         { file: 'deploy-dev.yml', environment: 'development' },
         { file: 'deploy-beta.yml', environment: 'beta' },
-        { file: 'deploy-production.yml', environment: 'production' }
+        { file: 'deploy-production.yml', environment: 'production' },
       ];
 
       configs.forEach(({ file, environment }) => {
@@ -219,7 +223,7 @@ describe('GitHub Actions Workflow Validation', () => {
         // Check for Docker secrets
         expect(content).toContain('secrets.DOCKER_USER');
         expect(content).toContain('secrets.DOCKER_PAT');
-        
+
         // Check for kubeconfig secrets
         if (workflowFile === 'deploy-dev.yml') {
           expect(content).toContain('secrets.KUBECONFIG_DEV');
@@ -255,7 +259,9 @@ describe('GitHub Actions Workflow Validation', () => {
         expect(workflowDispatch.inputs.force_deploy.default).toBe(false);
 
         // Check conditional logic in jobs
-        expect(workflow.jobs['build-and-push'].if).toContain("github.event.inputs.force_deploy == 'true'");
+        expect(workflow.jobs['build-and-push'].if).toContain(
+          "github.event.inputs.force_deploy == 'true'"
+        );
         expect(workflow.jobs.deploy.if).toContain("github.event.inputs.force_deploy == 'true'");
       });
     });
@@ -269,8 +275,13 @@ describe('GitHub Actions Workflow Validation', () => {
         const workflow = yaml.load(content) as any;
 
         const testJob = workflow.jobs.test;
-        const testStep = testJob.steps.find((step: any) => step.name === 'Run tests' || step.name === 'Run full test suite' || step.name === 'Run simplified tests');
-        
+        const testStep = testJob.steps.find(
+          (step: any) =>
+            step.name === 'Run tests' ||
+            step.name === 'Run full test suite' ||
+            step.name === 'Run simplified tests'
+        );
+
         expect(testStep.env.NODE_ENV).toBe('test');
         expect(testStep.env.JWT_SECRET).toBe('test-jwt-secret-key-for-ci');
         expect(testStep.env.GOOGLE_CLIENT_ID).toBe('fake-google-client-id');
@@ -287,7 +298,9 @@ describe('GitHub Actions Workflow Validation', () => {
 
       expect(content).toContain('this is expected for new dev deployments');
       // Check that the smoke test section doesn't exit on failure
-      expect(content).toContain('echo "⚠️ Health check failed - this is expected for new dev deployments"');
+      expect(content).toContain(
+        'echo "⚠️ Health check failed - this is expected for new dev deployments"'
+      );
     });
 
     test('deploy-beta.yml and deploy-production.yml should have strict smoke tests', () => {
@@ -298,7 +311,7 @@ describe('GitHub Actions Workflow Validation', () => {
 
         const deployJob = workflow.jobs.deploy;
         const smokeTestStep = deployJob.steps.find((step: any) => step.name === 'Run smoke tests');
-        
+
         expect(smokeTestStep.run).toContain('exit 1');
       });
     });

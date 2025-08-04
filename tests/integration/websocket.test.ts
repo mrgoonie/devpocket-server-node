@@ -443,7 +443,6 @@ describe('WebSocket API', () => {
     it('should enforce connection limits per user', async () => {
       const connections: WebSocket[] = [];
       const maxConnections = 10;
-      let establishedConnections = 0;
 
       for (let i = 0; i < maxConnections + 5; i++) {
         const ws = new WebSocket(`${wsUrl}/terminal/${testEnvironment.id}?token=${authToken}`);

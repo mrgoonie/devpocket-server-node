@@ -1,6 +1,6 @@
 /**
  * Semantic Release Configuration Tests
- * 
+ *
  * Tests validate:
  * - Branch configuration supports dev/*, beta, main branches
  * - Conventional commits parsing and version calculation
@@ -29,16 +29,16 @@ describe('Semantic Release Configuration Tests', () => {
     });
 
     test('should support beta branch for pre-releases', () => {
-      const betaBranch = releaseConfig.branches.find((branch: any) => 
-        typeof branch === 'object' && branch.name === 'beta'
+      const betaBranch = releaseConfig.branches.find(
+        (branch: any) => typeof branch === 'object' && branch.name === 'beta'
       );
       expect(betaBranch).toBeDefined();
       expect(betaBranch.prerelease).toBe('beta');
     });
 
     test('should support dev/* branches for development pre-releases', () => {
-      const devBranch = releaseConfig.branches.find((branch: any) => 
-        typeof branch === 'object' && branch.name === 'dev/*'
+      const devBranch = releaseConfig.branches.find(
+        (branch: any) => typeof branch === 'object' && branch.name === 'dev/*'
       );
       expect(devBranch).toBeDefined();
       expect(devBranch.prerelease).toBe('dev');
@@ -47,10 +47,10 @@ describe('Semantic Release Configuration Tests', () => {
     test('should have correct branch priority order', () => {
       expect(releaseConfig.branches).toHaveLength(3);
       expect(releaseConfig.branches[0]).toBe('main'); // Main should be first (highest priority)
-      
+
       const betaBranch = releaseConfig.branches[1];
       expect(betaBranch.name).toBe('beta');
-      
+
       const devBranch = releaseConfig.branches[2];
       expect(devBranch.name).toBe('dev/*');
     });
@@ -64,10 +64,10 @@ describe('Semantic Release Configuration Tests', () => {
         '@semantic-release/changelog',
         '@semantic-release/npm',
         '@semantic-release/git',
-        '@semantic-release/github'
+        '@semantic-release/github',
       ];
 
-      const configuredPlugins = releaseConfig.plugins.map((plugin: any) => 
+      const configuredPlugins = releaseConfig.plugins.map((plugin: any) =>
         Array.isArray(plugin) ? plugin[0] : plugin
       );
 
@@ -79,24 +79,24 @@ describe('Semantic Release Configuration Tests', () => {
     test('should have plugins in correct order', () => {
       const pluginOrder = [
         '@semantic-release/commit-analyzer',
-        '@semantic-release/release-notes-generator', 
+        '@semantic-release/release-notes-generator',
         '@semantic-release/changelog',
         '@semantic-release/npm',
         '@semantic-release/git',
-        '@semantic-release/github'
+        '@semantic-release/github',
       ];
 
       pluginOrder.forEach((expectedPlugin, index) => {
-        const actualPlugin = Array.isArray(releaseConfig.plugins[index]) 
-          ? releaseConfig.plugins[index][0] 
+        const actualPlugin = Array.isArray(releaseConfig.plugins[index])
+          ? releaseConfig.plugins[index][0]
           : releaseConfig.plugins[index];
         expect(actualPlugin).toBe(expectedPlugin);
       });
     });
 
     test('should configure git plugin with correct assets', () => {
-      const gitPlugin = releaseConfig.plugins.find((plugin: any) => 
-        Array.isArray(plugin) && plugin[0] === '@semantic-release/git'
+      const gitPlugin = releaseConfig.plugins.find(
+        (plugin: any) => Array.isArray(plugin) && plugin[0] === '@semantic-release/git'
       );
 
       expect(gitPlugin).toBeDefined();
@@ -104,11 +104,13 @@ describe('Semantic Release Configuration Tests', () => {
     });
 
     test('should configure git plugin with proper commit message', () => {
-      const gitPlugin = releaseConfig.plugins.find((plugin: any) => 
-        Array.isArray(plugin) && plugin[0] === '@semantic-release/git'
+      const gitPlugin = releaseConfig.plugins.find(
+        (plugin: any) => Array.isArray(plugin) && plugin[0] === '@semantic-release/git'
       );
 
-      expect(gitPlugin[1].message).toBe('chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}');
+      expect(gitPlugin[1].message).toBe(
+        'chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}'
+      );
     });
   });
 
@@ -118,7 +120,10 @@ describe('Semantic Release Configuration Tests', () => {
     });
 
     test('should configure breaking change keywords', () => {
-      expect(releaseConfig.parserOpts.noteKeywords).toEqual(['BREAKING CHANGE', 'BREAKING CHANGES']);
+      expect(releaseConfig.parserOpts.noteKeywords).toEqual([
+        'BREAKING CHANGE',
+        'BREAKING CHANGES',
+      ]);
     });
 
     test('should configure writer options for commit sorting', () => {
@@ -147,7 +152,7 @@ describe('Semantic Release Configuration Tests', () => {
 
     test('should configure non-release commit types', () => {
       const nonReleaseTypes = ['docs', 'style', 'refactor', 'test', 'chore'];
-      
+
       nonReleaseTypes.forEach(type => {
         const rule = releaseConfig.releaseRules.find((rule: any) => rule.type === type);
         expect(rule).toBeDefined();
@@ -156,7 +161,9 @@ describe('Semantic Release Configuration Tests', () => {
     });
 
     test('should configure no-release scope', () => {
-      const noReleaseRule = releaseConfig.releaseRules.find((rule: any) => rule.scope === 'no-release');
+      const noReleaseRule = releaseConfig.releaseRules.find(
+        (rule: any) => rule.scope === 'no-release'
+      );
       expect(noReleaseRule).toBeDefined();
       expect(noReleaseRule.release).toBe(false);
     });
@@ -171,19 +178,23 @@ describe('Semantic Release Configuration Tests', () => {
         { type: 'refactor', release: false },
         { type: 'test', release: false },
         { type: 'chore', release: false },
-        { scope: 'no-release', release: false }
+        { scope: 'no-release', release: false },
       ];
 
       expect(releaseConfig.releaseRules).toHaveLength(expectedRules.length);
-      
+
       expectedRules.forEach(expectedRule => {
         let actualRule;
         if (expectedRule.type) {
-          actualRule = releaseConfig.releaseRules.find((rule: any) => rule.type === expectedRule.type);
+          actualRule = releaseConfig.releaseRules.find(
+            (rule: any) => rule.type === expectedRule.type
+          );
         } else if (expectedRule.scope) {
-          actualRule = releaseConfig.releaseRules.find((rule: any) => rule.scope === expectedRule.scope);
+          actualRule = releaseConfig.releaseRules.find(
+            (rule: any) => rule.scope === expectedRule.scope
+          );
         }
-        
+
         expect(actualRule).toBeDefined();
         if (actualRule) {
           expect(actualRule.release).toBe(expectedRule.release);
@@ -202,7 +213,7 @@ describe('Semantic Release Configuration Tests', () => {
     test('should have semantic-release script in package.json', () => {
       const packageJsonPath = path.join(process.cwd(), 'package.json');
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-      
+
       expect(packageJson.scripts.release).toBe('semantic-release');
       expect(packageJson.scripts['release:dry']).toBe('semantic-release --dry-run');
     });
@@ -210,7 +221,7 @@ describe('Semantic Release Configuration Tests', () => {
     test('should have semantic-release as devDependency', () => {
       const packageJsonPath = path.join(process.cwd(), 'package.json');
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-      
+
       expect(packageJson.devDependencies['semantic-release']).toBeDefined();
       expect(packageJson.devDependencies['@semantic-release/changelog']).toBeDefined();
       expect(packageJson.devDependencies['@semantic-release/git']).toBeDefined();
@@ -224,13 +235,13 @@ describe('Semantic Release Configuration Tests', () => {
       { type: 'perf', subject: 'improve performance', breaking: false },
       { type: 'docs', subject: 'update docs', breaking: false },
       { type: 'chore', subject: 'update dependencies', breaking: false },
-      { type: 'feat', subject: 'breaking change', breaking: true }
+      { type: 'feat', subject: 'breaking change', breaking: true },
     ];
 
     test('should correctly determine release types for different commits', () => {
       mockCommits.forEach(commit => {
         const rule = releaseConfig.releaseRules.find((rule: any) => rule.type === commit.type);
-        
+
         if (commit.breaking) {
           // Breaking changes should trigger major release (handled by conventional commits preset)
           expect(['feat', 'fix', 'perf']).toContain(commit.type);
@@ -247,19 +258,19 @@ describe('Semantic Release Configuration Tests', () => {
 
   describe('Pre-release Configuration Validation', () => {
     test('should generate correct pre-release versions for beta branch', () => {
-      const betaBranch = releaseConfig.branches.find((branch: any) => 
-        typeof branch === 'object' && branch.name === 'beta'
+      const betaBranch = releaseConfig.branches.find(
+        (branch: any) => typeof branch === 'object' && branch.name === 'beta'
       );
-      
+
       expect(betaBranch.prerelease).toBe('beta');
       // Pre-release versions should follow pattern: 1.0.0-beta.1, 1.0.0-beta.2, etc.
     });
 
     test('should generate correct pre-release versions for dev branches', () => {
-      const devBranch = releaseConfig.branches.find((branch: any) => 
-        typeof branch === 'object' && branch.name === 'dev/*'
+      const devBranch = releaseConfig.branches.find(
+        (branch: any) => typeof branch === 'object' && branch.name === 'dev/*'
       );
-      
+
       expect(devBranch.prerelease).toBe('dev');
       // Pre-release versions should follow pattern: 1.0.0-dev.1, 1.0.0-dev.2, etc.
     });
@@ -267,15 +278,16 @@ describe('Semantic Release Configuration Tests', () => {
 
   describe('Changelog Configuration', () => {
     test('should generate changelog for all release types', () => {
-      const changelogPlugin = releaseConfig.plugins.find((plugin: any) => 
-        (Array.isArray(plugin) ? plugin[0] : plugin) === '@semantic-release/changelog'
+      const changelogPlugin = releaseConfig.plugins.find(
+        (plugin: any) =>
+          (Array.isArray(plugin) ? plugin[0] : plugin) === '@semantic-release/changelog'
       );
       expect(changelogPlugin).toBeDefined();
     });
 
     test('should include changelog in git assets', () => {
-      const gitPlugin = releaseConfig.plugins.find((plugin: any) => 
-        Array.isArray(plugin) && plugin[0] === '@semantic-release/git'
+      const gitPlugin = releaseConfig.plugins.find(
+        (plugin: any) => Array.isArray(plugin) && plugin[0] === '@semantic-release/git'
       );
       expect(gitPlugin[1].assets).toContain('CHANGELOG.md');
     });
@@ -283,8 +295,8 @@ describe('Semantic Release Configuration Tests', () => {
 
   describe('GitHub Integration', () => {
     test('should configure GitHub releases', () => {
-      const githubPlugin = releaseConfig.plugins.find((plugin: any) => 
-        (Array.isArray(plugin) ? plugin[0] : plugin) === '@semantic-release/github'
+      const githubPlugin = releaseConfig.plugins.find(
+        (plugin: any) => (Array.isArray(plugin) ? plugin[0] : plugin) === '@semantic-release/github'
       );
       expect(githubPlugin).toBeDefined();
     });
@@ -292,15 +304,15 @@ describe('Semantic Release Configuration Tests', () => {
 
   describe('NPM Publishing Configuration', () => {
     test('should configure npm publishing', () => {
-      const npmPlugin = releaseConfig.plugins.find((plugin: any) => 
-        (Array.isArray(plugin) ? plugin[0] : plugin) === '@semantic-release/npm'
+      const npmPlugin = releaseConfig.plugins.find(
+        (plugin: any) => (Array.isArray(plugin) ? plugin[0] : plugin) === '@semantic-release/npm'
       );
       expect(npmPlugin).toBeDefined();
     });
 
     test('should update package.json version', () => {
-      const gitPlugin = releaseConfig.plugins.find((plugin: any) => 
-        Array.isArray(plugin) && plugin[0] === '@semantic-release/git'
+      const gitPlugin = releaseConfig.plugins.find(
+        (plugin: any) => Array.isArray(plugin) && plugin[0] === '@semantic-release/git'
       );
       expect(gitPlugin[1].assets).toContain('package.json');
       expect(gitPlugin[1].assets).toContain('pnpm-lock.yaml');
@@ -309,7 +321,9 @@ describe('Semantic Release Configuration Tests', () => {
 
   describe('Error Handling and Edge Cases', () => {
     test('should handle commits with no-release scope', () => {
-      const noReleaseRule = releaseConfig.releaseRules.find((rule: any) => rule.scope === 'no-release');
+      const noReleaseRule = releaseConfig.releaseRules.find(
+        (rule: any) => rule.scope === 'no-release'
+      );
       expect(noReleaseRule.release).toBe(false);
     });
 
@@ -320,7 +334,14 @@ describe('Semantic Release Configuration Tests', () => {
     });
 
     test('should have all required fields', () => {
-      const requiredFields = ['branches', 'plugins', 'preset', 'parserOpts', 'writerOpts', 'releaseRules'];
+      const requiredFields = [
+        'branches',
+        'plugins',
+        'preset',
+        'parserOpts',
+        'writerOpts',
+        'releaseRules',
+      ];
       requiredFields.forEach(field => {
         expect(releaseConfig[field]).toBeDefined();
       });

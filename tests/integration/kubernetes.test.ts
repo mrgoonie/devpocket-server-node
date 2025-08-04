@@ -7,7 +7,7 @@ jest.mock('@kubernetes/client-node', () => {
     loadFromString: jest.fn(),
     makeApiClient: jest.fn().mockReturnValue({}),
   };
-  
+
   return {
     KubeConfig: jest.fn().mockImplementation(() => mockKubeConfig),
     CoreV1Api: jest.fn(),

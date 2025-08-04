@@ -34,7 +34,7 @@ function validateTemplate(template: unknown): template is TemplateDefinition {
   }
 
   const templateObj = template as Record<string, unknown>;
-  
+
   const required = [
     'name',
     'displayName',
@@ -81,7 +81,8 @@ function validateTemplate(template: unknown): template is TemplateDefinition {
   if (typeof templateObj.version !== 'string') throw new Error('version must be a string');
 
   if (!Array.isArray(templateObj.tags)) throw new Error('tags must be an array');
-  if (!Array.isArray(templateObj.startupCommands)) throw new Error('startupCommands must be an array');
+  if (!Array.isArray(templateObj.startupCommands))
+    throw new Error('startupCommands must be an array');
 
   if (typeof templateObj.environmentVariables !== 'object') {
     throw new Error('environmentVariables must be an object');

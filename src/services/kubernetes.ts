@@ -64,11 +64,11 @@ class KubernetesService {
       const tokenPath = '/var/run/secrets/kubernetes.io/serviceaccount/token';
       const namespacePath = '/var/run/secrets/kubernetes.io/serviceaccount/namespace';
       const caCertPath = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt';
-      
+
       return fs.existsSync(tokenPath) && fs.existsSync(namespacePath) && fs.existsSync(caCertPath);
     } catch (error) {
       logger.debug('Error checking in-cluster environment', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       return false;
     }
@@ -102,7 +102,7 @@ class KubernetesService {
               message: inClusterError instanceof Error ? inClusterError.message : 'Unknown error',
             },
           });
-          
+
           // Fall back to external kubeconfig
           await this.loadExternalKubeconfig(kc, clusterId);
           authMethod = 'external-kubeconfig';
@@ -143,10 +143,10 @@ class KubernetesService {
       this.clients.set(clusterId, client);
       this.kubeConfigs.set(clusterId, kc);
 
-      logger.info('Kubernetes client initialized with hybrid authentication', { 
-        clusterId, 
+      logger.info('Kubernetes client initialized with hybrid authentication', {
+        clusterId,
         authMethod,
-        sslVerificationEnabled: true
+        sslVerificationEnabled: true,
       });
       return client;
     } catch (error) {
@@ -246,7 +246,7 @@ class KubernetesService {
       // This method exists to explicitly document that SSL verification is enabled and provide a place
       // for any additional SSL configuration if needed in the future
       logger.debug('SSL verification enabled for Kubernetes API client', {
-        clientType: client.constructor.name
+        clientType: client.constructor.name,
       });
     });
   }

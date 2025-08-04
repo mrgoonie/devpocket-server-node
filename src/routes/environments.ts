@@ -430,7 +430,11 @@ router.get(
       status: { notIn: ['TERMINATED'] }, // Don't show terminated environments by default
     };
 
-    if (status && typeof status === 'string' && Object.values(EnvironmentStatus).includes(status as EnvironmentStatus)) {
+    if (
+      status &&
+      typeof status === 'string' &&
+      Object.values(EnvironmentStatus).includes(status as EnvironmentStatus)
+    ) {
       where.status = status as EnvironmentStatus;
     }
 
