@@ -171,6 +171,12 @@ run_test_category() {
     fi
     
     local test_file="tests/ci-cd/${category}.test.ts"
+    
+    # Handle file name mappings
+    case $category in
+        "kubernetes-manifest") test_file="tests/ci-cd/kubernetes-manifest-validation.test.ts" ;;
+        "semantic-release") test_file="tests/ci-cd/semantic-release-config.test.ts" ;;
+    esac
     if [[ ! -f "$test_file" ]]; then
         warn "Test file not found: $test_file"
         return 1
