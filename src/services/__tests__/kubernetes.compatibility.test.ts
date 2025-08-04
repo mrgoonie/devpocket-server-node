@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { jest, describe, beforeEach, it, expect } from '@jest/globals';
 import { KubeConfig } from '@kubernetes/client-node';
 import { prisma } from '@/config/database';
@@ -24,7 +28,7 @@ describe('KubernetesService - Backward Compatibility Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     kubernetesService = new (KubernetesService as any)();
-    
+
     // Mock running outside cluster by default
     jest.spyOn(kubernetesService as any, 'isRunningInCluster').mockReturnValue(false);
   });
@@ -55,11 +59,11 @@ users:
         id: 'legacy-cluster-id',
         name: 'legacy-cluster',
         kubeconfig: legacyKubeconfig, // Plain text, not encrypted
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
 
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
-      
+
       // Mock decryption failure (indicates plain text)
       mockEncryptionService.decrypt.mockImplementation(() => {
         throw new Error('Unable to decrypt - not encrypted');
@@ -72,12 +76,15 @@ users:
         loadFromString: jest.fn(),
         getContexts: jest.fn().mockReturnValue([{ name: 'legacy-context' }]),
         getCurrentContext: jest.fn().mockReturnValue('legacy-context'),
-        makeApiClient: jest.fn().mockReturnValue({})
+        makeApiClient: jest.fn().mockReturnValue({}),
       } as any;
 
       mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
 
-      await kubernetesService['loadExternalKubeconfig'](mockKubeConfigInstance, 'legacy-cluster-id');
+      await kubernetesService['loadExternalKubeconfig'](
+        mockKubeConfigInstance,
+        'legacy-cluster-id'
+      );
 
       expect(mockEncryptionService.decrypt).toHaveBeenCalledWith(legacyKubeconfig);
       expect(mockKubeConfigInstance.loadFromString).toHaveBeenCalledWith(legacyKubeconfig);
@@ -108,7 +115,7 @@ users:
         id: 'cert-cluster-id',
         name: 'cert-cluster',
         kubeconfig: clientCertKubeconfig,
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
 
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
@@ -118,7 +125,7 @@ users:
         loadFromString: jest.fn(),
         getContexts: jest.fn().mockReturnValue([{ name: 'cert-context' }]),
         getCurrentContext: jest.fn().mockReturnValue('cert-context'),
-        makeApiClient: jest.fn().mockReturnValue({})
+        makeApiClient: jest.fn().mockReturnValue({}),
       } as any;
 
       mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
@@ -153,7 +160,7 @@ users:
         id: 'basic-cluster-id',
         name: 'basic-cluster',
         kubeconfig: basicAuthKubeconfig,
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
 
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
@@ -166,7 +173,7 @@ users:
         loadFromString: jest.fn(),
         getContexts: jest.fn().mockReturnValue([{ name: 'basic-context' }]),
         getCurrentContext: jest.fn().mockReturnValue('basic-context'),
-        makeApiClient: jest.fn().mockReturnValue({})
+        makeApiClient: jest.fn().mockReturnValue({}),
       } as any;
 
       mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
@@ -183,7 +190,7 @@ users:
         loadFromString: jest.fn(),
         getContexts: jest.fn().mockReturnValue([{ name: 'test-context' }]),
         getCurrentContext: jest.fn().mockReturnValue('test-context'),
-        makeApiClient: jest.fn()
+        makeApiClient: jest.fn(),
       } as any;
 
       const mockCoreV1Api = { constructor: { name: 'CoreV1Api' } };
@@ -200,7 +207,7 @@ users:
         id: 'test-cluster',
         name: 'test-cluster',
         kubeconfig: 'test-config',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
 
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
@@ -213,7 +220,7 @@ users:
       expect(client).toHaveProperty('coreV1Api');
       expect(client).toHaveProperty('appsV1Api');
       expect(client).toHaveProperty('batchV1Api');
-      
+
       // Interface should be compatible with existing code
       expect(client.coreV1Api).toBe(mockCoreV1Api);
       expect(client.appsV1Api).toBe(mockAppsV1Api);
@@ -223,21 +230,21 @@ users:
     it('should support existing method signatures', async () => {
       // Verify that existing method signatures are preserved
       expect(typeof kubernetesService['getKubernetesClient']).toBe('function');
-      
+
       // Should accept string cluster ID parameter
       const clusterId = 'test-cluster-id';
       expect(typeof clusterId).toBe('string');
-      
+
       // Should return Promise<KubernetesClient>
       const mockClient = {
         coreV1Api: {},
         appsV1Api: {},
-        batchV1Api: {}
+        batchV1Api: {},
       };
 
       // Mock the method to verify signature compatibility
       jest.spyOn(kubernetesService as any, 'getKubernetesClient').mockResolvedValue(mockClient);
-      
+
       const result = await kubernetesService['getKubernetesClient'](clusterId);
       expect(result).toBe(mockClient);
     });
@@ -250,11 +257,11 @@ users:
         loadFromString: jest.fn(),
         getContexts: jest.fn().mockReturnValue([{ name: 'test-context' }]),
         getCurrentContext: jest.fn().mockReturnValue('test-context'),
-        makeApiClient: jest.fn().mockReturnValue({ 
+        makeApiClient: jest.fn().mockReturnValue({
           constructor: { name: 'CoreV1Api' },
           // Old configuration might have had SSL disabled
-          requestOptions: { strictSSL: false }
-        })
+          requestOptions: { strictSSL: false },
+        }),
       } as any;
 
       mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
@@ -263,7 +270,7 @@ users:
         id: 'test-cluster',
         name: 'test-cluster',
         kubeconfig: 'test-config',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
 
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
@@ -280,16 +287,16 @@ users:
 
     it('should handle clusters without encryption gracefully', async () => {
       const plainTextKubeconfig = 'apiVersion: v1\nclusters: []\ncontexts: []\nusers: []';
-      
+
       const mockCluster = {
         id: 'plain-cluster',
         name: 'plain-cluster',
         kubeconfig: plainTextKubeconfig,
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
 
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
-      
+
       // Simulate decryption failure for plain text config
       mockEncryptionService.decrypt.mockImplementation(() => {
         throw new Error('Not encrypted');
@@ -301,7 +308,7 @@ users:
         loadFromString: jest.fn(),
         getContexts: jest.fn().mockReturnValue([{ name: 'test-context' }]),
         getCurrentContext: jest.fn().mockReturnValue('test-context'),
-        makeApiClient: jest.fn().mockReturnValue({})
+        makeApiClient: jest.fn().mockReturnValue({}),
       } as any;
 
       mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
@@ -329,17 +336,17 @@ users:
 
     it('should handle invalid kubeconfig format consistently', async () => {
       const invalidKubeconfig = 'invalid yaml content {[}';
-      
+
       const mockCluster = {
         id: 'invalid-cluster',
         name: 'invalid-cluster',
         kubeconfig: invalidKubeconfig,
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
 
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
       mockEncryptionService.decrypt.mockReturnValue(invalidKubeconfig);
-      
+
       // Mock validation failure
       jest.spyOn(kubernetesService as any, 'validateKubeconfigFormat').mockReturnValue(false);
 
@@ -360,7 +367,7 @@ users:
         id: 'existing-cluster',
         name: 'existing-cluster',
         kubeconfig: 'existing-config',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
 
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
@@ -371,7 +378,7 @@ users:
         loadFromString: jest.fn(),
         getContexts: jest.fn().mockReturnValue([{ name: 'existing-context' }]),
         getCurrentContext: jest.fn().mockReturnValue('existing-context'),
-        makeApiClient: jest.fn().mockReturnValue({})
+        makeApiClient: jest.fn().mockReturnValue({}),
       } as any;
 
       mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
@@ -391,7 +398,7 @@ users:
         id: clusterId,
         name: clusterId,
         kubeconfig: 'cached-config',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
 
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
@@ -402,14 +409,14 @@ users:
         loadFromString: jest.fn(),
         getContexts: jest.fn().mockReturnValue([{ name: 'cached-context' }]),
         getCurrentContext: jest.fn().mockReturnValue('cached-context'),
-        makeApiClient: jest.fn().mockReturnValue({})
+        makeApiClient: jest.fn().mockReturnValue({}),
       } as any;
 
       mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
 
       // First call should create client
       const client1 = await kubernetesService['getKubernetesClient'](clusterId);
-      
+
       // Second call should return cached client
       const client2 = await kubernetesService['getKubernetesClient'](clusterId);
 
@@ -422,19 +429,19 @@ users:
     it('should work with existing cluster table structure', async () => {
       // Verify that the service works with the expected database schema
       const expectedClusterFields = ['id', 'name', 'kubeconfig', 'status'];
-      
+
       const mockCluster = {
         id: 'schema-test-cluster',
         name: 'schema-test-cluster',
         kubeconfig: 'schema-test-config',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
 
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
 
       // Verify that only expected fields are requested
       expect(mockPrisma.cluster.findUnique).toBeDefined();
-      
+
       // The service should work with standard cluster schema
       expectedClusterFields.forEach(field => {
         expect(mockCluster).toHaveProperty(field);
@@ -443,13 +450,13 @@ users:
 
     it('should handle cluster status enum values correctly', async () => {
       const statusValues = ['ACTIVE', 'INACTIVE', 'MAINTENANCE'];
-      
+
       for (const status of statusValues) {
         const mockCluster = {
           id: `cluster-${status.toLowerCase()}`,
           name: `cluster-${status.toLowerCase()}`,
           kubeconfig: 'test-config',
-          status: status
+          status: status,
         };
 
         mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
@@ -463,7 +470,7 @@ users:
             loadFromString: jest.fn(),
             getContexts: jest.fn().mockReturnValue([{ name: 'test' }]),
             getCurrentContext: jest.fn().mockReturnValue('test'),
-            makeApiClient: jest.fn().mockReturnValue({})
+            makeApiClient: jest.fn().mockReturnValue({}),
           } as any;
 
           mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
@@ -482,4 +489,4 @@ users:
     });
   });
 });
-EOF < /dev/null
+EOF < /dev/llnu;

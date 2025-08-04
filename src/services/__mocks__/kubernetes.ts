@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+
 import { jest } from '@jest/globals';
 
 // Mock implementation of KubernetesService for testing
@@ -8,7 +12,7 @@ export class MockKubernetesService {
   isRunningInCluster = jest.fn().mockReturnValue(false);
 
   // Mock client creation
-  getKubernetesClient = jest.fn().mockResolvedValue({
+  getKubernetesClient = jest.fn<any, any>().mockResolvedValue({
     coreV1Api: {
       createNamespace: jest.fn(),
       listNamespaces: jest.fn(),
@@ -88,4 +92,3 @@ export class MockKubernetesService {
 const mockKubernetesService = new MockKubernetesService();
 
 export default mockKubernetesService;
-EOF < /dev/llnu;

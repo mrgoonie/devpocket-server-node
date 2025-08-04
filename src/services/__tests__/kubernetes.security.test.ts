@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { jest, describe, beforeEach, it, expect } from '@jest/globals';
 import { KubeConfig } from '@kubernetes/client-node';
 import * as fs from 'fs';
@@ -27,29 +31,29 @@ describe('KubernetesService - Security Tests', () => {
     it('should enforce SSL verification for all API clients', async () => {
       // Mock in-cluster environment
       mockFs.existsSync.mockReturnValue(true);
-      
+
       const mockKubeConfigInstance = {
         loadFromCluster: jest.fn(),
         getContexts: jest.fn().mockReturnValue([{ name: 'test-context' }]),
         getCurrentContext: jest.fn().mockReturnValue('test-context'),
-        makeApiClient: jest.fn()
+        makeApiClient: jest.fn(),
       } as any;
 
       // Mock API clients
-      const mockCoreV1Api = { 
+      const mockCoreV1Api = {
         constructor: { name: 'CoreV1Api' },
         basePath: 'https://kubernetes.default.svc',
         authentications: {
-          BearerToken: { apiKey: 'mock-token' }
-        }
+          BearerToken: { apiKey: 'mock-token' },
+        },
       };
-      const mockAppsV1Api = { 
+      const mockAppsV1Api = {
         constructor: { name: 'AppsV1Api' },
-        basePath: 'https://kubernetes.default.svc'
+        basePath: 'https://kubernetes.default.svc',
       };
-      const mockBatchV1Api = { 
+      const mockBatchV1Api = {
         constructor: { name: 'BatchV1Api' },
-        basePath: 'https://kubernetes.default.svc'
+        basePath: 'https://kubernetes.default.svc',
       };
 
       mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
@@ -64,26 +68,22 @@ describe('KubernetesService - Security Tests', () => {
       await kubernetesService['getKubernetesClient']('test-cluster');
 
       // Verify SSL configuration was called with all clients
-      expect(configureSSLSpy).toHaveBeenCalledWith([
-        mockCoreV1Api,
-        mockAppsV1Api,
-        mockBatchV1Api
-      ]);
+      expect(configureSSLSpy).toHaveBeenCalledWith([mockCoreV1Api, mockAppsV1Api, mockBatchV1Api]);
     });
 
     it('should verify HTTPS endpoints are used', async () => {
       mockFs.existsSync.mockReturnValue(true);
-      
+
       const mockKubeConfigInstance = {
         loadFromCluster: jest.fn(),
         getContexts: jest.fn().mockReturnValue([{ name: 'test-context' }]),
         getCurrentContext: jest.fn().mockReturnValue('test-context'),
-        makeApiClient: jest.fn()
+        makeApiClient: jest.fn(),
       } as any;
 
-      const mockCoreV1Api = { 
+      const mockCoreV1Api = {
         constructor: { name: 'CoreV1Api' },
-        basePath: 'https://kubernetes.default.svc'  // Ensure HTTPS
+        basePath: 'https://kubernetes.default.svc', // Ensure HTTPS
       };
 
       mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
@@ -115,10 +115,10 @@ users:
 `;
 
       const isValid = kubernetesService['validateKubeconfigFormat'](insecureConfig);
-      
+
       // Should validate format but warn about insecure connection
       expect(isValid).toBe(true);
-      
+
       // In a real implementation, you might want to add additional validation
       // to reject HTTP endpoints in production
       expect(insecureConfig).toContain('http://');
@@ -129,33 +129,41 @@ users:
     it('should properly detect and use service account tokens', () => {
       // Mock service account files exist
       mockFs.existsSync
-        .mockReturnValueOnce(true)  // token file
-        .mockReturnValueOnce(true)  // namespace file  
+        .mockReturnValueOnce(true) // token file
+        .mockReturnValueOnce(true) // namespace file
         .mockReturnValueOnce(true); // ca cert file
 
       const result = kubernetesService['isRunningInCluster']();
-      
+
       expect(result).toBe(true);
-      
+
       // Verify it checks for all required service account files
-      expect(mockFs.existsSync).toHaveBeenCalledWith('/var/run/secrets/kubernetes.io/serviceaccount/token');
-      expect(mockFs.existsSync).toHaveBeenCalledWith('/var/run/secrets/kubernetes.io/serviceaccount/namespace');
-      expect(mockFs.existsSync).toHaveBeenCalledWith('/var/run/secrets/kubernetes.io/serviceaccount/ca.crt');
+      expect(mockFs.existsSync).toHaveBeenCalledWith(
+        '/var/run/secrets/kubernetes.io/serviceaccount/token'
+      );
+      expect(mockFs.existsSync).toHaveBeenCalledWith(
+        '/var/run/secrets/kubernetes.io/serviceaccount/namespace'
+      );
+      expect(mockFs.existsSync).toHaveBeenCalledWith(
+        '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+      );
     });
 
     it('should handle missing service account files securely', () => {
       // Mock missing token file (security risk)
       mockFs.existsSync
         .mockReturnValueOnce(false) // token file missing
-        .mockReturnValueOnce(true)  // namespace file exists
+        .mockReturnValueOnce(true) // namespace file exists
         .mockReturnValueOnce(true); // ca cert exists
 
       const result = kubernetesService['isRunningInCluster']();
-      
+
       expect(result).toBe(false);
-      
+
       // Should not proceed with in-cluster auth if token is missing
-      expect(mockFs.existsSync).toHaveBeenCalledWith('/var/run/secrets/kubernetes.io/serviceaccount/token');
+      expect(mockFs.existsSync).toHaveBeenCalledWith(
+        '/var/run/secrets/kubernetes.io/serviceaccount/token'
+      );
     });
 
     it('should handle service account file access errors securely', () => {
@@ -165,9 +173,9 @@ users:
       });
 
       const result = kubernetesService['isRunningInCluster']();
-      
+
       expect(result).toBe(false);
-      
+
       // Should fail safely when unable to access service account files
     });
   });
@@ -207,21 +215,22 @@ exec: |
 `;
 
       const result = kubernetesService['validateKubeconfigFormat'](maliciousKubeconfig);
-      
+
       // Should reject malformed configs
       expect(result).toBe(false);
     });
 
     it('should sanitize error messages to prevent information disclosure', () => {
-      const sensitiveError = 'Authentication failed: token abc123xyz789 is invalid for cluster internal-prod-cluster at https://internal.k8s.company.com';
-      
+      const sensitiveError =
+        'Authentication failed: token abc123xyz789 is invalid for cluster internal-prod-cluster at https://internal.k8s.company.com';
+
       const sanitizedMessage = kubernetesService['sanitizeErrorMessage'](sensitiveError);
-      
+
       // Should not contain sensitive information
       expect(sanitizedMessage).not.toContain('abc123xyz789');
       expect(sanitizedMessage).not.toContain('internal.k8s.company.com');
       expect(sanitizedMessage).not.toContain('internal-prod-cluster');
-      
+
       // Should still be useful for debugging
       expect(sanitizedMessage).toContain('Authentication failed');
     });
@@ -230,14 +239,14 @@ exec: |
   describe('Authentication Method Security', () => {
     it('should log authentication method for security auditing', async () => {
       const loggerSpy = jest.spyOn(console, 'log').mockImplementation();
-      
+
       mockFs.existsSync.mockReturnValue(true);
-      
+
       const mockKubeConfigInstance = {
         loadFromCluster: jest.fn(),
         getContexts: jest.fn().mockReturnValue([{ name: 'test-context' }]),
         getCurrentContext: jest.fn().mockReturnValue('test-context'),
-        makeApiClient: jest.fn().mockReturnValue({})
+        makeApiClient: jest.fn().mockReturnValue({}),
       } as any;
 
       mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
@@ -252,12 +261,12 @@ exec: |
     it('should prevent authentication method downgrade attacks', async () => {
       // Mock in-cluster environment
       jest.spyOn(kubernetesService as any, 'isRunningInCluster').mockReturnValue(true);
-      
+
       const mockKubeConfigInstance = {
         loadFromCluster: jest.fn(),
         getContexts: jest.fn().mockReturnValue([{ name: 'test-context' }]),
         getCurrentContext: jest.fn().mockReturnValue('test-context'),
-        makeApiClient: jest.fn().mockReturnValue({})
+        makeApiClient: jest.fn().mockReturnValue({}),
       } as any;
 
       mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
@@ -272,7 +281,7 @@ exec: |
   describe('Cluster Access Control', () => {
     it('should validate cluster status before authentication', async () => {
       jest.spyOn(kubernetesService as any, 'isRunningInCluster').mockReturnValue(false);
-      
+
       // Mock inactive cluster
       const mockPrisma = {
         cluster: {
@@ -280,13 +289,13 @@ exec: |
             id: 'test-cluster',
             name: 'test-cluster',
             kubeconfig: 'config-data',
-            status: 'INACTIVE'  // Should reject inactive clusters
-          })
-        }
+            status: 'INACTIVE', // Should reject inactive clusters
+          }),
+        },
       };
 
       jest.doMock('@/config/database', () => ({
-        prisma: mockPrisma
+        prisma: mockPrisma,
       }));
 
       const mockKubeConfigInstance = {} as any;
@@ -298,15 +307,15 @@ exec: |
 
     it('should handle missing cluster securely', async () => {
       jest.spyOn(kubernetesService as any, 'isRunningInCluster').mockReturnValue(false);
-      
+
       const mockPrisma = {
         cluster: {
-          findUnique: jest.fn().mockResolvedValue(null)  // Cluster not found
-        }
+          findUnique: jest.fn().mockResolvedValue(null), // Cluster not found
+        },
       };
 
       jest.doMock('@/config/database', () => ({
-        prisma: mockPrisma
+        prisma: mockPrisma,
       }));
 
       const mockKubeConfigInstance = {} as any;
@@ -321,10 +330,10 @@ exec: |
     it('should enforce namespace isolation', () => {
       // This test would verify that operations are properly scoped to namespaces
       // and don't accidentally access resources from other namespaces
-      
+
       const environmentId = 'user123-env456';
       const expectedNamespace = `devpocket-${environmentId}`;
-      
+
       // In a real implementation, verify that all operations use the correct namespace
       expect(expectedNamespace).toMatch(/^devpocket-user123-env456$/);
     });
@@ -332,7 +341,7 @@ exec: |
     it('should validate resource names to prevent injection', () => {
       const maliciousName = '../../../etc/passwd';
       const safeName = 'my-environment-123';
-      
+
       // Resource names should be validated
       expect(maliciousName).toContain('../');
       expect(safeName).toMatch(/^[a-z0-9-]+$/);
@@ -341,10 +350,12 @@ exec: |
 
   describe('Error Handling Security', () => {
     it('should not leak sensitive information in error messages', () => {
-      const sensitiveError = new Error('Failed to connect to https://internal-k8s.company.com:6443 with token sk-abc123xyz789');
-      
+      const sensitiveError = new Error(
+        'Failed to connect to https://internal-k8s.company.com:6443 with token sk-abc123xyz789'
+      );
+
       const sanitized = kubernetesService['sanitizeErrorMessage'](sensitiveError.message);
-      
+
       expect(sanitized).not.toContain('internal-k8s.company.com');
       expect(sanitized).not.toContain('sk-abc123xyz789');
       expect(sanitized).toContain('Failed to connect');
@@ -352,12 +363,12 @@ exec: |
 
     it('should handle authentication failures without exposing credentials', () => {
       const authError = new Error('Invalid token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...');
-      
+
       const sanitized = kubernetesService['sanitizeErrorMessage'](authError.message);
-      
+
       expect(sanitized).not.toContain('eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9');
       expect(sanitized).toContain('Invalid token');
     });
   });
 });
-EOF < /dev/null
+EOF < /dev/llnu;

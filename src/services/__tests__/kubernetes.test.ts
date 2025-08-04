@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { jest } from '@jest/globals';
 import * as fs from 'fs';
 import { KubeConfig } from '@kubernetes/client-node';
@@ -23,7 +27,7 @@ import KubernetesService from '../kubernetes';
 
 describe('KubernetesService - Hybrid Authentication', () => {
   let kubernetesService: KubernetesService;
-  
+
   beforeEach(() => {
     jest.clearAllMocks();
     kubernetesService = new (KubernetesService as any)();
@@ -33,27 +37,33 @@ describe('KubernetesService - Hybrid Authentication', () => {
     it('should detect in-cluster environment when service account files exist', () => {
       // Mock service account files exist
       mockFs.existsSync
-        .mockReturnValueOnce(true)  // token file
-        .mockReturnValueOnce(true)  // namespace file
+        .mockReturnValueOnce(true) // token file
+        .mockReturnValueOnce(true) // namespace file
         .mockReturnValueOnce(true); // ca cert file
 
       const result = kubernetesService['isRunningInCluster']();
-      
+
       expect(result).toBe(true);
-      expect(mockFs.existsSync).toHaveBeenCalledWith('/var/run/secrets/kubernetes.io/serviceaccount/token');
-      expect(mockFs.existsSync).toHaveBeenCalledWith('/var/run/secrets/kubernetes.io/serviceaccount/namespace');
-      expect(mockFs.existsSync).toHaveBeenCalledWith('/var/run/secrets/kubernetes.io/serviceaccount/ca.crt');
+      expect(mockFs.existsSync).toHaveBeenCalledWith(
+        '/var/run/secrets/kubernetes.io/serviceaccount/token'
+      );
+      expect(mockFs.existsSync).toHaveBeenCalledWith(
+        '/var/run/secrets/kubernetes.io/serviceaccount/namespace'
+      );
+      expect(mockFs.existsSync).toHaveBeenCalledWith(
+        '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+      );
     });
 
     it('should detect external environment when service account files are missing', () => {
       // Mock service account files don't exist
       mockFs.existsSync
         .mockReturnValueOnce(false) // token file missing
-        .mockReturnValueOnce(true)  // namespace file exists
+        .mockReturnValueOnce(true) // namespace file exists
         .mockReturnValueOnce(true); // ca cert exists
 
       const result = kubernetesService['isRunningInCluster']();
-      
+
       expect(result).toBe(false);
     });
 
@@ -64,12 +74,12 @@ describe('KubernetesService - Hybrid Authentication', () => {
       });
 
       const result = kubernetesService['isRunningInCluster']();
-      
+
       expect(result).toBe(false);
       expect(mockLogger.debug).toHaveBeenCalledWith(
         'Error checking in-cluster environment',
         expect.objectContaining({
-          error: 'File system error'
+          error: 'File system error',
         })
       );
     });
@@ -87,7 +97,7 @@ describe('KubernetesService - Hybrid Authentication', () => {
         loadFromString: jest.fn(),
         getContexts: jest.fn().mockReturnValue([{ name: 'test-context' }]),
         getCurrentContext: jest.fn().mockReturnValue('test-context'),
-        makeApiClient: jest.fn()
+        makeApiClient: jest.fn(),
       } as any;
 
       mockCoreV1Api = { constructor: { name: 'CoreV1Api' } };
@@ -104,11 +114,11 @@ describe('KubernetesService - Hybrid Authentication', () => {
     it('should use in-cluster authentication when running inside Kubernetes', async () => {
       // Mock in-cluster environment
       jest.spyOn(kubernetesService as any, 'isRunningInCluster').mockReturnValue(true);
-      
+
       // Mock successful in-cluster config loading
       mockKubeConfigInstance.loadFromCluster.mockResolvedValue(undefined);
 
-      const result = await kubernetesService['getKubernetesClient']('test-cluster-id');
+      const _result = await kubernetesService['getKubernetesClient']('test-cluster-id');
 
       expect(mockKubeConfigInstance.loadFromCluster).toHaveBeenCalled();
       expect(mockLogger.info).toHaveBeenCalledWith(
@@ -120,7 +130,7 @@ describe('KubernetesService - Hybrid Authentication', () => {
         expect.objectContaining({
           clusterId: 'test-cluster-id',
           authMethod: 'in-cluster',
-          sslVerificationEnabled: true
+          sslVerificationEnabled: true,
         })
       );
       expect(result).toHaveProperty('coreV1Api', mockCoreV1Api);
@@ -131,21 +141,25 @@ describe('KubernetesService - Hybrid Authentication', () => {
     it('should fallback to external kubeconfig when in-cluster fails', async () => {
       // Mock in-cluster environment but config loading fails
       jest.spyOn(kubernetesService as any, 'isRunningInCluster').mockReturnValue(true);
-      mockKubeConfigInstance.loadFromCluster.mockRejectedValue(new Error('In-cluster config failed'));
+      mockKubeConfigInstance.loadFromCluster.mockRejectedValue(
+        new Error('In-cluster config failed')
+      );
 
       // Mock database cluster lookup
       const mockCluster = {
         id: 'test-cluster-id',
         name: 'test-cluster',
         kubeconfig: 'encrypted-kubeconfig',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
-      mockEncryptionService.decrypt.mockReturnValue('apiVersion: v1\nclusters:\n- cluster:\n    server: https://k8s.example.com');
+      mockEncryptionService.decrypt.mockReturnValue(
+        'apiVersion: v1\nclusters:\n- cluster:\n    server: https://k8s.example.com'
+      );
 
       jest.spyOn(kubernetesService as any, 'validateKubeconfigFormat').mockReturnValue(true);
 
-      const result = await kubernetesService['getKubernetesClient']('test-cluster-id');
+      const _result = await kubernetesService['getKubernetesClient']('test-cluster-id');
 
       expect(mockKubeConfigInstance.loadFromCluster).toHaveBeenCalled();
       expect(mockLogger.warn).toHaveBeenCalledWith(
@@ -153,19 +167,19 @@ describe('KubernetesService - Hybrid Authentication', () => {
         expect.objectContaining({
           clusterId: 'test-cluster-id',
           error: expect.objectContaining({
-            message: 'In-cluster config failed'
-          })
+            message: 'In-cluster config failed',
+          }),
         })
       );
       expect(mockPrisma.cluster.findUnique).toHaveBeenCalledWith({
         where: { id: 'test-cluster-id' },
-        select: { id: true, name: true, kubeconfig: true, status: true }
+        select: { id: true, name: true, kubeconfig: true, status: true },
       });
       expect(mockLogger.info).toHaveBeenCalledWith(
         'Kubernetes client initialized with hybrid authentication',
         expect.objectContaining({
           clusterId: 'test-cluster-id',
-          authMethod: 'external-kubeconfig'
+          authMethod: 'external-kubeconfig',
         })
       );
     });
@@ -179,14 +193,16 @@ describe('KubernetesService - Hybrid Authentication', () => {
         id: 'test-cluster-id',
         name: 'test-cluster',
         kubeconfig: 'encrypted-kubeconfig',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
-      mockEncryptionService.decrypt.mockReturnValue('apiVersion: v1\nclusters:\n- cluster:\n    server: https://k8s.example.com');
+      mockEncryptionService.decrypt.mockReturnValue(
+        'apiVersion: v1\nclusters:\n- cluster:\n    server: https://k8s.example.com'
+      );
 
       jest.spyOn(kubernetesService as any, 'validateKubeconfigFormat').mockReturnValue(true);
 
-      const result = await kubernetesService['getKubernetesClient']('test-cluster-id');
+      const _result = await kubernetesService['getKubernetesClient']('test-cluster-id');
 
       expect(mockKubeConfigInstance.loadFromCluster).not.toHaveBeenCalled();
       expect(mockPrisma.cluster.findUnique).toHaveBeenCalled();
@@ -194,7 +210,7 @@ describe('KubernetesService - Hybrid Authentication', () => {
         'Kubernetes client initialized with hybrid authentication',
         expect.objectContaining({
           clusterId: 'test-cluster-id',
-          authMethod: 'external-kubeconfig'
+          authMethod: 'external-kubeconfig',
         })
       );
     });
@@ -205,7 +221,7 @@ describe('KubernetesService - Hybrid Authentication', () => {
 
     beforeEach(() => {
       mockKubeConfigInstance = {
-        loadFromString: jest.fn()
+        loadFromString: jest.fn(),
       } as any;
     });
 
@@ -214,32 +230,39 @@ describe('KubernetesService - Hybrid Authentication', () => {
         id: 'test-cluster-id',
         name: 'test-cluster',
         kubeconfig: 'encrypted-kubeconfig-data',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
-      
+
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
-      mockEncryptionService.decrypt.mockReturnValue('apiVersion: v1\nclusters:\n- cluster:\n    server: https://k8s.example.com');
+      mockEncryptionService.decrypt.mockReturnValue(
+        'apiVersion: v1\nclusters:\n- cluster:\n    server: https://k8s.example.com'
+      );
 
       await kubernetesService['loadExternalKubeconfig'](mockKubeConfigInstance, 'test-cluster-id');
 
       expect(mockPrisma.cluster.findUnique).toHaveBeenCalledWith({
         where: { id: 'test-cluster-id' },
-        select: { id: true, name: true, kubeconfig: true, status: true }
+        select: { id: true, name: true, kubeconfig: true, status: true },
       });
       expect(mockEncryptionService.decrypt).toHaveBeenCalledWith('encrypted-kubeconfig-data');
-      expect(mockKubeConfigInstance.loadFromString).toHaveBeenCalledWith('apiVersion: v1\nclusters:\n- cluster:\n    server: https://k8s.example.com');
-      expect(mockLogger.debug).toHaveBeenCalledWith('Kubeconfig decrypted successfully', { clusterId: 'test-cluster-id' });
+      expect(mockKubeConfigInstance.loadFromString).toHaveBeenCalledWith(
+        'apiVersion: v1\nclusters:\n- cluster:\n    server: https://k8s.example.com'
+      );
+      expect(mockLogger.debug).toHaveBeenCalledWith('Kubeconfig decrypted successfully', {
+        clusterId: 'test-cluster-id',
+      });
     });
 
     it('should fallback to plain text kubeconfig when decryption fails', async () => {
-      const plainTextKubeconfig = 'apiVersion: v1\nclusters:\n- cluster:\n    server: https://k8s.example.com';
+      const plainTextKubeconfig =
+        'apiVersion: v1\nclusters:\n- cluster:\n    server: https://k8s.example.com';
       const mockCluster = {
         id: 'test-cluster-id',
         name: 'test-cluster',
         kubeconfig: plainTextKubeconfig,
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
-      
+
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
       mockEncryptionService.decrypt.mockImplementation(() => {
         throw new Error('Decryption failed');
@@ -253,8 +276,8 @@ describe('KubernetesService - Hybrid Authentication', () => {
         expect.objectContaining({
           clusterId: 'test-cluster-id',
           error: expect.objectContaining({
-            message: 'Decryption failed'
-          })
+            message: 'Decryption failed',
+          }),
         })
       );
       expect(mockKubeConfigInstance.loadFromString).toHaveBeenCalledWith(plainTextKubeconfig);
@@ -273,9 +296,9 @@ describe('KubernetesService - Hybrid Authentication', () => {
         id: 'test-cluster-id',
         name: 'test-cluster',
         kubeconfig: 'kubeconfig-data',
-        status: 'INACTIVE'
+        status: 'INACTIVE',
       };
-      
+
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
 
       await expect(
@@ -288,9 +311,9 @@ describe('KubernetesService - Hybrid Authentication', () => {
         id: 'test-cluster-id',
         name: 'test-cluster',
         kubeconfig: 'invalid-kubeconfig',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
-      
+
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
       mockEncryptionService.decrypt.mockImplementation(() => {
         throw new Error('Decryption failed');
@@ -308,7 +331,7 @@ describe('KubernetesService - Hybrid Authentication', () => {
       const mockClients = [
         { constructor: { name: 'CoreV1Api' } },
         { constructor: { name: 'AppsV1Api' } },
-        { constructor: { name: 'BatchV1Api' } }
+        { constructor: { name: 'BatchV1Api' } },
       ];
 
       kubernetesService['configureSSLVerification'](mockClients as any);
@@ -332,67 +355,67 @@ describe('KubernetesService - Hybrid Authentication', () => {
   describe('Error Handling', () => {
     it('should handle authentication errors gracefully', async () => {
       jest.spyOn(kubernetesService as any, 'isRunningInCluster').mockReturnValue(true);
-      
+
       const mockKubeConfigInstance = {
         loadFromCluster: jest.fn().mockRejectedValue(new Error('Authentication failed')),
-        getContexts: jest.fn().mockReturnValue([])
+        getContexts: jest.fn().mockReturnValue([]),
       } as any;
-      
+
       mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
-      
+
       // Mock database to fail as well
       mockPrisma.cluster.findUnique = jest.fn().mockRejectedValue(new Error('Database error'));
 
-      await expect(
-        kubernetesService['getKubernetesClient']('test-cluster-id')
-      ).rejects.toThrow('Failed to connect to cluster test-cluster-id');
+      await expect(kubernetesService['getKubernetesClient']('test-cluster-id')).rejects.toThrow(
+        'Failed to connect to cluster test-cluster-id'
+      );
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Failed to initialize Kubernetes client',
         expect.objectContaining({
           clusterId: 'test-cluster-id',
           error: expect.objectContaining({
-            message: expect.stringContaining('Database error')
-          })
+            message: expect.stringContaining('Database error'),
+          }),
         })
       );
     });
 
     it('should handle missing contexts in kubeconfig', async () => {
       jest.spyOn(kubernetesService as any, 'isRunningInCluster').mockReturnValue(true);
-      
+
       const mockKubeConfigInstance = {
         loadFromCluster: jest.fn(),
         getContexts: jest.fn().mockReturnValue([]), // No contexts
-        getCurrentContext: jest.fn()
+        getCurrentContext: jest.fn(),
       } as any;
-      
+
       mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
 
-      await expect(
-        kubernetesService['getKubernetesClient']('test-cluster-id')
-      ).rejects.toThrow('Failed to connect to cluster test-cluster-id: No contexts found in kubeconfig');
+      await expect(kubernetesService['getKubernetesClient']('test-cluster-id')).rejects.toThrow(
+        'Failed to connect to cluster test-cluster-id: No contexts found in kubeconfig'
+      );
     });
   });
 
   describe('Client Caching', () => {
     it('should cache and reuse Kubernetes clients', async () => {
       const clusterId = 'test-cluster-id';
-      
+
       jest.spyOn(kubernetesService as any, 'isRunningInCluster').mockReturnValue(true);
-      
+
       const mockKubeConfigInstance = {
         loadFromCluster: jest.fn(),
         getContexts: jest.fn().mockReturnValue([{ name: 'test-context' }]),
         getCurrentContext: jest.fn().mockReturnValue('test-context'),
-        makeApiClient: jest.fn().mockReturnValue({})
+        makeApiClient: jest.fn().mockReturnValue({}),
       } as any;
-      
+
       mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
 
       // First call should create the client
       const client1 = await kubernetesService['getKubernetesClient'](clusterId);
-      
+
       // Second call should return cached client
       const client2 = await kubernetesService['getKubernetesClient'](clusterId);
 

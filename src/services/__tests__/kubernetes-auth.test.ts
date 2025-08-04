@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { jest, describe, beforeEach, it, expect } from '@jest/globals';
 import * as fs from 'fs';
 
@@ -21,19 +25,20 @@ describe('Kubernetes Authentication Tests', () => {
     it('should detect in-cluster environment when service account files exist', () => {
       // Mock service account files exist
       mockFs.existsSync
-        .mockReturnValueOnce(true)  // token file
-        .mockReturnValueOnce(true)  // namespace file
+        .mockReturnValueOnce(true) // token file
+        .mockReturnValueOnce(true) // namespace file
         .mockReturnValueOnce(true); // ca cert file
 
       // This simulates the isRunningInCluster logic
       const tokenPath = '/var/run/secrets/kubernetes.io/serviceaccount/token';
       const namespacePath = '/var/run/secrets/kubernetes.io/serviceaccount/namespace';
       const caCertPath = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt';
-      
-      const result = mockFs.existsSync(tokenPath) && 
-                    mockFs.existsSync(namespacePath) && 
-                    mockFs.existsSync(caCertPath);
-      
+
+      const result =
+        mockFs.existsSync(tokenPath) &&
+        mockFs.existsSync(namespacePath) &&
+        mockFs.existsSync(caCertPath);
+
       expect(result).toBe(true);
       expect(mockFs.existsSync).toHaveBeenCalledWith(tokenPath);
       expect(mockFs.existsSync).toHaveBeenCalledWith(namespacePath);
@@ -44,17 +49,18 @@ describe('Kubernetes Authentication Tests', () => {
       // Mock service account files don't exist
       mockFs.existsSync
         .mockReturnValueOnce(false) // token file missing
-        .mockReturnValueOnce(true)  // namespace file exists
+        .mockReturnValueOnce(true) // namespace file exists
         .mockReturnValueOnce(true); // ca cert exists
 
       const tokenPath = '/var/run/secrets/kubernetes.io/serviceaccount/token';
       const namespacePath = '/var/run/secrets/kubernetes.io/serviceaccount/namespace';
       const caCertPath = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt';
-      
-      const result = mockFs.existsSync(tokenPath) && 
-                    mockFs.existsSync(namespacePath) && 
-                    mockFs.existsSync(caCertPath);
-      
+
+      const result =
+        mockFs.existsSync(tokenPath) &&
+        mockFs.existsSync(namespacePath) &&
+        mockFs.existsSync(caCertPath);
+
       expect(result).toBe(false);
     });
 
@@ -69,14 +75,15 @@ describe('Kubernetes Authentication Tests', () => {
         const tokenPath = '/var/run/secrets/kubernetes.io/serviceaccount/token';
         const namespacePath = '/var/run/secrets/kubernetes.io/serviceaccount/namespace';
         const caCertPath = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt';
-        
-        result = mockFs.existsSync(tokenPath) && 
-                 mockFs.existsSync(namespacePath) && 
-                 mockFs.existsSync(caCertPath);
+
+        result =
+          mockFs.existsSync(tokenPath) &&
+          mockFs.existsSync(namespacePath) &&
+          mockFs.existsSync(caCertPath);
       } catch (error) {
         result = false;
       }
-      
+
       expect(result).toBe(false);
     });
   });
@@ -85,26 +92,28 @@ describe('Kubernetes Authentication Tests', () => {
     it('should prioritize in-cluster authentication when available', () => {
       // Mock in-cluster environment
       mockFs.existsSync.mockReturnValue(true);
-      
-      const isInCluster = mockFs.existsSync('/var/run/secrets/kubernetes.io/serviceaccount/token') &&
-                         mockFs.existsSync('/var/run/secrets/kubernetes.io/serviceaccount/namespace') &&
-                         mockFs.existsSync('/var/run/secrets/kubernetes.io/serviceaccount/ca.crt');
-      
+
+      const isInCluster =
+        mockFs.existsSync('/var/run/secrets/kubernetes.io/serviceaccount/token') &&
+        mockFs.existsSync('/var/run/secrets/kubernetes.io/serviceaccount/namespace') &&
+        mockFs.existsSync('/var/run/secrets/kubernetes.io/serviceaccount/ca.crt');
+
       const authMethod = isInCluster ? 'in-cluster' : 'external-kubeconfig';
-      
+
       expect(authMethod).toBe('in-cluster');
     });
 
     it('should fallback to external kubeconfig when not in cluster', () => {
       // Mock external environment
       mockFs.existsSync.mockReturnValue(false);
-      
-      const isInCluster = mockFs.existsSync('/var/run/secrets/kubernetes.io/serviceaccount/token') &&
-                         mockFs.existsSync('/var/run/secrets/kubernetes.io/serviceaccount/namespace') &&
-                         mockFs.existsSync('/var/run/secrets/kubernetes.io/serviceaccount/ca.crt');
-      
+
+      const isInCluster =
+        mockFs.existsSync('/var/run/secrets/kubernetes.io/serviceaccount/token') &&
+        mockFs.existsSync('/var/run/secrets/kubernetes.io/serviceaccount/namespace') &&
+        mockFs.existsSync('/var/run/secrets/kubernetes.io/serviceaccount/ca.crt');
+
       const authMethod = isInCluster ? 'in-cluster' : 'external-kubeconfig';
-      
+
       expect(authMethod).toBe('external-kubeconfig');
     });
   });
@@ -115,13 +124,13 @@ describe('Kubernetes Authentication Tests', () => {
       const mockApiClient = {
         basePath: 'https://kubernetes.default.svc',
         requestOptions: {
-          strictSSL: true
-        }
+          strictSSL: true,
+        },
       };
 
       // Verify HTTPS endpoint
       expect(mockApiClient.basePath).toMatch(/^https:\/\//);
-      
+
       // Verify SSL is not explicitly disabled
       expect(mockApiClient.requestOptions.strictSSL).not.toBe(false);
     });
@@ -129,10 +138,10 @@ describe('Kubernetes Authentication Tests', () => {
     it('should reject insecure HTTP connections', () => {
       const insecureEndpoint = 'http://insecure-k8s.example.com';
       const secureEndpoint = 'https://secure-k8s.example.com';
-      
+
       expect(insecureEndpoint).toMatch(/^http:\/\//);
       expect(secureEndpoint).toMatch(/^https:\/\//);
-      
+
       // In production, HTTP endpoints should be rejected
       const isSecure = secureEndpoint.startsWith('https://');
       expect(isSecure).toBe(true);
@@ -164,7 +173,7 @@ users:
       const hasClusters = validKubeconfig.includes('clusters');
       const hasContexts = validKubeconfig.includes('contexts');
       const hasUsers = validKubeconfig.includes('users');
-      
+
       expect(hasApiVersion).toBe(true);
       expect(hasClusters).toBe(true);
       expect(hasContexts).toBe(true);
@@ -181,7 +190,7 @@ invalid yaml: {
       // Basic validation - malformed configs won't have required fields
       const hasApiVersion = malformedKubeconfig.includes('apiVersion: v1');
       const hasClusters = malformedKubeconfig.includes('clusters:');
-      
+
       expect(hasApiVersion).toBe(false);
       expect(hasClusters).toBe(false);
     });
@@ -189,13 +198,14 @@ invalid yaml: {
 
   describe('Error Handling Security', () => {
     it('should sanitize error messages', () => {
-      const sensitiveError = 'Authentication failed with token abc123xyz789 for cluster internal-prod.company.com';
-      
+      const sensitiveError =
+        'Authentication failed with token abc123xyz789 for cluster internal-prod.company.com';
+
       // Simple sanitization example
       const sanitized = sensitiveError
         .replace(/token\s+[a-zA-Z0-9]+/g, 'token [REDACTED]')
         .replace(/cluster\s+[a-zA-Z0-9.-]+/g, 'cluster [REDACTED]');
-      
+
       expect(sanitized).not.toContain('abc123xyz789');
       expect(sanitized).not.toContain('internal-prod.company.com');
       expect(sanitized).toContain('Authentication failed');
@@ -206,20 +216,20 @@ invalid yaml: {
   describe('Resource Access Security', () => {
     it('should enforce namespace isolation', () => {
       const userId = 'user123';
-      
+
       // Namespace should be scoped to user
       const namespace = `devpocket-${userId}`;
-      
+
       expect(namespace).toBe('devpocket-user123');
     });
 
     it('should validate resource names', () => {
       const maliciousName = '../../../etc/passwd';
       const validName = 'my-environment-123';
-      
+
       // Resource names should follow Kubernetes naming conventions
       const k8sNameRegex = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
-      
+
       expect(k8sNameRegex.test(maliciousName)).toBe(false);
       expect(k8sNameRegex.test(validName)).toBe(true);
     });

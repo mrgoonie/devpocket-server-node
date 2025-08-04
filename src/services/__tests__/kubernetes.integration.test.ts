@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
 import { KubeConfig, CoreV1Api, AppsV1Api, BatchV1Api } from '@kubernetes/client-node';
 import { prisma } from '@/config/database';
@@ -65,10 +69,11 @@ describe('KubernetesService - Integration Tests', () => {
       loadFromString: jest.fn(),
       getContexts: jest.fn().mockReturnValue([{ name: 'test-context' }]),
       getCurrentContext: jest.fn().mockReturnValue('test-context'),
-      makeApiClient: jest.fn()
+      makeApiClient: jest
+        .fn()
         .mockReturnValueOnce(mockCoreV1Api)
         .mockReturnValueOnce(mockAppsV1Api)
-        .mockReturnValueOnce(mockBatchV1Api)
+        .mockReturnValueOnce(mockBatchV1Api),
     } as any;
 
     mockKubeConfig.mockImplementation(() => mockKubeConfigInstance);
@@ -90,20 +95,20 @@ describe('KubernetesService - Integration Tests', () => {
         response: { statusCode: 201 },
         body: {
           metadata: { name: 'test-namespace' },
-          status: { phase: 'Active' }
-        }
+          status: { phase: 'Active' },
+        },
       };
       mockCoreV1Api.createNamespace.mockResolvedValue(mockNamespaceResponse as any);
 
       // Get client and perform operation
       const client = await kubernetesService['getKubernetesClient']('test-cluster');
       const result = await client.coreV1Api.createNamespace({
-        metadata: { name: 'test-namespace' }
+        metadata: { name: 'test-namespace' },
       });
 
       expect(mockKubeConfigInstance.loadFromCluster).toHaveBeenCalled();
       expect(mockCoreV1Api.createNamespace).toHaveBeenCalledWith({
-        metadata: { name: 'test-namespace' }
+        metadata: { name: 'test-namespace' },
       });
       expect(result.response.statusCode).toBe(201);
     });
@@ -120,7 +125,7 @@ describe('KubernetesService - Integration Tests', () => {
         id: 'test-cluster',
         name: 'test-cluster',
         kubeconfig: 'apiVersion: v1\nclusters: []',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
       mockEncryptionService.decrypt.mockReturnValue(mockCluster.kubeconfig);
@@ -146,10 +151,11 @@ describe('KubernetesService - Integration Tests', () => {
         id: 'test-cluster',
         name: 'test-cluster',
         kubeconfig: 'encrypted-kubeconfig-data',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
-      const decryptedKubeconfig = 'apiVersion: v1\nclusters:\n- cluster:\n    server: https://k8s.example.com';
-      
+      const decryptedKubeconfig =
+        'apiVersion: v1\nclusters:\n- cluster:\n    server: https://k8s.example.com';
+
       mockPrisma.cluster.findUnique = jest.fn().mockResolvedValue(mockCluster);
       mockEncryptionService.decrypt.mockReturnValue(decryptedKubeconfig);
       jest.spyOn(kubernetesService as any, 'validateKubeconfigFormat').mockReturnValue(true);
@@ -159,8 +165,8 @@ describe('KubernetesService - Integration Tests', () => {
         response: { statusCode: 201 },
         body: {
           metadata: { name: 'test-deployment', namespace: 'test-namespace' },
-          status: { readyReplicas: 1 }
-        }
+          status: { readyReplicas: 1 },
+        },
       };
       mockAppsV1Api.createDeployment.mockResolvedValue(mockDeploymentResponse as any);
 
@@ -168,7 +174,11 @@ describe('KubernetesService - Integration Tests', () => {
       const client = await kubernetesService['getKubernetesClient']('test-cluster');
       const result = await client.appsV1Api.createDeployment('test-namespace', {
         metadata: { name: 'test-deployment' },
-        spec: { replicas: 1, selector: { matchLabels: {} }, template: { metadata: { labels: {} }, spec: { containers: [] } } }
+        spec: {
+          replicas: 1,
+          selector: { matchLabels: {} },
+          template: { metadata: { labels: {} }, spec: { containers: [] } },
+        },
       });
 
       expect(mockPrisma.cluster.findUnique).toHaveBeenCalled();
@@ -184,7 +194,7 @@ describe('KubernetesService - Integration Tests', () => {
         id: 'test-cluster',
         name: 'test-cluster',
         kubeconfig: 'base64-encrypted-kubeconfig',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       };
       const decryptedKubeconfig = `
 apiVersion: v1
@@ -213,8 +223,8 @@ users:
         response: { statusCode: 201 },
         body: {
           metadata: { name: 'test-pvc' },
-          status: { phase: 'Bound' }
-        }
+          status: { phase: 'Bound' },
+        },
       };
       mockCoreV1Api.createPersistentVolumeClaim.mockResolvedValue(mockPvcResponse as any);
 
@@ -223,8 +233,8 @@ users:
         metadata: { name: 'test-pvc' },
         spec: {
           accessModes: ['ReadWriteOnce'],
-          resources: { requests: { storage: '1Gi' } }
-        }
+          resources: { requests: { storage: '1Gi' } },
+        },
       });
 
       expect(mockEncryptionService.decrypt).toHaveBeenCalledWith('base64-encrypted-kubeconfig');
@@ -243,11 +253,7 @@ users:
       const client = await kubernetesService['getKubernetesClient']('test-cluster');
 
       // Verify SSL configuration was called
-      expect(configureSSLSpy).toHaveBeenCalledWith([
-        mockCoreV1Api,
-        mockAppsV1Api,
-        mockBatchV1Api
-      ]);
+      expect(configureSSLSpy).toHaveBeenCalledWith([mockCoreV1Api, mockAppsV1Api, mockBatchV1Api]);
     });
   });
 
@@ -275,13 +281,13 @@ users:
       );
 
       // Mock database fallback also fails
-      mockPrisma.cluster.findUnique = jest.fn().mockRejectedValue(
-        new Error('Database connection failed')
-      );
+      mockPrisma.cluster.findUnique = jest
+        .fn()
+        .mockRejectedValue(new Error('Database connection failed'));
 
-      await expect(
-        kubernetesService['getKubernetesClient']('test-cluster')
-      ).rejects.toThrow('Failed to connect to cluster test-cluster');
+      await expect(kubernetesService['getKubernetesClient']('test-cluster')).rejects.toThrow(
+        'Failed to connect to cluster test-cluster'
+      );
     });
   });
 
@@ -291,27 +297,42 @@ users:
       mockKubeConfigInstance.loadFromCluster.mockResolvedValue(undefined);
 
       // Mock successful resource creation
-      mockCoreV1Api.createNamespace.mockResolvedValue({ response: { statusCode: 201 }, body: {} } as any);
-      mockCoreV1Api.createPersistentVolumeClaim.mockResolvedValue({ response: { statusCode: 201 }, body: {} } as any);
-      mockCoreV1Api.createConfigMap.mockResolvedValue({ response: { statusCode: 201 }, body: {} } as any);
-      mockAppsV1Api.createDeployment.mockResolvedValue({ response: { statusCode: 201 }, body: {} } as any);
-      mockCoreV1Api.createService.mockResolvedValue({ response: { statusCode: 201 }, body: {} } as any);
+      mockCoreV1Api.createNamespace.mockResolvedValue({
+        response: { statusCode: 201 },
+        body: {},
+      } as any);
+      mockCoreV1Api.createPersistentVolumeClaim.mockResolvedValue({
+        response: { statusCode: 201 },
+        body: {},
+      } as any);
+      mockCoreV1Api.createConfigMap.mockResolvedValue({
+        response: { statusCode: 201 },
+        body: {},
+      } as any);
+      mockAppsV1Api.createDeployment.mockResolvedValue({
+        response: { statusCode: 201 },
+        body: {},
+      } as any);
+      mockCoreV1Api.createService.mockResolvedValue({
+        response: { statusCode: 201 },
+        body: {},
+      } as any);
 
       const client = await kubernetesService['getKubernetesClient']('test-cluster');
 
       // Create namespace
       await client.coreV1Api.createNamespace({ metadata: { name: 'test-env' } });
-      
+
       // Create PVC
       await client.coreV1Api.createPersistentVolumeClaim('test-env', {
         metadata: { name: 'test-pvc' },
-        spec: { accessModes: ['ReadWriteOnce'], resources: { requests: { storage: '1Gi' } } }
+        spec: { accessModes: ['ReadWriteOnce'], resources: { requests: { storage: '1Gi' } } },
       });
 
       // Create ConfigMap
       await client.coreV1Api.createConfigMap('test-env', {
         metadata: { name: 'test-config' },
-        data: { 'startup.sh': '#\!/bin/bash\necho "Starting environment"' }
+        data: { 'startup.sh': '#\!/bin/bash\necho "Starting environment"' },
       });
 
       // Create Deployment
@@ -322,9 +343,9 @@ users:
           selector: { matchLabels: { app: 'test-app' } },
           template: {
             metadata: { labels: { app: 'test-app' } },
-            spec: { containers: [{ name: 'test-container', image: 'nginx' }] }
-          }
-        }
+            spec: { containers: [{ name: 'test-container', image: 'nginx' }] },
+          },
+        },
       });
 
       // Create Service
@@ -332,8 +353,8 @@ users:
         metadata: { name: 'test-service' },
         spec: {
           selector: { app: 'test-app' },
-          ports: [{ port: 80, targetPort: 80 }]
-        }
+          ports: [{ port: 80, targetPort: 80 }],
+        },
       });
 
       // Verify all resources were created
@@ -354,10 +375,10 @@ users:
 
       // First operation
       const client1 = await kubernetesService['getKubernetesClient'](clusterId);
-      
+
       // Second operation should use cached client
       const client2 = await kubernetesService['getKubernetesClient'](clusterId);
-      
+
       // Third operation should also use cached client
       const client3 = await kubernetesService['getKubernetesClient'](clusterId);
 
@@ -367,4 +388,4 @@ users:
     });
   });
 });
-EOF < /dev/null
+EOF < /dev/llnu;

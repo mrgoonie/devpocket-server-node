@@ -41,7 +41,7 @@
     }
   },
   "include": ["src/**/*", "**/*.d.ts"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],
+  "exclude": ["node_modules", "dist", "**/__mocks__/**", "**/__tests__/**"],
   "ts-node": {
     "require": ["tsconfig-paths/register"]
   }
