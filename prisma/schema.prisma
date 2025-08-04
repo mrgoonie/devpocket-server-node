@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,101 +8,91 @@ datasource db {
 }
 
 model User {
-  id                String   @id @default(cuid())
-  email             String   @unique
-  username          String   @unique
-  fullName          String   @map("full_name")
-  password          String?
-  avatarUrl         String?  @map("avatar_url")
-  isActive          Boolean  @default(true) @map("is_active")
-  isVerified        Boolean  @default(false) @map("is_verified")
-  emailVerifiedAt   DateTime? @map("email_verified_at")
-  subscriptionPlan  SubscriptionPlan @default(FREE) @map("subscription_plan")
-  googleId          String?  @unique @map("google_id")
-  failedLoginAttempts Int    @default(0) @map("failed_login_attempts")
-  accountLockedUntil DateTime? @map("account_locked_until")
-  lastLoginAt       DateTime? @map("last_login_at")
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  environments      Environment[]
-  refreshTokens     RefreshToken[]
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  username                String                   @unique
+  fullName                String                   @map("full_name")
+  password                String?
+  avatarUrl               String?                  @map("avatar_url")
+  isActive                Boolean                  @default(true) @map("is_active")
+  isVerified              Boolean                  @default(false) @map("is_verified")
+  emailVerifiedAt         DateTime?                @map("email_verified_at")
+  subscriptionPlan        SubscriptionPlan         @default(FREE) @map("subscription_plan")
+  googleId                String?                  @unique @map("google_id")
+  failedLoginAttempts     Int                      @default(0) @map("failed_login_attempts")
+  accountLockedUntil      DateTime?                @map("account_locked_until")
+  lastLoginAt             DateTime?                @map("last_login_at")
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @updatedAt @map("updated_at")
   emailVerificationTokens EmailVerificationToken[]
-  userClusters      UserCluster[]
+  environments            Environment[]
+  refreshTokens           RefreshToken[]
+  userClusters            UserCluster[]
 
   @@map("users")
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  userId    String   @map("user_id")
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String    @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
   revokedAt DateTime? @map("revoked_at")
-
-  // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
 }
 
 model EmailVerificationToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  userId    String   @map("user_id")
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String    @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
   usedAt    DateTime? @map("used_at")
-
-  // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("email_verification_tokens")
 }
 
 model Template {
-  id                  String   @id @default(cuid())
-  name                String   @unique
-  displayName         String   @map("display_name")
-  description         String
-  category            TemplateCategory
-  tags                String[]
-  dockerImage         String   @map("docker_image")
-  defaultPort         Int      @default(8080) @map("default_port")
-  defaultResourcesCpu String   @default("500m") @map("default_resources_cpu")
-  defaultResourcesMemory String @default("1Gi") @map("default_resources_memory")
-  defaultResourcesStorage String @default("10Gi") @map("default_resources_storage")
-  environmentVariables Json    @default("{}") @map("environment_variables")
-  startupCommands     String[] @map("startup_commands")
-  documentationUrl    String?  @map("documentation_url")
-  iconUrl             String?  @map("icon_url")
-  status              TemplateStatus @default(ACTIVE)
-  version             String   @default("1.0.0")
-  usageCount          Int      @default(0) @map("usage_count")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  environments        Environment[]
+  id                      String           @id @default(cuid())
+  name                    String           @unique
+  displayName             String           @map("display_name")
+  description             String
+  category                TemplateCategory
+  tags                    String[]
+  dockerImage             String           @map("docker_image")
+  defaultPort             Int              @default(8080) @map("default_port")
+  defaultResourcesCpu     String           @default("500m") @map("default_resources_cpu")
+  defaultResourcesMemory  String           @default("1Gi") @map("default_resources_memory")
+  defaultResourcesStorage String           @default("10Gi") @map("default_resources_storage")
+  environmentVariables    Json             @default("{}") @map("environment_variables")
+  startupCommands         String[]         @map("startup_commands")
+  documentationUrl        String?          @map("documentation_url")
+  iconUrl                 String?          @map("icon_url")
+  status                  TemplateStatus   @default(ACTIVE)
+  version                 String           @default("1.0.0")
+  usageCount              Int              @default(0) @map("usage_count")
+  createdAt               DateTime         @default(now()) @map("created_at")
+  updatedAt               DateTime         @updatedAt @map("updated_at")
+  environments            Environment[]
 
   @@map("templates")
 }
 
 model Cluster {
-  id          String        @id @default(cuid())
-  name        String        @unique
-  description String?
-  provider    String        @default("ovh")
-  region      String
-  kubeconfig  String        // Encrypted kubeconfig content
-  status      ClusterStatus @default(ACTIVE)
-  nodeCount   Int           @default(3) @map("node_count")
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
-
-  // Relations
+  id           String        @id @default(cuid())
+  name         String        @unique
+  description  String?
+  provider     String        @default("ovh")
+  region       String
+  kubeconfig   String
+  status       ClusterStatus @default(ACTIVE)
+  nodeCount    Int           @default(3) @map("node_count")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
   environments Environment[]
   userClusters UserCluster[]
 
@@ -113,87 +100,79 @@ model Cluster {
 }
 
 model UserCluster {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  clusterId String   @map("cluster_id")
+  id        String          @id @default(cuid())
+  userId    String          @map("user_id")
+  clusterId String          @map("cluster_id")
   role      UserClusterRole @default(USER)
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cluster   Cluster  @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now()) @map("created_at")
+  cluster   Cluster         @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, clusterId])
   @@map("user_clusters")
 }
 
 model Environment {
-  id                    String            @id @default(cuid())
+  id                    String              @id @default(cuid())
   name                  String
   description           String?
-  userId                String            @map("user_id")
-  templateId            String            @map("template_id")
-  clusterId             String            @map("cluster_id")
-  status                EnvironmentStatus @default(CREATING)
-  dockerImage           String            @map("docker_image")
-  port                  Int               @default(8080)
-  webPort               Int?              @map("web_port")
-  resourcesCpu          String            @default("500m") @map("resources_cpu")
-  resourcesMemory       String            @default("1Gi") @map("resources_memory")
-  resourcesStorage      String            @default("10Gi") @map("resources_storage")
-  environmentVariables  Json              @default("{}") @map("environment_variables")
-  installationCompleted Boolean           @default(false) @map("installation_completed")
-  externalUrl           String?           @map("external_url")
-  kubernetesNamespace   String?           @map("kubernetes_namespace")
-  kubernetesPodName     String?           @map("kubernetes_pod_name")
-  kubernetesServiceName String?           @map("kubernetes_service_name")
-  cpuUsage              Float             @default(0.0) @map("cpu_usage")
-  memoryUsage           Float             @default(0.0) @map("memory_usage")
-  storageUsage          Float             @default(0.0) @map("storage_usage")
-  lastError             String?           @map("last_error") // Store last error details for debugging
-  lastActivityAt        DateTime?         @map("last_activity_at")
-  createdAt             DateTime          @default(now()) @map("created_at")
-  updatedAt             DateTime          @updatedAt @map("updated_at")
-
-  // Relations
-  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  template              Template          @relation(fields: [templateId], references: [id], onDelete: Restrict)
-  cluster               Cluster           @relation(fields: [clusterId], references: [id], onDelete: Restrict)
-  terminalSessions      TerminalSession[]
+  userId                String              @map("user_id")
+  templateId            String              @map("template_id")
+  clusterId             String              @map("cluster_id")
+  status                EnvironmentStatus   @default(CREATING)
+  dockerImage           String              @map("docker_image")
+  port                  Int                 @default(8080)
+  webPort               Int?                @map("web_port")
+  resourcesCpu          String              @default("500m") @map("resources_cpu")
+  resourcesMemory       String              @default("1Gi") @map("resources_memory")
+  resourcesStorage      String              @default("10Gi") @map("resources_storage")
+  environmentVariables  Json                @default("{}") @map("environment_variables")
+  installationCompleted Boolean             @default(false) @map("installation_completed")
+  externalUrl           String?             @map("external_url")
+  kubernetesNamespace   String?             @map("kubernetes_namespace")
+  kubernetesPodName     String?             @map("kubernetes_pod_name")
+  kubernetesServiceName String?             @map("kubernetes_service_name")
+  cpuUsage              Float               @default(0.0) @map("cpu_usage")
+  memoryUsage           Float               @default(0.0) @map("memory_usage")
+  storageUsage          Float               @default(0.0) @map("storage_usage")
+  lastActivityAt        DateTime?           @map("last_activity_at")
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+  lastError             String?             @map("last_error")
   environmentLogs       EnvironmentLog[]
   environmentMetrics    EnvironmentMetric[]
+  cluster               Cluster             @relation(fields: [clusterId], references: [id])
+  template              Template            @relation(fields: [templateId], references: [id])
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  terminalSessions      TerminalSession[]
 
   @@unique([userId, name])
   @@map("environments")
 }
 
 model TerminalSession {
-  id            String      @id @default(cuid())
-  environmentId String      @map("environment_id")
-  sessionId     String      @unique @map("session_id")
-  status        SessionStatus @default(ACTIVE)
-  tmuxSessionName String?   @map("tmux_session_name")
-  clientInfo    Json?       @map("client_info")
-  startedAt     DateTime    @default(now()) @map("started_at")
-  endedAt       DateTime?   @map("ended_at")
-  lastActivityAt DateTime?  @map("last_activity_at")
-
-  // Relations
-  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  id              String        @id @default(cuid())
+  environmentId   String        @map("environment_id")
+  sessionId       String        @unique @map("session_id")
+  status          SessionStatus @default(ACTIVE)
+  tmuxSessionName String?       @map("tmux_session_name")
+  clientInfo      Json?         @map("client_info")
+  startedAt       DateTime      @default(now()) @map("started_at")
+  endedAt         DateTime?     @map("ended_at")
+  lastActivityAt  DateTime?     @map("last_activity_at")
+  environment     Environment   @relation(fields: [environmentId], references: [id], onDelete: Cascade)
 
   @@map("terminal_sessions")
 }
 
 model EnvironmentLog {
-  id            String    @id @default(cuid())
-  environmentId String    @map("environment_id")
-  level         LogLevel  @default(INFO)
+  id            String      @id @default(cuid())
+  environmentId String      @map("environment_id")
+  level         LogLevel    @default(INFO)
   message       String
-  source        String    @default("container")
-  metadata      Json?     @default("{}") 
-  timestamp     DateTime  @default(now())
-
-  // Relations
+  source        String      @default("container")
+  metadata      Json?       @default("{}")
+  timestamp     DateTime    @default(now())
   environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
 
   @@index([environmentId, timestamp])
@@ -201,23 +180,20 @@ model EnvironmentLog {
 }
 
 model EnvironmentMetric {
-  id            String    @id @default(cuid())
-  environmentId String    @map("environment_id")
-  cpuUsage      Float     @map("cpu_usage")
-  memoryUsage   Float     @map("memory_usage")
-  storageUsage  Float     @map("storage_usage")
-  networkRx     BigInt    @default(0) @map("network_rx")
-  networkTx     BigInt    @default(0) @map("network_tx")
-  timestamp     DateTime  @default(now())
-
-  // Relations
+  id            String      @id @default(cuid())
+  environmentId String      @map("environment_id")
+  cpuUsage      Float       @map("cpu_usage")
+  memoryUsage   Float       @map("memory_usage")
+  storageUsage  Float       @map("storage_usage")
+  networkRx     BigInt      @default(0) @map("network_rx")
+  networkTx     BigInt      @default(0) @map("network_tx")
+  timestamp     DateTime    @default(now())
   environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
 
   @@index([environmentId, timestamp])
   @@map("environment_metrics")
 }
 
-// Enums
 enum SubscriptionPlan {
   FREE
   STARTER
