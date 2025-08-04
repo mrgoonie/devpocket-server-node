@@ -65,11 +65,10 @@ current-context: test-context
       // Test empty kubeconfig
       const isEmpty = !(kubernetesService as any).validateKubeconfigFormat('');
       this.addResult('Empty kubeconfig rejection', isEmpty);
-
     } catch (error) {
       this.addResult(
-        'Kubeconfig validation tests', 
-        false, 
+        'Kubeconfig validation tests',
+        false,
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -90,7 +89,7 @@ current-context: test-context
       const hasName = serialized.name === 'Error';
       const hasMessage = serialized.message === 'Test error message';
       const hasStack = typeof serialized.stack === 'string';
-      
+
       this.addResult('Error serialization - name', hasName);
       this.addResult('Error serialization - message', hasMessage);
       this.addResult('Error serialization - stack', hasStack);
@@ -99,13 +98,12 @@ current-context: test-context
       const nonError = { some: 'object' };
       const serializedNonError = serializeError(nonError);
       const isObject = typeof serializedNonError === 'object';
-      
-      this.addResult('Non-error object serialization', isObject);
 
+      this.addResult('Non-error object serialization', isObject);
     } catch (error) {
       this.addResult(
-        'Error serialization tests', 
-        false, 
+        'Error serialization tests',
+        false,
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -132,9 +130,11 @@ current-context: test-context
 
       const succeeded = result === 'success';
       const correctAttempts = attemptCount === 3;
-      
+
       this.addResult('Retry mechanism - success after retries', succeeded);
-      this.addResult('Retry mechanism - correct attempt count', correctAttempts, undefined, { attempts: attemptCount });
+      this.addResult('Retry mechanism - correct attempt count', correctAttempts, undefined, {
+        attempts: attemptCount,
+      });
 
       // Test non-retryable error
       let nonRetryAttempts = 0;
@@ -152,13 +152,14 @@ current-context: test-context
         this.addResult('Non-retryable error handling', false, 'Should have thrown error');
       } catch (error) {
         const correctlyFailed = nonRetryAttempts === 1;
-        this.addResult('Non-retryable error - single attempt', correctlyFailed, undefined, { attempts: nonRetryAttempts });
+        this.addResult('Non-retryable error - single attempt', correctlyFailed, undefined, {
+          attempts: nonRetryAttempts,
+        });
       }
-
     } catch (error) {
       this.addResult(
-        'Retry mechanism tests', 
-        false, 
+        'Retry mechanism tests',
+        false,
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -177,13 +178,12 @@ current-context: test-context
         take: 1,
         select: { id: true, name: true, status: true },
       });
-      
-      this.addResult('Cluster lookup', true, undefined, { clustersFound: clusters.length });
 
+      this.addResult('Cluster lookup', true, undefined, { clustersFound: clusters.length });
     } catch (error) {
       this.addResult(
-        'Database integration', 
-        false, 
+        'Database integration',
+        false,
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -194,7 +194,7 @@ current-context: test-context
 
     try {
       const testData = 'test-kubeconfig-data';
-      
+
       // Test encryption
       const encrypted = encryptionService.encrypt(testData);
       const hasCorrectFormat = encrypted.includes(':');
@@ -212,11 +212,10 @@ current-context: test-context
       } catch (error) {
         this.addResult('Invalid decryption handling', true);
       }
-
     } catch (error) {
       this.addResult(
-        'Encryption service tests', 
-        false, 
+        'Encryption service tests',
+        false,
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -240,15 +239,15 @@ current-context: test-context
 
   async runAllTests(): Promise<void> {
     this.log('Starting Kubernetes service fix verification...');
-    
+
     await this.testKubeconfigValidation();
     await this.testErrorSerialization();
     await this.testRetryMechanism();
     await this.testDatabaseIntegration();
     await this.testEncryptionService();
-    
+
     this.printSummary();
-    
+
     const allPassed = this.results.every(r => r.passed);
     process.exit(allPassed ? 0 : 1);
   }
