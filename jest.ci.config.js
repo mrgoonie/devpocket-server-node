@@ -32,5 +32,7 @@ module.exports = {
   forceExit: true,
   detectOpenHandles: false, // Disabled for faster CI
   maxWorkers: 2, // Faster parallel execution
-  // No setupFilesAfterEnv to avoid database dependencies
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  globalSetup: '<rootDir>/tests/globalSetup.ts',
+  globalTeardown: '<rootDir>/tests/globalTeardown.ts',
 };
