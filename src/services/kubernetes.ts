@@ -502,7 +502,7 @@ class KubernetesService {
         resourceCleanup.push(
           client.coreV1Api
             .deleteNamespacedPod(environment.kubernetesPodName, namespace)
-            .catch((err: any) =>
+            .catch((err: unknown) =>
               logger.warn('Failed to delete pod', { pod: environment.kubernetesPodName, err })
             )
         );
@@ -512,7 +512,7 @@ class KubernetesService {
         resourceCleanup.push(
           client.coreV1Api
             .deleteNamespacedService(environment.kubernetesServiceName, namespace)
-            .catch((err: any) =>
+            .catch((err: unknown) =>
               logger.warn('Failed to delete service', {
                 service: environment.kubernetesServiceName,
                 err,
@@ -528,10 +528,10 @@ class KubernetesService {
       resourceCleanup.push(
         client.coreV1Api
           .deleteNamespacedPersistentVolumeClaim(pvcName, namespace)
-          .catch((err: any) => logger.warn('Failed to delete PVC', { pvc: pvcName, err })),
+          .catch((err: unknown) => logger.warn('Failed to delete PVC', { pvc: pvcName, err })),
         client.coreV1Api
           .deleteNamespacedConfigMap(configMapName, namespace)
-          .catch((err: any) =>
+          .catch((err: unknown) =>
             logger.warn('Failed to delete ConfigMap', { configMap: configMapName, err })
           )
       );
@@ -601,7 +601,7 @@ class KubernetesService {
           process.stderr,
           stdin ? process.stdin : null,
           true, // tty
-          (status: any) => {
+          (status: { status: string }) => {
             resolve({
               success: status.status === 'Success',
               output: output || '',

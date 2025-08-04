@@ -36,7 +36,7 @@ beforeAll(async () => {
       env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
     });
   } catch (error) {
-    console.warn('Migration failed - this is expected for the first run');
+    // Migration failed - this is expected for the first run
   }
 });
 
@@ -70,7 +70,7 @@ beforeEach(async () => {
     try {
       await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE`);
     } catch (error) {
-      console.warn('Failed to truncate tables:', error);
+      // Failed to truncate tables - this can happen during test cleanup
     }
   }
 });

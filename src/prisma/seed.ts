@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
 import 'dotenv/config';
-import { PrismaClient, SubscriptionPlan, ClusterStatus } from '@prisma/client';
+import { PrismaClient, SubscriptionPlan, ClusterStatus, User, Cluster } from '@prisma/client';
 import { hashPassword } from '@/utils/password';
 import { loadAllTemplates } from '@/scripts/load_templates';
 import { kubeconfigService } from '@/utils/kubeconfig';
@@ -97,7 +97,7 @@ async function seedClusters() {
       })),
     });
 
-    const seededClusters: any = {};
+    const seededClusters: Record<string, Cluster> = {};
 
     // Create/update clusters from real kubeconfig data
     for (const clusterData of clusterDataList) {
@@ -228,7 +228,10 @@ async function seedTemplates() {
   return templates;
 }
 
-async function seedUserClusters(users: any, clusters: any) {
+async function seedUserClusters(
+  users: { adminUser: User; demoUser: User; testUser: User },
+  clusters: Record<string, Cluster> | { allClusters: Record<string, Cluster> }
+) {
   logger.info('Seeding user-cluster relationships...');
 
   // Handle both new structure (with allClusters) and old structure
@@ -243,24 +246,24 @@ async function seedUserClusters(users: any, clusters: any) {
         where: {
           userId_clusterId: {
             userId: users.adminUser.id,
-            clusterId: (cluster as any).id,
+            clusterId: (cluster as Cluster).id,
           },
         },
         update: {},
         create: {
           userId: users.adminUser.id,
-          clusterId: (cluster as any).id,
+          clusterId: (cluster as Cluster).id,
           role: 'ADMIN',
         },
       });
 
       logger.debug('Admin access granted to cluster', {
-        clusterId: (cluster as any).id,
-        clusterName: (cluster as any).name,
+        clusterId: (cluster as Cluster).id,
+        clusterName: (cluster as Cluster).name,
       });
     } catch (error) {
       logger.error('Failed to grant admin access to cluster', {
-        clusterId: (cluster as any).id,
+        clusterId: (cluster as Cluster).id,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -318,7 +321,11 @@ async function seedUserClusters(users: any, clusters: any) {
   logger.info('User-cluster relationships seeding completed');
 }
 
-async function seedEnvironments(users: any, templates: any[], clusters: any) {
+async function seedEnvironments(
+  users: { adminUser: User; demoUser: User; testUser: User },
+  templates: Array<{ id: string; name: string }>,
+  clusters: Record<string, Cluster> | { allClusters: Record<string, Cluster> }
+) {
   logger.info('Seeding demo environments...');
 
   // Create demo environment for demo user

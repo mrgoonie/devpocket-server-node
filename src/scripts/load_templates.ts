@@ -28,7 +28,7 @@ interface TemplateDefinition {
   version: string;
 }
 
-function validateTemplate(template: any): template is TemplateDefinition {
+function validateTemplate(template: unknown): template is TemplateDefinition {
   const required = [
     'name',
     'displayName',

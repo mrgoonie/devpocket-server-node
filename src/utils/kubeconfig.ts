@@ -43,7 +43,7 @@ interface KubeconfigData {
     context: ContextInfo;
   }>;
   currentContext?: string;
-  preferences?: any;
+  preferences?: Record<string, unknown>;
 }
 
 interface ParsedClusterData {

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '@/config/database';
+import { Prisma } from '@prisma/client';
 import { asyncHandler } from '@/middleware/errorHandler';
 import { authenticate, AuthenticatedRequest, requireEmailVerification } from '@/middleware/auth';
 import { ValidationError, NotFoundError, ConflictError } from '@/types/errors';
@@ -208,7 +209,7 @@ router.put(
     }
 
     // Update user (excluding email changes - they need a separate secure flow)
-    const userData: any = {};
+    const userData: Prisma.UserUpdateInput = {};
     if (updateData.username) userData.username = updateData.username.toLowerCase();
     if (updateData.fullName) userData.fullName = updateData.fullName;
     if (updateData.avatarUrl !== undefined) userData.avatarUrl = updateData.avatarUrl;

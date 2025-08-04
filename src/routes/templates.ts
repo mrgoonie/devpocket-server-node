@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '@/config/database';
+import { Prisma } from '@prisma/client';
 import { asyncHandler } from '@/middleware/errorHandler';
 import { authenticate, AuthenticatedRequest, requireAdmin } from '@/middleware/auth';
 import { ValidationError, NotFoundError, ConflictError } from '@/types/errors';
@@ -123,7 +124,7 @@ router.get(
       offset = (page - 1) * limit;
     }
 
-    const where: any = {
+    const where: Prisma.TemplateWhereInput = {
       // Only show active templates by default (unless includeDeprecated query param is true)
       status:
         req.query.includeDeprecated === 'true'
@@ -318,7 +319,7 @@ router.get(
       offset = (page - 1) * limit;
     }
 
-    const where: any = {
+    const where: Prisma.TemplateWhereInput = {
       status: 'ACTIVE',
     };
 
@@ -565,7 +566,7 @@ router.post(
     }
 
     // Prepare safe data for Prisma
-    const safeTemplateData: any = {
+    const safeTemplateData: Prisma.TemplateUpdateInput = {
       name: templateData.name,
       displayName: templateData.displayName,
       description: templateData.description,

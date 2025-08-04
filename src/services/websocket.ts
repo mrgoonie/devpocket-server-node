@@ -20,8 +20,8 @@ interface AuthenticatedWebSocket extends WebSocket {
 
 interface WebSocketMessage {
   type: string;
-  data?: any;
-  [key: string]: any;
+  data?: unknown;
+  [key: string]: unknown;
 }
 
 class WebSocketConnectionManager {

@@ -21,8 +21,8 @@ module.exports = {
   coverageReporters: [
     'text',
     'text-summary',
-    // 'lcov',
-    // 'html'
+    'lcov',
+    'html'
   ],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   moduleNameMapper: {

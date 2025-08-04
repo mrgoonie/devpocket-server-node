@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '@/config/database';
+import { Prisma } from '@prisma/client';
 import { asyncHandler } from '@/middleware/errorHandler';
 import { authenticate, AuthenticatedRequest, requireEmailVerification } from '@/middleware/auth';
 import { environmentRateLimiter } from '@/middleware/rateLimiter';
@@ -424,7 +425,7 @@ router.get(
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
     const offset = parseInt(req.query.offset as string) || 0;
 
-    const where: any = {
+    const where: Prisma.EnvironmentWhereInput = {
       userId: authReq.user.id,
       status: { notIn: ['TERMINATED'] }, // Don't show terminated environments by default
     };
@@ -717,7 +718,7 @@ router.put(
     }
 
     // Prepare update data
-    const dbUpdateData: any = {};
+    const dbUpdateData: Prisma.EnvironmentUpdateInput = {};
     if (updateData.name) dbUpdateData.name = updateData.name;
     if (updateData.description !== undefined) dbUpdateData.description = updateData.description;
     if (updateData.resources) {
@@ -1231,7 +1232,7 @@ router.get(
 
       // Update environment with latest metrics
       if (kubernetesInfo.cpuUsage !== undefined || kubernetesInfo.memoryUsage !== undefined) {
-        const updateData: any = {
+        const updateData: Prisma.EnvironmentUpdateInput = {
           lastActivityAt: new Date(),
         };
         if (kubernetesInfo.cpuUsage !== undefined) updateData.cpuUsage = kubernetesInfo.cpuUsage;
