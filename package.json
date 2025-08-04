@@ -37,6 +37,9 @@
     "db:migration:test": "tsx scripts/database-migration-manager.ts test",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run",
+    "test:cicd": "bash scripts/test-ci-cd-pipeline.sh",
+    "test:cicd:quick": "bash scripts/test-ci-cd-pipeline.sh --quick",
+    "test:cicd:report": "bash scripts/test-ci-cd-pipeline.sh --report",
     "docker:build": "docker build -t devpocket-server .",
     "docker:run": "docker run -p 8000:8000 devpocket-server"
   },

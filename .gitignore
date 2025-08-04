@@ -19,6 +19,10 @@ coverage/
 # nyc test coverage
 .nyc_output
 
+# Test artifacts and temporary files
+temp-*-test/
+temp-*test/
+
 # Compiled binary addons
 build/Release
 
