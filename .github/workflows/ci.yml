@@ -108,9 +108,13 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
+          load: true
           tags: digitop/devpocket-nodejs:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Verify Docker image exists
+        run: docker images | grep digitop/devpocket-nodejs
 
       - name: Test Docker image
         run: |
