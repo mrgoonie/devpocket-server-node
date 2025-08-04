@@ -7,9 +7,12 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "jest",
-    "test:watch": "dotenv -e .env -- jest --watch",
-    "test:coverage": "dotenv -e .env -- jest --coverage",
+    "test:setup": "scripts/test-setup.sh",
+    "test:teardown": "docker-compose -f docker-compose.test.yml down",
+    "test": "NODE_ENV=test jest",
+    "test:watch": "NODE_ENV=test jest --watch",
+    "test:coverage": "NODE_ENV=test jest --coverage",
+    "test:ci": "scripts/test-setup.sh && dotenv -e .env.test -- jest && docker-compose -f docker-compose.test.yml down",
     "test:unit": "jest --config jest.unit.config.js",
     "test:unit:watch": "jest --config jest.unit.config.js --watch",
     "test:unit:coverage": "jest --config jest.unit.config.js --coverage",
@@ -81,6 +84,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@jest/globals": "^30.0.5",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@types/bcryptjs": "^2.4.6",

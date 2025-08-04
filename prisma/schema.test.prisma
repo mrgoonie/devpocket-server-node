@@ -1,0 +1,214 @@
+// Test-specific Prisma schema file with SQLite support
+// This is used for tests when PostgreSQL is not available
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/test-client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./tests/test.db"
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  username          String   @unique
+  fullName          String   @map("full_name")
+  password          String?
+  avatarUrl         String?  @map("avatar_url")
+  isActive          Boolean  @default(true) @map("is_active")
+  isVerified        Boolean  @default(false) @map("is_verified")
+  emailVerifiedAt   DateTime? @map("email_verified_at")
+  subscriptionPlan  String   @default("FREE") @map("subscription_plan") // Changed from enum to string for SQLite
+  googleId          String?  @unique @map("google_id")
+  failedLoginAttempts Int    @default(0) @map("failed_login_attempts")
+  accountLockedUntil DateTime? @map("account_locked_until")
+  lastLoginAt       DateTime? @map("last_login_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  environments      Environment[]
+  refreshTokens     RefreshToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  userClusters      UserCluster[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  usedAt    DateTime? @map("used_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_verification_tokens")
+}
+
+model Cluster {
+  id                String   @id @default(cuid())
+  name              String   @unique
+  description       String?
+  kubeconfig        String
+  endpoint          String
+  isActive          Boolean  @default(true) @map("is_active")
+  region            String?
+  provider          String?
+  version           String?
+  maxEnvironments   Int      @default(100) @map("max_environments")
+  currentEnvironments Int    @default(0) @map("current_environments")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  environments      Environment[]
+  userClusters      UserCluster[]
+
+  @@map("clusters")
+}
+
+model UserCluster {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  clusterId String   @map("cluster_id")
+  canDeploy Boolean  @default(false) @map("can_deploy")
+  canManage Boolean  @default(false) @map("can_manage")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cluster   Cluster  @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clusterId])
+  @@map("user_clusters")
+}
+
+model Template {
+  id                String   @id @default(cuid())
+  name              String   @unique
+  displayName       String   @map("display_name")
+  description       String
+  dockerImage       String   @map("docker_image")
+  port              Int      @default(3000)
+  category          String
+  tags              String   // JSON array stored as string
+  isActive          Boolean  @default(true) @map("is_active")
+  isDeprecated      Boolean  @default(false) @map("is_deprecated")
+  popularity        Int      @default(0)
+  usageCount        Int      @default(0) @map("usage_count")
+  resourceRequirements String @map("resource_requirements") // JSON stored as string
+  environmentVariables String @default("{}") @map("environment_variables") // JSON stored as string
+  startupCommands   String   @default("[]") @map("startup_commands") // JSON array stored as string
+  icon              String?
+  documentation     String?
+  sourceUrl         String?  @map("source_url")
+  maintainer        String?
+  version           String   @default("1.0.0")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  environments      Environment[]
+
+  @@map("templates")
+}
+
+model Environment {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  clusterId         String   @map("cluster_id")
+  templateId        String   @map("template_id")
+  name              String
+  description       String?
+  status            String   @default("PROVISIONING") // Changed from enum to string
+  dockerImage       String   @map("docker_image")
+  port              Int      @default(3000)
+  internalUrl       String?  @map("internal_url")
+  externalUrl       String?  @map("external_url")
+  resourceLimits    String   @map("resource_limits") // JSON stored as string
+  environmentVariables String @default("{}") @map("environment_variables") // JSON stored as string
+  lastAccessedAt    DateTime? @map("last_accessed_at")
+  lastError         String?  @map("last_error")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cluster           Cluster  @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  template          Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  terminalSessions  TerminalSession[]
+  environmentLogs   EnvironmentLog[]
+  environmentMetrics EnvironmentMetric[]
+
+  @@unique([userId, name])
+  @@map("environments")
+}
+
+model TerminalSession {
+  id            String   @id @default(cuid())
+  environmentId String   @map("environment_id")
+  sessionId     String   @unique @map("session_id")
+  isActive      Boolean  @default(true) @map("is_active")
+  lastActivity  DateTime @default(now()) @map("last_activity")
+  createdAt     DateTime @default(now()) @map("created_at")
+  closedAt      DateTime? @map("closed_at")
+
+  // Relations
+  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+
+  @@map("terminal_sessions")
+}
+
+model EnvironmentLog {
+  id            String   @id @default(cuid())
+  environmentId String   @map("environment_id")
+  level         String   @default("info")
+  message       String
+  timestamp     DateTime @default(now())
+  source        String?
+  metadata      String?  // JSON stored as string
+
+  // Relations
+  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+
+  @@index([environmentId, timestamp])
+  @@map("environment_logs")
+}
+
+model EnvironmentMetric {
+  id            String   @id @default(cuid())
+  environmentId String   @map("environment_id")
+  cpuUsage      Float    @map("cpu_usage")
+  memoryUsage   Float    @map("memory_usage")
+  storageUsage  Float    @map("storage_usage")
+  networkIn     Float    @default(0) @map("network_in")
+  networkOut    Float    @default(0) @map("network_out")
+  timestamp     DateTime @default(now())
+
+  // Relations
+  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+
+  @@index([environmentId, timestamp])
+  @@map("environment_metrics")
+}

@@ -25,9 +25,12 @@ module.exports = {
     'html'
   ],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  globalSetup: '<rootDir>/tests/globalSetup.ts',
+  globalTeardown: '<rootDir>/tests/globalTeardown.ts',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@/services/kubernetes$': '<rootDir>/src/services/__mocks__/kubernetes.ts',
+    '^@/config/database$': '<rootDir>/src/config/__mocks__/database.ts',
   },
   testTimeout: 30000,
   clearMocks: true,
