@@ -75,6 +75,31 @@ This document summarizes all documentation updates made to ensure alignment with
 - [x] Rate limiting information is included
 - [x] All user-facing features are documented
 
+## Infrastructure Updates - August 2025
+
+### Kubernetes Authentication Enhancement
+**Date:** August 4, 2025
+
+**Changes Made:**
+- Implemented hybrid Kubernetes authentication strategy for improved security
+- Added support for in-cluster service account authentication as primary method
+- Maintained backward compatibility with external kubeconfig fallback
+- Enhanced SSL certificate verification for all Kubernetes API connections
+- Created comprehensive RBAC manifests with minimal required permissions
+- Added comprehensive test suite covering authentication, security, and compatibility scenarios
+
+**Impact on API:**
+- No changes to user-facing API endpoints
+- Improved security and reliability of environment provisioning
+- Better error handling for Kubernetes operations
+- Enhanced logging for operational visibility
+
+**Files Updated:**
+- `src/services/kubernetes.ts` - Core authentication logic
+- `k8s/rbac/` - Complete RBAC manifest files
+- `k8s/deploy-rbac.sh` - Enhanced deployment script
+- Added comprehensive test suites in `src/services/__tests__/`
+
 ## Next Steps
 
 1. Review and implement Google OAuth if needed
