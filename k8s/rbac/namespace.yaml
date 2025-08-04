@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devpocket-system
+  labels:
+    app.kubernetes.io/name: devpocket
+    app.kubernetes.io/component: system
+    app.kubernetes.io/part-of: devpocket-platform
+    name: devpocket-system
+  annotations:
+    description: "Namespace for DevPocket system components"
+spec: {}

@@ -1,0 +1,23 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: devpocket-api
+  labels:
+    app.kubernetes.io/name: devpocket
+    app.kubernetes.io/component: api-server
+    app.kubernetes.io/part-of: devpocket-platform
+  annotations:
+    description: "ClusterRoleBinding for DevPocket API server service account"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: devpocket-api
+subjects:
+# Default namespace binding
+- kind: ServiceAccount
+  name: devpocket-api
+  namespace: default
+# Production namespace binding (if using separate namespace)
+- kind: ServiceAccount
+  name: devpocket-api
+  namespace: devpocket-system

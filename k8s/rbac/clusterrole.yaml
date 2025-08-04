@@ -1,0 +1,118 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: devpocket-api
+  labels:
+    app.kubernetes.io/name: devpocket
+    app.kubernetes.io/component: api-server
+    app.kubernetes.io/part-of: devpocket-platform
+  annotations:
+    description: "ClusterRole for DevPocket API server to manage development environments"
+rules:
+# Core API resources
+- apiGroups: [""]
+  resources: 
+    - "namespaces"
+  verbs: 
+    - "create"
+    - "get"
+    - "list"
+    - "watch"
+    - "delete"
+
+- apiGroups: [""]
+  resources: 
+    - "pods"
+    - "pods/log"
+    - "pods/exec"
+  verbs: 
+    - "create"
+    - "get"
+    - "list"
+    - "watch"
+    - "delete"
+    - "patch"
+    - "update"
+
+- apiGroups: [""]
+  resources: 
+    - "services"
+  verbs: 
+    - "create"
+    - "get"
+    - "list"
+    - "watch"
+    - "delete"
+    - "patch"
+    - "update"
+
+- apiGroups: [""]
+  resources: 
+    - "persistentvolumeclaims"
+  verbs: 
+    - "create"
+    - "get"
+    - "list"
+    - "watch"
+    - "delete"
+    - "patch"
+    - "update"
+
+- apiGroups: [""]
+  resources: 
+    - "configmaps"
+  verbs: 
+    - "create"
+    - "get"
+    - "list"
+    - "watch"
+    - "delete"
+    - "patch"
+    - "update"
+
+# Apps API resources
+- apiGroups: ["apps"]
+  resources: 
+    - "deployments"
+    - "deployments/status"
+    - "deployments/scale"
+  verbs: 
+    - "create"
+    - "get"
+    - "list"
+    - "watch"
+    - "delete"
+    - "patch"
+    - "update"
+
+# Additional permissions for monitoring and debugging
+- apiGroups: [""]
+  resources: 
+    - "events"
+  verbs: 
+    - "get"
+    - "list"
+    - "watch"
+
+# Metrics access (if metrics-server is available)
+- apiGroups: ["metrics.k8s.io"]
+  resources: 
+    - "pods"
+    - "nodes"
+  verbs: 
+    - "get"
+    - "list"
+
+# Batch API for potential job management
+- apiGroups: ["batch"]
+  resources: 
+    - "jobs"
+    - "cronjobs"
+  verbs: 
+    - "create"
+    - "get"
+    - "list"
+    - "watch"
+    - "delete"
+    - "patch"
+    - "update"
