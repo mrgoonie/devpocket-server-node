@@ -11,7 +11,20 @@ const envSchema = z.object({
   APP_NAME: z.string().default('DevPocket API'),
 
   // Database
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.string().refine(
+    (url) => {
+      // Allow file URLs for SQLite in test/development
+      if (url.startsWith('file:')) return true;
+      // Otherwise must be a valid URL
+      try {
+        new URL(url);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: "DATABASE_URL must be a valid URL or file path" }
+  ),
 
   // JWT
   JWT_SECRET: z.string().min(32),

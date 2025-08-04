@@ -121,7 +121,7 @@ jobs:
           # Start container with test environment
           docker run --rm -d --name test-container \
             -e NODE_ENV=test \
-            -e DATABASE_URL=file:./test.db \
+            -e DATABASE_URL=file:///app/test.db \
             -e JWT_SECRET=test-jwt-secret-key-for-testing-that-is-long-enough \
             -e LOG_LEVEL=error \
             -e GOOGLE_CLIENT_ID=fake-google-client-id \
@@ -133,14 +133,29 @@ jobs:
             -p 8000:8000 \
             digitop/devpocket-nodejs:test
           
-          # Wait for container to start
-          sleep 15
+          # Wait for container to start and check logs
+          sleep 10
+          echo "Container logs:"
+          docker logs test-container
+          
+          # Wait a bit more
+          sleep 5
           
           # Test health endpoint (expect 200 for basic health check)
-          curl -f http://localhost:8000/health || exit 1
+          echo "Testing health endpoint..."
+          curl -f http://localhost:8000/health || {
+            echo "Health check failed, showing container logs:"
+            docker logs test-container
+            exit 1
+          }
           
           # Test that ready endpoint returns 503 (expected without real database)
-          curl -s http://localhost:8000/health/ready | grep '"status":"not ready"' || exit 1
+          echo "Testing ready endpoint..."
+          curl -s http://localhost:8000/health/ready | grep '"status":"not ready"' || {
+            echo "Ready check failed, showing response:"
+            curl -s http://localhost:8000/health/ready
+            exit 1
+          }
           
           # Cleanup
           docker stop test-container
