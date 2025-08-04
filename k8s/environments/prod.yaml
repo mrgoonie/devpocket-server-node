@@ -1,0 +1,33 @@
+# Production Environment Configuration
+# This file contains environment-specific variables for the production environment
+
+# Environment details
+ENVIRONMENT: prod
+NAMESPACE: devpocket-prod
+NODE_ENV: production
+
+# Domain configuration
+DOMAIN: api.devpocket.app
+FRONTEND_URL: https://app.devpocket.com
+
+# Application configuration
+DEBUG: "false"
+LOG_LEVEL: info
+CLUSTER_NAME: production-cluster
+
+# Resource allocation (optimized for production)
+REPLICAS: 2
+MEMORY_REQUEST: 256Mi
+MEMORY_LIMIT: 512Mi
+CPU_REQUEST: 200m
+CPU_LIMIT: 500m
+
+# Rate limiting (strict for production)
+RATE_LIMIT_WINDOW_MS: 900000
+RATE_LIMIT_MAX_REQUESTS: 100
+AUTH_RATE_LIMIT_MAX_REQUESTS: 5
+ENV_RATE_LIMIT_MAX_REQUESTS: 10
+
+# Production-specific features
+ENABLE_API_DOCS: "false"
+ENABLE_PERFORMANCE_MONITORING: "true"

@@ -7,14 +7,17 @@ metadata:
     app.kubernetes.io/name: devpocket-nodejs
     app.kubernetes.io/component: api-server
     app.kubernetes.io/part-of: devpocket-platform
-    environment: {{ ENVIRONMENT }}
+    app.kubernetes.io/version: "{{ VERSION }}"
+    app.kubernetes.io/environment: {{ ENVIRONMENT }}
+  annotations:
+    description: "DevPocket API server service for {{ ENVIRONMENT }} environment"
 spec:
   type: ClusterIP
   ports:
-  - port: 8000
-    targetPort: http
+  - name: http
+    port: 80
+    targetPort: 8000
     protocol: TCP
-    name: http
   selector:
     app.kubernetes.io/name: devpocket-nodejs
     app.kubernetes.io/component: api-server

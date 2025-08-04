@@ -1,0 +1,33 @@
+# Development Environment Configuration
+# This file contains environment-specific variables for the dev environment
+
+# Environment details
+ENVIRONMENT: dev
+NAMESPACE: devpocket-dev
+NODE_ENV: development
+
+# Domain configuration
+DOMAIN: api.dev.devpocket.app
+FRONTEND_URL: https://dev.devpocket.app
+
+# Application configuration
+DEBUG: "true"
+LOG_LEVEL: debug
+CLUSTER_NAME: development-cluster
+
+# Resource allocation (reduced for development)
+REPLICAS: 1
+MEMORY_REQUEST: 128Mi
+MEMORY_LIMIT: 256Mi
+CPU_REQUEST: 100m
+CPU_LIMIT: 300m
+
+# Rate limiting (more permissive for development)
+RATE_LIMIT_WINDOW_MS: 900000
+RATE_LIMIT_MAX_REQUESTS: 200
+AUTH_RATE_LIMIT_MAX_REQUESTS: 10
+ENV_RATE_LIMIT_MAX_REQUESTS: 20
+
+# Development-specific features
+ENABLE_API_DOCS: "true"
+ENABLE_DEBUG_ENDPOINTS: "true"

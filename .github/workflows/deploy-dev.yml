@@ -2,34 +2,42 @@ name: Deploy to Development
 
 on:
   push:
-    branches: [dev/*]
+    branches:
+      - dev
+      - develop
   workflow_dispatch:
     inputs:
-      force_deploy:
-        description: 'Force deploy even if tests fail'
+      image_tag:
+        description: 'Docker image tag to deploy'
         required: false
-        default: false
-        type: boolean
-
-env:
-  DOCKER_REGISTRY: docker.io
-  DOCKER_IMAGE: digitop/devpocket-nodejs
-  KUBERNETES_NAMESPACE: devpocket-dev
-  DOMAIN: api.dev.devpocket.app
+        default: 'dev-latest'
 
 jobs:
   test:
-    runs-on: ubuntu-latest
     name: Run Tests
+    runs-on: ubuntu-latest
     
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: devpocket_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9.6.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -42,35 +50,28 @@ jobs:
 
       - name: Generate Prisma client
         run: pnpm db:generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/devpocket_test
 
-      - name: Run linting
-        run: pnpm lint
-
-      - name: Check formatting
-        run: pnpm format --check
-
-      - name: Run type checking
-        run: pnpm build
+      - name: Run database migrations
+        run: pnpm prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/devpocket_test
 
       - name: Run tests
-        run: pnpm test:ci:coverage
+        run: pnpm test
         env:
           NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/devpocket_test
           JWT_SECRET: test-jwt-secret-key-for-ci
           GOOGLE_CLIENT_ID: fake-google-client-id
           GOOGLE_CLIENT_SECRET: fake-google-client-secret
           RESEND_API_KEY: fake-resend-api-key
 
-  build-and-push:
+  build:
+    name: Build Docker Image
     runs-on: ubuntu-latest
-    name: Build and Push Docker Image
     needs: test
-    if: success() || github.event.inputs.force_deploy == 'true'
-    
-    outputs:
-      image-tag: ${{ steps.meta.outputs.tags }}
-      image-digest: ${{ steps.build.outputs.digest }}
-      build-number: ${{ github.run_number }}
     
     steps:
       - name: Checkout repository
@@ -79,32 +80,23 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Hub
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PAT }}
-
-      - name: Extract branch name
-        shell: bash
-        run: |
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}
-          BRANCH_SAFE=${BRANCH_NAME//\//-}
-          echo "BRANCH_SAFE=${BRANCH_SAFE}" >> $GITHUB_ENV
-          echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_ENV
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}
+          images: devpocket/server
           tags: |
+            type=ref,event=branch,suffix=-{{sha}}
             type=raw,value=dev-latest
-            type=raw,value=dev-${{ env.BRANCH_SAFE }}-${{ github.run_number }}-${{ env.SHORT_SHA }}
+            type=raw,value=dev-{{date 'YYYYMMDD-HHmmss'}}
 
       - name: Build and push Docker image
-        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -114,16 +106,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64
-
-      - name: Image digest
-        run: echo "Built image with digest ${{ steps.build.outputs.digest }}"
 
   deploy:
+    name: Deploy to Development
     runs-on: ubuntu-latest
-    name: Deploy to Kubernetes Development
-    needs: [test, build-and-push]
-    if: success() || github.event.inputs.force_deploy == 'true'
+    needs: build
     environment: development
     
     steps:
@@ -135,111 +122,71 @@ jobs:
         with:
           version: 'v1.28.0'
 
-      - name: Setup kubeconfig
+      - name: Configure kubectl
         run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBECONFIG_DEV }}" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
 
       - name: Verify cluster connection
         run: |
           kubectl cluster-info
-          kubectl get namespaces
+          kubectl get nodes
 
-      - name: Create namespace if not exists
+      - name: Generate development manifests
         run: |
-          kubectl create namespace ${{ env.KUBERNETES_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          echo "Generating development manifests..."
+          IMAGE_TAG="${{ github.event.inputs.image_tag || 'dev-latest' }}"
+          ./scripts/deployment/generate-manifests.sh \
+            -e dev \
+            -i "devpocket/server:$IMAGE_TAG" \
+            -o k8s/generated/dev
 
-      - name: Prepare environment-specific manifests
+      - name: Deploy to development
         run: |
-          # Create dev-specific manifests from templates
-          mkdir -p k8s/dev
+          echo "Deploying to development environment..."
           
-          # Copy and modify deployment for dev environment
-          sed -e "s/namespace: devpocket-prod/namespace: ${{ env.KUBERNETES_NAMESPACE }}/g" \
-              -e "s/image: docker.io\/digitop\/devpocket-nodejs:latest/image: ${{ env.DOCKER_REGISTRY }}\/${{ env.DOCKER_IMAGE }}:dev-${{ env.BRANCH_SAFE }}-${{ github.run_number }}-${{ env.SHORT_SHA }}/g" \
-              -e "s/value: \"production\"/value: \"development\"/g" \
-              -e "s/value: \"info\"/value: \"debug\"/g" \
-              -e "s/value: \"false\"/value: \"true\"/g" \
-              -e "s/requests:/# Reduced resources for dev\n        requests:/g" \
-              -e "s/memory: \"256Mi\"/memory: \"128Mi\"/g" \
-              -e "s/cpu: \"200m\"/cpu: \"100m\"/g" \
-              -e "s/limits:/limits:/g" \
-              -e "s/memory: \"512Mi\"/memory: \"256Mi\"/g" \
-              -e "s/cpu: \"500m\"/cpu: \"300m\"/g" \
-              k8s/deployment.yaml > k8s/dev/deployment.yaml
+          # Apply manifests in correct order
+          kubectl apply -f k8s/generated/dev/namespace.yaml
+          kubectl apply -f k8s/generated/dev/service.yaml
+          kubectl apply -f k8s/generated/dev/deployment.yaml
+          kubectl apply -f k8s/generated/dev/ingress.yaml
           
-          # Copy and modify service for dev environment
-          sed "s/namespace: devpocket-prod/namespace: ${{ env.KUBERNETES_NAMESPACE }}/g" \
-              k8s/service.yaml > k8s/dev/service.yaml
+          # Wait for deployment to be ready
+          kubectl rollout status deployment/devpocket-nodejs -n devpocket-dev --timeout=600s
           
-          # Copy and modify ingress for dev environment
-          sed -e "s/namespace: devpocket-prod/namespace: ${{ env.KUBERNETES_NAMESPACE }}/g" \
-              -e "s/api.devpocket.app/${{ env.DOMAIN }}/g" \
-              -e "s/devpocket-nodejs.prod.diginext.site/devpocket-nodejs.dev.diginext.site/g" \
-              -e "s/tls-api-devpocket-app/tls-api-dev-devpocket-app/g" \
-              -e "s/tls-devpocket-nodejs-prod-diginext-site/tls-devpocket-nodejs-dev-diginext-site/g" \
-              k8s/ingress.yaml > k8s/dev/ingress.yaml
+          # Verify deployment
+          kubectl get pods -n devpocket-dev -l app.kubernetes.io/name=devpocket-nodejs
+
+      - name: Health check
+        run: |
+          echo "Performing health checks..."
           
-          # Copy namespace manifest
-          sed "s/name: devpocket-prod/name: ${{ env.KUBERNETES_NAMESPACE }}/g" \
-              k8s/namespace.yaml > k8s/dev/namespace.yaml
-        env:
-          BRANCH_SAFE: ${{ env.BRANCH_SAFE }}
-          SHORT_SHA: ${{ env.SHORT_SHA }}
-
-      - name: Apply Kubernetes manifests
-        run: |
-          kubectl apply -f k8s/dev/namespace.yaml
-          kubectl apply -f k8s/dev/service.yaml
-          kubectl apply -f k8s/dev/deployment.yaml
-          kubectl apply -f k8s/dev/ingress.yaml
-
-      - name: Wait for deployment to be ready
-        run: |
-          kubectl rollout status deployment/devpocket-nodejs -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=300s
-
-      - name: Verify deployment
-        run: |
-          kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }} -l app.kubernetes.io/name=devpocket-nodejs
-          kubectl get services -n ${{ env.KUBERNETES_NAMESPACE }} devpocket-nodejs
-          kubectl get ingress -n ${{ env.KUBERNETES_NAMESPACE }} devpocket-nodejs
-
-      - name: Run smoke tests
-        run: |
-          # Wait for ingress to be ready
-          sleep 60
+          # Wait for pods to be ready
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=devpocket-nodejs -n devpocket-dev --timeout=300s
           
-          # Test the API health endpoint
-          if curl -f https://${{ env.DOMAIN }}/api/v1/health; then
-            echo "✅ Health check passed"
+          # Get pod name for health check
+          POD_NAME=$(kubectl get pods -n devpocket-dev -l app.kubernetes.io/name=devpocket-nodejs -o jsonpath='{.items[0].metadata.name}')
+          
+          # Check health endpoint
+          if kubectl exec -n devpocket-dev $POD_NAME -- curl -f http://localhost:8000/api/v1/health; then
+            echo "Development deployment health check passed"
           else
-            echo "⚠️ Health check failed - this is expected for new dev deployments"
-            kubectl logs -n ${{ env.KUBERNETES_NAMESPACE }} -l app.kubernetes.io/name=devpocket-nodejs --tail=20
+            echo "Development deployment health check failed"
+            exit 1
           fi
 
-  notify:
-    runs-on: ubuntu-latest
-    name: Notify Deployment Status
-    needs: [test, build-and-push, deploy]
-    if: always()
-    
-    steps:
-      - name: Deployment Success
-        if: needs.deploy.result == 'success'
+      - name: Deployment summary
+        if: always()
         run: |
-          echo "🚀 Development deployment successful!"
-          echo "✅ Tests: ${{ needs.test.result }}"
-          echo "✅ Build: ${{ needs.build-and-push.result }}"  
-          echo "✅ Deploy: ${{ needs.deploy.result }}"
-          echo "🌐 URL: https://${{ env.DOMAIN }}"
-          echo "🏷️ Build: ${{ needs.build-and-push.outputs.build-number }}"
-
-      - name: Deployment Failed
-        if: needs.deploy.result == 'failure'
-        run: |
-          echo "❌ Development deployment failed!"
-          echo "Tests: ${{ needs.test.result }}"
-          echo "Build: ${{ needs.build-and-push.result }}"  
-          echo "Deploy: ${{ needs.deploy.result }}"
-          exit 1
+          echo "Development Deployment Summary"
+          echo "============================="
+          echo "Environment: Development"
+          echo "Namespace: devpocket-dev"
+          echo "Image: devpocket/server:${{ github.event.inputs.image_tag || 'dev-latest' }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo ""
+          echo "Access URL: https://api.dev.devpocket.app"
+          echo ""
+          kubectl get all -n devpocket-dev

@@ -1,0 +1,33 @@
+# Beta Environment Configuration
+# This file contains environment-specific variables for the beta environment
+
+# Environment details
+ENVIRONMENT: beta
+NAMESPACE: devpocket-beta
+NODE_ENV: beta
+
+# Domain configuration
+DOMAIN: api.beta.devpocket.app
+FRONTEND_URL: https://beta.devpocket.app
+
+# Application configuration
+DEBUG: "true"
+LOG_LEVEL: debug
+CLUSTER_NAME: beta-cluster
+
+# Resource allocation (moderate for beta testing)
+REPLICAS: 1
+MEMORY_REQUEST: 256Mi
+MEMORY_LIMIT: 512Mi
+CPU_REQUEST: 200m
+CPU_LIMIT: 500m
+
+# Rate limiting (moderate for beta testing)
+RATE_LIMIT_WINDOW_MS: 900000
+RATE_LIMIT_MAX_REQUESTS: 150
+AUTH_RATE_LIMIT_MAX_REQUESTS: 8
+ENV_RATE_LIMIT_MAX_REQUESTS: 15
+
+# Beta-specific features
+ENABLE_API_DOCS: "true"
+ENABLE_BETA_FEATURES: "true"

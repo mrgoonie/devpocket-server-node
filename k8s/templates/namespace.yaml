@@ -4,8 +4,7 @@ metadata:
   name: {{ NAMESPACE }}
   labels:
     app.kubernetes.io/name: devpocket
-    app.kubernetes.io/component: namespace
+    app.kubernetes.io/environment: {{ ENVIRONMENT }}
     app.kubernetes.io/part-of: devpocket-platform
-    environment: {{ ENVIRONMENT }}
   annotations:
     description: "DevPocket {{ ENVIRONMENT }} environment namespace"

@@ -82,6 +82,11 @@ spec:
             secretKeyRef:
               name: devpocket-secrets
               key: jwt-refresh-secret
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: devpocket-secrets
+              key: secret-key
         
         # External service credentials
         - name: GOOGLE_CLIENT_ID
@@ -164,7 +169,7 @@ spec:
         # Health checks
         readinessProbe:
           httpGet:
-            path: /api/v1/health
+            path: /api/v1/health/ready
             port: http
           initialDelaySeconds: 10
           periodSeconds: 10

@@ -201,6 +201,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TEMPLATE_DIR="$PROJECT_ROOT/k8s/templates"
 
+# Handle relative vs absolute output paths
+if [[ "$OUTPUT_DIR" = /* ]]; then
+    # Absolute path
+    FULL_OUTPUT_DIR="$OUTPUT_DIR"
+else
+    # Relative path
+    FULL_OUTPUT_DIR="$PROJECT_ROOT/$OUTPUT_DIR"
+fi
+
 # Validate template directory exists
 if [[ ! -d "$TEMPLATE_DIR" ]]; then
     error "Template directory not found: $TEMPLATE_DIR"
@@ -208,19 +217,19 @@ if [[ ! -d "$TEMPLATE_DIR" ]]; then
 fi
 
 # Create output directory
-mkdir -p "$PROJECT_ROOT/$OUTPUT_DIR"
+mkdir -p "$FULL_OUTPUT_DIR"
 
 log "Generating manifests for environment: $ENVIRONMENT"
 log "Using image: $IMAGE"
 log "Version: $VERSION"
-log "Output directory: $PROJECT_ROOT/$OUTPUT_DIR"
+log "Output directory: $FULL_OUTPUT_DIR"
 
 # Generate manifests from templates
 TEMPLATES=("namespace.yaml" "service.yaml" "deployment.yaml" "ingress.yaml")
 
 for template in "${TEMPLATES[@]}"; do
     template_file="$TEMPLATE_DIR/$template"
-    output_file="$PROJECT_ROOT/$OUTPUT_DIR/$template"
+    output_file="$FULL_OUTPUT_DIR/$template"
     
     if [[ -f "$template_file" ]]; then
         log "Generating $template..."
@@ -232,7 +241,7 @@ for template in "${TEMPLATES[@]}"; do
 done
 
 # Create a summary file
-cat > "$PROJECT_ROOT/$OUTPUT_DIR/README.md" << EOF
+cat > "$FULL_OUTPUT_DIR/README.md" << EOF
 # DevPocket $ENVIRONMENT Environment Manifests
 
 Generated on: $(date)
@@ -271,5 +280,5 @@ kubectl delete -f namespace.yaml
 EOF
 
 success "Manifest generation completed!"
-log "Manifests generated in: $PROJECT_ROOT/$OUTPUT_DIR"
-log "Summary available in: $PROJECT_ROOT/$OUTPUT_DIR/README.md"
+log "Manifests generated in: $FULL_OUTPUT_DIR"
+log "Summary available in: $FULL_OUTPUT_DIR/README.md"

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # DevPocket Environment Cleanup Script
-# This script helps clean up deployments across different environments
+# This script cleans up environment-specific Kubernetes resources
 
 set -euo pipefail
 
@@ -18,19 +18,24 @@ NAMESPACE=""
 DRY_RUN=false
 FORCE=false
 
+# Resource cleanup order (reversed dependency order)
+RESOURCE_ORDER=("ingress" "service" "deployment" "configmap" "secret" "pvc")
+
 usage() {
-    echo "Usage: $0 -e <environment> [-n <namespace>] [-d] [-f]"
-    echo "  -e, --environment  Environment to cleanup (dev, beta, prod)"
-    echo "  -n, --namespace    Specific namespace (optional, derived from environment if not provided)"
+    echo "Usage: $0 [-e <environment>] [-n <namespace>] [-d] [-f] [-h]"
+    echo "  -e, --environment  Environment (dev, beta, prod)"
+    echo "  -n, --namespace    Kubernetes namespace (alternative to environment)"
     echo "  -d, --dry-run      Show what would be deleted without actually deleting"
-    echo "  -f, --force        Force deletion without confirmation"
+    echo "  -f, --force        Skip confirmation prompts"
     echo "  -h, --help         Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 -e dev -d                    # Dry run cleanup for dev environment"
-    echo "  $0 -e beta -f                   # Force cleanup beta environment"
-    echo "  $0 -e prod                      # Interactive cleanup for production"
-    echo "  $0 -n devpocket-dev-feature-x  # Cleanup specific namespace"
+    echo "  $0 -e dev"
+    echo "  $0 -n devpocket-beta"
+    echo "  $0 -e prod -d"
+    echo "  $0 -n devpocket-dev -f"
+    echo ""
+    echo "Note: Either environment (-e) or namespace (-n) must be specified"
 }
 
 log() {
@@ -47,6 +52,158 @@ error() {
 
 success() {
     echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+# Function to check if kubectl is available
+check_dependencies() {
+    if ! command -v kubectl >/dev/null 2>&1; then
+        error "kubectl is not installed or not in PATH"
+        exit 1
+    fi
+    
+    # Test kubectl connectivity
+    if ! kubectl cluster-info >/dev/null 2>&1; then
+        error "Cannot connect to Kubernetes cluster"
+        exit 1
+    fi
+}
+
+# Function to validate and set namespace
+validate_environment() {
+    if [[ -n "$ENVIRONMENT" ]]; then
+        case $ENVIRONMENT in
+            dev)
+                NAMESPACE="devpocket-dev"
+                ;;
+            beta)
+                NAMESPACE="devpocket-beta"
+                ;;
+            prod)
+                NAMESPACE="devpocket-prod"
+                ;;
+            *)
+                error "Unknown environment: $ENVIRONMENT. Use dev, beta, or prod"
+                exit 1
+                ;;
+        esac
+    fi
+    
+    if [[ -z "$NAMESPACE" ]]; then
+        error "Either environment (-e) or namespace (-n) must be specified"
+        usage
+        exit 1
+    fi
+    
+    # Verify namespace exists
+    if ! kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
+        warn "Namespace '$NAMESPACE' does not exist"
+        if [[ "$FORCE" == "false" ]]; then
+            read -p "Continue anyway? (y/N): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                log "Operation cancelled"
+                exit 0
+            fi
+        fi
+    fi
+}
+
+# Function to list resources in namespace
+list_resources() {
+    local resource_type="$1"
+    local timeout="30s"
+    
+    kubectl get "$resource_type" -n "$NAMESPACE" --no-headers 2>/dev/null | \
+        grep -v kubernetes | \
+        grep -v -E '^(kube-root-ca.crt)$' | \
+        grep -v -E '^(default-token-|sh\.helm\.release\.)' | \
+        awk '{print $1}' || true
+}
+
+# Function to delete resources
+delete_resources() {
+    local resource_type="$1"
+    local resources
+    
+    resources=$(list_resources "$resource_type")
+    
+    if [[ -z "$resources" ]]; then
+        log "No $resource_type resources found in namespace $NAMESPACE"
+        return 0
+    fi
+    
+    log "Found $resource_type resources in namespace $NAMESPACE:"
+    echo "$resources" | sed 's/^/  - /'
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        warn "Would delete the above resources (dry-run mode)"
+        return 0
+    fi
+    
+    if [[ "$FORCE" == "false" ]] && [[ "$resource_type" != "configmap" ]] && [[ "$resource_type" != "secret" ]]; then
+        read -p "Delete these $resource_type resources? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            log "Skipping $resource_type deletion"
+            return 0
+        fi
+    fi
+    
+    echo "$resources" | while IFS= read -r resource; do
+        if [[ -n "$resource" ]]; then
+            log "Deleting $resource_type: $resource"
+            if kubectl delete "$resource_type" "$resource" -n "$NAMESPACE" --timeout=60s; then
+                success "Deleted $resource_type: $resource"
+            else
+                error "Failed to delete $resource_type: $resource"
+            fi
+        fi
+    done
+}
+
+# Function to cleanup namespace
+cleanup_namespace() {
+    log "Starting cleanup for namespace: $NAMESPACE"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        warn "Running in dry-run mode - no resources will be deleted"
+    fi
+    
+    # Delete resources in reverse dependency order
+    for resource_type in "${RESOURCE_ORDER[@]}"; do
+        log "Processing $resource_type resources..."
+        delete_resources "$resource_type"
+    done
+    
+    # Check if namespace should be deleted
+    local remaining_resources
+    remaining_resources=$(kubectl get all -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l || echo "0")
+    
+    if [[ "$remaining_resources" -eq 0 ]]; then
+        log "Namespace $NAMESPACE appears to be empty"
+        
+        if [[ "$DRY_RUN" == "true" ]]; then
+            warn "Would delete namespace $NAMESPACE (dry-run mode)"
+        else
+            if [[ "$FORCE" == "false" ]]; then
+                read -p "Delete the empty namespace $NAMESPACE? (y/N): " -n 1 -r
+                echo
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    kubectl delete namespace "$NAMESPACE"
+                    success "Deleted namespace: $NAMESPACE"
+                else
+                    log "Keeping namespace: $NAMESPACE"
+                fi
+            else
+                kubectl delete namespace "$NAMESPACE"
+                success "Deleted namespace: $NAMESPACE"
+            fi
+        fi
+    else
+        warn "Namespace $NAMESPACE still contains resources, not deleting"
+        log "Remaining resources:"
+        kubectl get all -n "$NAMESPACE" 2>/dev/null || true
+    fi
 }
 
 # Parse command line arguments
@@ -81,162 +238,34 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate inputs
-if [[ -z "$ENVIRONMENT" && -z "$NAMESPACE" ]]; then
+if [[ -z "$ENVIRONMENT" ]] && [[ -z "$NAMESPACE" ]]; then
     error "Either environment (-e) or namespace (-n) must be specified"
     usage
     exit 1
 fi
 
-# Set namespace based on environment if not explicitly provided
-if [[ -n "$ENVIRONMENT" && -z "$NAMESPACE" ]]; then
-    case $ENVIRONMENT in
-        dev)
-            NAMESPACE="devpocket-dev"
-            ;;
-        beta)
-            NAMESPACE="devpocket-beta"
-            ;;
-        prod)
-            NAMESPACE="devpocket-prod"
-            ;;
-        *)
-            error "Unknown environment: $ENVIRONMENT. Use dev, beta, or prod"
-            exit 1
-            ;;
-    esac
-fi
+# Main execution
+log "DevPocket Environment Cleanup"
+log "==============================="
 
-# Check if kubectl is available
-if ! command -v kubectl &> /dev/null; then
-    error "kubectl is not installed or not in PATH"
-    exit 1
-fi
+check_dependencies
+validate_environment
 
-# Check if namespace exists
-if ! kubectl get namespace "$NAMESPACE" &> /dev/null; then
-    warn "Namespace '$NAMESPACE' does not exist"
-    exit 0
-fi
-
-log "Preparing to cleanup environment: ${ENVIRONMENT:-"custom"} (namespace: $NAMESPACE)"
-
-# Get list of resources to delete
-RESOURCES_TO_DELETE=()
-
-# Check for deployments
-if kubectl get deployments -n "$NAMESPACE" --no-headers 2>/dev/null | grep -q .; then
-    DEPLOYMENTS=$(kubectl get deployments -n "$NAMESPACE" --no-headers -o custom-columns=":metadata.name" 2>/dev/null)
-    while IFS= read -r deployment; do
-        [[ -n "$deployment" ]] && RESOURCES_TO_DELETE+=("deployment/$deployment")
-    done <<< "$DEPLOYMENTS"
-fi
-
-# Check for services
-if kubectl get services -n "$NAMESPACE" --no-headers 2>/dev/null | grep -q .; then
-    SERVICES=$(kubectl get services -n "$NAMESPACE" --no-headers -o custom-columns=":metadata.name" 2>/dev/null | grep -v kubernetes)
-    while IFS= read -r service; do
-        [[ -n "$service" ]] && RESOURCES_TO_DELETE+=("service/$service")
-    done <<< "$SERVICES"
-fi
-
-# Check for ingresses
-if kubectl get ingresses -n "$NAMESPACE" --no-headers 2>/dev/null | grep -q .; then
-    INGRESSES=$(kubectl get ingresses -n "$NAMESPACE" --no-headers -o custom-columns=":metadata.name" 2>/dev/null)
-    while IFS= read -r ingress; do
-        [[ -n "$ingress" ]] && RESOURCES_TO_DELETE+=("ingress/$ingress")
-    done <<< "$INGRESSES"
-fi
-
-# Check for configmaps (exclude default ones)
-if kubectl get configmaps -n "$NAMESPACE" --no-headers 2>/dev/null | grep -q .; then
-    CONFIGMAPS=$(kubectl get configmaps -n "$NAMESPACE" --no-headers -o custom-columns=":metadata.name" 2>/dev/null | grep -v -E '^(kube-root-ca.crt)$')
-    while IFS= read -r configmap; do
-        [[ -n "$configmap" ]] && RESOURCES_TO_DELETE+=("configmap/$configmap")
-    done <<< "$CONFIGMAPS"
-fi
-
-# Check for secrets (exclude default ones)
-if kubectl get secrets -n "$NAMESPACE" --no-headers 2>/dev/null | grep -q .; then
-    SECRETS=$(kubectl get secrets -n "$NAMESPACE" --no-headers -o custom-columns=":metadata.name" 2>/dev/null | grep -v -E '^(default-token-|sh\.helm\.release\.)')
-    while IFS= read -r secret; do
-        [[ -n "$secret" ]] && RESOURCES_TO_DELETE+=("secret/$secret")
-    done <<< "$SECRETS"
-fi
-
-# Check for PVCs
-if kubectl get pvc -n "$NAMESPACE" --no-headers 2>/dev/null | grep -q .; then
-    PVCS=$(kubectl get pvc -n "$NAMESPACE" --no-headers -o custom-columns=":metadata.name" 2>/dev/null)
-    while IFS= read -r pvc; do
-        [[ -n "$pvc" ]] && RESOURCES_TO_DELETE+=("pvc/$pvc")
-    done <<< "$PVCS"
-fi
-
-# Display what will be deleted
-if [[ ${#RESOURCES_TO_DELETE[@]} -eq 0 ]]; then
-    success "No resources found to cleanup in namespace '$NAMESPACE'"
-    exit 0
-fi
-
-log "Found ${#RESOURCES_TO_DELETE[@]} resources to delete:"
-for resource in "${RESOURCES_TO_DELETE[@]}"; do
-    echo "  - $resource"
-done
-
-# Dry run mode
-if [[ "$DRY_RUN" == "true" ]]; then
-    log "DRY RUN: Would delete the above resources from namespace '$NAMESPACE'"
-    exit 0
-fi
-
-# Confirmation (unless force mode)
-if [[ "$FORCE" != "true" ]]; then
-    echo ""
-    read -p "Are you sure you want to delete these resources from namespace '$NAMESPACE'? (y/N): " -n 1 -r
-    echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        log "Cleanup cancelled"
+# Production safety check
+if [[ "$ENVIRONMENT" == "prod" ]] && [[ "$FORCE" == "false" ]]; then
+    warn "You are about to cleanup a PRODUCTION environment!"
+    warn "This will delete all resources in namespace: $NAMESPACE"
+    read -p "Are you absolutely sure? Type 'DELETE PRODUCTION' to continue: " -r
+    if [[ "$REPLY" != "DELETE PRODUCTION" ]]; then
+        log "Operation cancelled for safety"
         exit 0
     fi
 fi
 
-# Delete resources
-log "Starting cleanup of namespace '$NAMESPACE'..."
+cleanup_namespace
 
-# Delete in proper order (most dependent first)
-RESOURCE_ORDER=("ingress" "service" "deployment" "configmap" "secret" "pvc")
-
-for resource_type in "${RESOURCE_ORDER[@]}"; do
-    for resource in "${RESOURCES_TO_DELETE[@]}"; do
-        if [[ "$resource" == "$resource_type/"* ]]; then
-            log "Deleting $resource..."
-            if kubectl delete "$resource" -n "$NAMESPACE" --timeout=60s; then
-                success "Deleted $resource"
-            else
-                warn "Failed to delete $resource"
-            fi
-        fi
-    done
-done
-
-# Wait for pods to terminate
-log "Waiting for pods to terminate..."
-if ! kubectl wait --for=delete pods --all -n "$NAMESPACE" --timeout=120s 2>/dev/null; then
-    warn "Some pods may still be terminating"
+if [[ "$DRY_RUN" == "true" ]]; then
+    log "Dry-run completed. Use -f flag to perform actual cleanup."
+else
+    success "Environment cleanup completed!"
 fi
-
-# Option to delete the namespace itself
-if [[ "$FORCE" == "true" ]] || [[ "$ENVIRONMENT" != "prod" ]]; then
-    echo ""
-    read -p "Do you want to delete the namespace '$NAMESPACE' itself? (y/N): " -n 1 -r
-    echo ""
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        log "Deleting namespace '$NAMESPACE'..."
-        if kubectl delete namespace "$NAMESPACE" --timeout=120s; then
-            success "Deleted namespace '$NAMESPACE'"
-        else
-            warn "Failed to delete namespace '$NAMESPACE'"
-        fi
-    fi
-fi
-
-success "Cleanup completed for namespace '$NAMESPACE'"

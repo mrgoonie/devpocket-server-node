@@ -8,9 +8,9 @@ metadata:
     app.kubernetes.io/component: api-server
     app.kubernetes.io/part-of: devpocket-platform
     app.kubernetes.io/version: "{{ VERSION }}"
-    environment: {{ ENVIRONMENT }}
+    app.kubernetes.io/environment: {{ ENVIRONMENT }}
   annotations:
-    description: "DevPocket API server deployment for {{ ENVIRONMENT }} environment"
+    description: "DevPocket API server deployment with hybrid Kubernetes authentication for {{ ENVIRONMENT }}"
 spec:
   replicas: {{ REPLICAS }}
   strategy:
@@ -29,7 +29,7 @@ spec:
         app.kubernetes.io/component: api-server
         app.kubernetes.io/part-of: devpocket-platform
         app.kubernetes.io/version: "{{ VERSION }}"
-        environment: {{ ENVIRONMENT }}
+        app.kubernetes.io/environment: {{ ENVIRONMENT }}
     spec:
       # Use the DevPocket service account for hybrid authentication
       serviceAccountName: devpocket-nodejs
@@ -72,6 +72,7 @@ spec:
             secretKeyRef:
               name: devpocket-secrets
               key: redis-url
+              optional: true
         
         # JWT secrets
         - name: JWT_SECRET
@@ -84,6 +85,11 @@ spec:
             secretKeyRef:
               name: devpocket-secrets
               key: jwt-refresh-secret
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: devpocket-secrets
+              key: secret-key
         
         # External service credentials
         - name: GOOGLE_CLIENT_ID
@@ -166,7 +172,7 @@ spec:
         # Health checks
         readinessProbe:
           httpGet:
-            path: /api/v1/health
+            path: /api/v1/health/ready
             port: http
           initialDelaySeconds: 10
           periodSeconds: 10

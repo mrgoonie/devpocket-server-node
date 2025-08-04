@@ -154,19 +154,63 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Verify cluster connection
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Generate production manifests
+        run: |
+          echo "Generating production manifests..."
+          ./scripts/deployment/generate-manifests.sh \
+            -e prod \
+            -i devpocket/server:latest \
+            -o k8s/generated/prod
+
       - name: Deploy to production
         run: |
-          echo "🚀 Deploying to production..."
-          echo "This step would typically:"
-          echo "  - Update Kubernetes deployments"
-          echo "  - Run database migrations"
-          echo "  - Perform health checks"
-          echo "  - Send notifications"
+          echo "Deploying to production..."
           
-          # Add your actual deployment commands here
-          # Example with kubectl:
-          # kubectl set image deployment/devpocket-api devpocket-api=devpocket/server:latest
-          # kubectl rollout status deployment/devpocket-api
+          # Apply manifests in correct order
+          kubectl apply -f k8s/generated/prod/namespace.yaml
+          kubectl apply -f k8s/generated/prod/service.yaml
+          kubectl apply -f k8s/generated/prod/deployment.yaml
+          kubectl apply -f k8s/generated/prod/ingress.yaml
+          
+          # Wait for deployment to be ready
+          kubectl rollout status deployment/devpocket-nodejs -n devpocket-prod --timeout=600s
+          
+          # Verify deployment
+          kubectl get pods -n devpocket-prod -l app.kubernetes.io/name=devpocket-nodejs
+
+      - name: Health check
+        run: |
+          echo "Performing health checks..."
+          
+          # Wait for pods to be ready
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=devpocket-nodejs -n devpocket-prod --timeout=300s
+          
+          # Get pod name for health check
+          POD_NAME=$(kubectl get pods -n devpocket-prod -l app.kubernetes.io/name=devpocket-nodejs -o jsonpath='{.items[0].metadata.name}')
+          
+          # Check health endpoint
+          if kubectl exec -n devpocket-prod $POD_NAME -- curl -f http://localhost:8000/api/v1/health; then
+            echo "Health check passed"
+          else
+            echo "Health check failed"
+            exit 1
+          fi
 
       - name: Notify deployment
         if: always()
