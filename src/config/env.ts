@@ -90,7 +90,7 @@ class ConfigError extends Error {
 
 let env: Env;
 
-function loadEnvFiles() {
+function loadEnvFiles(): void {
   const nodeEnv = process.env.NODE_ENV || 'development';
 
   // Define the priority order for env files based on NODE_ENV
