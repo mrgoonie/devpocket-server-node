@@ -158,8 +158,8 @@ async function seedClusters() {
     // Return in expected format for backwards compatibility
     const clusterEntries = Object.values(seededClusters);
     return {
-      defaultCluster: clusterEntries[0] || null,
-      stagingCluster: clusterEntries[1] || clusterEntries[0] || null,
+      defaultCluster: clusterEntries[0],
+      stagingCluster: clusterEntries[1] || clusterEntries[0],
       allClusters: seededClusters,
     };
   } catch (error) {
@@ -211,7 +211,14 @@ async function seedMockClusters() {
 
   logger.info(`Created/updated mock clusters: ${defaultCluster.id}, ${stagingCluster.id}`);
 
-  return { defaultCluster, stagingCluster };
+  return { 
+    defaultCluster, 
+    stagingCluster, 
+    allClusters: { 
+      [defaultCluster.name]: defaultCluster, 
+      [stagingCluster.name]: stagingCluster 
+    } 
+  };
 }
 
 async function seedTemplates() {
@@ -230,14 +237,12 @@ async function seedTemplates() {
 
 async function seedUserClusters(
   users: { adminUser: User; demoUser: User; testUser: User },
-  clusters: Record<string, Cluster> | { allClusters: Record<string, Cluster> }
+  clusters: { defaultCluster?: Cluster | undefined; stagingCluster?: Cluster | undefined; allClusters: Record<string, Cluster> }
 ) {
   logger.info('Seeding user-cluster relationships...');
 
-  // Handle both new structure (with allClusters) and old structure
-  const clusterList = clusters.allClusters
-    ? Object.values(clusters.allClusters)
-    : Object.values(clusters);
+  // Handle the new structure with allClusters
+  const clusterList = Object.values(clusters.allClusters);
 
   // Give admin access to all clusters
   for (const cluster of clusterList) {
@@ -324,9 +329,19 @@ async function seedUserClusters(
 async function seedEnvironments(
   users: { adminUser: User; demoUser: User; testUser: User },
   templates: Array<{ id: string; name: string }>,
-  clusters: Record<string, Cluster> | { allClusters: Record<string, Cluster> }
+  clusters: { defaultCluster?: Cluster | undefined; stagingCluster?: Cluster | undefined; allClusters: Record<string, Cluster> }
 ) {
   logger.info('Seeding demo environments...');
+
+  // Get the first available cluster
+  const availableCluster = clusters.defaultCluster || 
+                          clusters.stagingCluster || 
+                          Object.values(clusters.allClusters)[0];
+
+  if (!availableCluster) {
+    logger.warn('No clusters available for seeding environments');
+    return [];
+  }
 
   // Create demo environment for demo user
   const demoEnvironment = await prisma.environment.upsert({
@@ -344,8 +359,9 @@ async function seedEnvironments(
       templateId:
         templates.find(t => t.name === 'nodejs')?.id ||
         templates.find(t => t.name.includes('node'))?.id ||
-        templates[0].id,
-      clusterId: clusters.defaultCluster.id,
+        templates[0]?.id ||
+        'fallback-template-id',
+      clusterId: availableCluster.id,
       dockerImage: 'node:18-alpine',
       port: 3000,
       resourcesCpu: '500m',
@@ -378,8 +394,9 @@ async function seedEnvironments(
         templates.find(t => t.name === 'python')?.id ||
         templates.find(t => t.name.includes('python'))?.id ||
         templates[1]?.id ||
-        templates[0].id,
-      clusterId: clusters.defaultCluster.id,
+        templates[0]?.id ||
+        'fallback-template-id',
+      clusterId: availableCluster.id,
       dockerImage: 'python:3.11-slim',
       port: 8000,
       resourcesCpu: '500m',

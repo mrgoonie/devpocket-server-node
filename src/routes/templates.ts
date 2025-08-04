@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '@/config/database';
-import { Prisma } from '@prisma/client';
+import { Prisma, TemplateCategory, TemplateStatus } from '@prisma/client';
 import { asyncHandler } from '@/middleware/errorHandler';
 import { authenticate, AuthenticatedRequest, requireAdmin } from '@/middleware/auth';
 import { ValidationError, NotFoundError, ConflictError } from '@/types/errors';
@@ -124,20 +124,19 @@ router.get(
       offset = (page - 1) * limit;
     }
 
-    const where: Prisma.TemplateWhereInput = {
-      // Only show active templates by default (unless includeDeprecated query param is true)
-      status:
-        req.query.includeDeprecated === 'true'
-          ? undefined // Show all statuses when explicitly requested
-          : 'ACTIVE', // Default: only show active templates
-    };
-
-    if (category && typeof category === 'string') {
-      where.category = category;
+    const where: Prisma.TemplateWhereInput = {};
+    
+    // Only show active templates by default (unless includeDeprecated query param is true)
+    if (req.query.includeDeprecated !== 'true') {
+      where.status = TemplateStatus.ACTIVE;
     }
 
-    if (status && typeof status === 'string') {
-      where.status = status;
+    if (category && typeof category === 'string' && Object.values(TemplateCategory).includes(category as TemplateCategory)) {
+      where.category = category as TemplateCategory;
+    }
+
+    if (status && typeof status === 'string' && Object.values(TemplateStatus).includes(status as TemplateStatus)) {
+      where.status = status as TemplateStatus;
     }
 
     if (search && typeof search === 'string') {
@@ -320,11 +319,11 @@ router.get(
     }
 
     const where: Prisma.TemplateWhereInput = {
-      status: 'ACTIVE',
+      status: TemplateStatus.ACTIVE,
     };
 
-    if (category && typeof category === 'string') {
-      where.category = category;
+    if (category && typeof category === 'string' && Object.values(TemplateCategory).includes(category as TemplateCategory)) {
+      where.category = category as TemplateCategory;
     }
 
     if (tags && typeof tags === 'string') {
@@ -566,7 +565,7 @@ router.post(
     }
 
     // Prepare safe data for Prisma
-    const safeTemplateData: Prisma.TemplateUpdateInput = {
+    const safeTemplateData: Prisma.TemplateCreateInput = {
       name: templateData.name,
       displayName: templateData.displayName,
       description: templateData.description,

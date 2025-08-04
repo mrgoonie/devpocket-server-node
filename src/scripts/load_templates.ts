@@ -29,6 +29,12 @@ interface TemplateDefinition {
 }
 
 function validateTemplate(template: unknown): template is TemplateDefinition {
+  if (!template || typeof template !== 'object') {
+    throw new Error('Template must be an object');
+  }
+
+  const templateObj = template as Record<string, unknown>;
+  
   const required = [
     'name',
     'displayName',
@@ -47,37 +53,37 @@ function validateTemplate(template: unknown): template is TemplateDefinition {
   ];
 
   for (const field of required) {
-    if (!(field in template)) {
+    if (!(field in templateObj)) {
       throw new Error(`Missing required field: ${field}`);
     }
   }
 
   // Validate category
-  if (!Object.values(TemplateCategory).includes(template.category)) {
+  if (!Object.values(TemplateCategory).includes(templateObj.category as TemplateCategory)) {
     throw new Error(
-      `Invalid category: ${template.category}. Must be one of: ${Object.values(TemplateCategory).join(', ')}`
+      `Invalid category: ${templateObj.category}. Must be one of: ${Object.values(TemplateCategory).join(', ')}`
     );
   }
 
   // Validate status
-  if (!Object.values(TemplateStatus).includes(template.status)) {
+  if (!Object.values(TemplateStatus).includes(templateObj.status as TemplateStatus)) {
     throw new Error(
-      `Invalid status: ${template.status}. Must be one of: ${Object.values(TemplateStatus).join(', ')}`
+      `Invalid status: ${templateObj.status}. Must be one of: ${Object.values(TemplateStatus).join(', ')}`
     );
   }
 
   // Validate types
-  if (typeof template.name !== 'string') throw new Error('name must be a string');
-  if (typeof template.displayName !== 'string') throw new Error('displayName must be a string');
-  if (typeof template.description !== 'string') throw new Error('description must be a string');
-  if (typeof template.dockerImage !== 'string') throw new Error('dockerImage must be a string');
-  if (typeof template.defaultPort !== 'number') throw new Error('defaultPort must be a number');
-  if (typeof template.version !== 'string') throw new Error('version must be a string');
+  if (typeof templateObj.name !== 'string') throw new Error('name must be a string');
+  if (typeof templateObj.displayName !== 'string') throw new Error('displayName must be a string');
+  if (typeof templateObj.description !== 'string') throw new Error('description must be a string');
+  if (typeof templateObj.dockerImage !== 'string') throw new Error('dockerImage must be a string');
+  if (typeof templateObj.defaultPort !== 'number') throw new Error('defaultPort must be a number');
+  if (typeof templateObj.version !== 'string') throw new Error('version must be a string');
 
-  if (!Array.isArray(template.tags)) throw new Error('tags must be an array');
-  if (!Array.isArray(template.startupCommands)) throw new Error('startupCommands must be an array');
+  if (!Array.isArray(templateObj.tags)) throw new Error('tags must be an array');
+  if (!Array.isArray(templateObj.startupCommands)) throw new Error('startupCommands must be an array');
 
-  if (typeof template.environmentVariables !== 'object') {
+  if (typeof templateObj.environmentVariables !== 'object') {
     throw new Error('environmentVariables must be an object');
   }
 

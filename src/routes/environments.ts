@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '@/config/database';
-import { Prisma } from '@prisma/client';
+import { Prisma, EnvironmentStatus } from '@prisma/client';
 import { asyncHandler } from '@/middleware/errorHandler';
 import { authenticate, AuthenticatedRequest, requireEmailVerification } from '@/middleware/auth';
 import { environmentRateLimiter } from '@/middleware/rateLimiter';
@@ -430,8 +430,8 @@ router.get(
       status: { notIn: ['TERMINATED'] }, // Don't show terminated environments by default
     };
 
-    if (status && typeof status === 'string') {
-      where.status = status;
+    if (status && typeof status === 'string' && Object.values(EnvironmentStatus).includes(status as EnvironmentStatus)) {
+      where.status = status as EnvironmentStatus;
     }
 
     if (templateId && typeof templateId === 'string') {

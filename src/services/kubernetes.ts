@@ -8,6 +8,7 @@ import {
   V1Service,
   V1ConfigMap,
   V1PersistentVolumeClaim,
+  V1Status,
 } from '@kubernetes/client-node';
 import { prisma } from '@/config/database';
 import { encryptionService } from '@/utils/encryption';
@@ -601,7 +602,7 @@ class KubernetesService {
           process.stderr,
           stdin ? process.stdin : null,
           true, // tty
-          (status: { status: string }) => {
+          (status: V1Status) => {
             resolve({
               success: status.status === 'Success',
               output: output || '',

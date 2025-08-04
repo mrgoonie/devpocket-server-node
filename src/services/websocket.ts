@@ -418,13 +418,13 @@ async function handleWebSocketMessage(ws: AuthenticatedWebSocket, data: Buffer):
         break;
 
       case 'input':
-        if (ws.isTerminalConnection) {
+        if (ws.isTerminalConnection && typeof message.data === 'string') {
           await handleTerminalInput(ws, message.data);
         }
         break;
 
       case 'resize':
-        if (ws.isTerminalConnection) {
+        if (ws.isTerminalConnection && typeof message.cols === 'number' && typeof message.rows === 'number') {
           handleTerminalResize(ws, message.cols, message.rows);
         }
         break;
