@@ -114,18 +114,29 @@ jobs:
 
       - name: Test Docker image
         run: |
+          # Start container with test environment
           docker run --rm -d --name test-container \
             -e NODE_ENV=test \
-            -e DATABASE_URL=postgresql://test:test@localhost:5432/test \
-            -e JWT_SECRET=test-secret \
+            -e DATABASE_URL=file:./test.db \
+            -e JWT_SECRET=test-jwt-secret-key-for-testing-that-is-long-enough \
+            -e LOG_LEVEL=error \
+            -e GOOGLE_CLIENT_ID=fake-google-client-id \
+            -e GOOGLE_CLIENT_SECRET=fake-google-client-secret \
+            -e RESEND_API_KEY=fake-resend-api-key \
+            -e FROM_EMAIL=test@example.com \
+            -e SUPPORT_EMAIL=support@example.com \
+            -e ALLOWED_ORIGINS=http://localhost:3000 \
             -p 8000:8000 \
             digitop/devpocket-nodejs:test
           
           # Wait for container to start
-          sleep 10
+          sleep 15
           
-          # Test health endpoint
+          # Test health endpoint (expect 200 for basic health check)
           curl -f http://localhost:8000/health || exit 1
+          
+          # Test that ready endpoint returns 503 (expected without real database)
+          curl -s http://localhost:8000/health/ready | grep '"status":"not ready"' || exit 1
           
           # Cleanup
           docker stop test-container
