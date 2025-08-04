@@ -177,10 +177,23 @@ describe('Semantic Release Configuration Tests', () => {
       expect(releaseConfig.releaseRules).toHaveLength(expectedRules.length);
       
       expectedRules.forEach(expectedRule => {
-        const actualRule = releaseConfig.releaseRules.find((rule: any) => 
-          (rule.type === expectedRule.type) || (rule.scope === expectedRule.scope)
-        );
-        expect(actualRule).toEqual(expectedRule);
+        let actualRule;
+        if (expectedRule.type) {
+          actualRule = releaseConfig.releaseRules.find((rule: any) => rule.type === expectedRule.type);
+        } else if (expectedRule.scope) {
+          actualRule = releaseConfig.releaseRules.find((rule: any) => rule.scope === expectedRule.scope);
+        }
+        
+        expect(actualRule).toBeDefined();
+        if (actualRule) {
+          expect(actualRule.release).toBe(expectedRule.release);
+          if (expectedRule.type) {
+            expect(actualRule.type).toBe(expectedRule.type);
+          }
+          if (expectedRule.scope) {
+            expect(actualRule.scope).toBe(expectedRule.scope);
+          }
+        }
       });
     });
   });

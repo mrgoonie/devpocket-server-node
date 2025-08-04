@@ -12,10 +12,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 
 describe('Kubernetes Manifest Generation and Validation', () => {
   const k8sDir = path.join(process.cwd(), 'k8s');
@@ -360,7 +356,6 @@ describe('Kubernetes Manifest Generation and Validation', () => {
       const container = deployment.spec.template.spec.containers[0];
       const envVars = container.env || [];
       
-      const secretEnvVars = envVars.filter((env: any) => env.valueFrom?.secretKeyRef);
       const sensitiveVars = ['DATABASE_URL', 'SECRET_KEY'];
       
       sensitiveVars.forEach(sensitiveVar => {
