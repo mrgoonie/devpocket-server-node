@@ -27,7 +27,7 @@ describe('Health API', () => {
   describe('GET /health/ready', () => {
     it('should return readiness status', async () => {
       const response = await request(app).get('/health/ready');
-      
+
       // In test environment without real database, expect 503
       // This is the correct behavior when database is not available
       expect(response.status).toBe(503);

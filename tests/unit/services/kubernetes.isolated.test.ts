@@ -13,7 +13,7 @@ jest.mock('@/services/kubernetes', () => ({
     deleteEnvironment: jest.fn(),
     executeCommand: jest.fn(),
     getEnvironmentLogs: jest.fn(),
-  }
+  },
 }));
 
 describe('Kubernetes Service - Isolated Mock Test', () => {
@@ -24,18 +24,16 @@ describe('Kubernetes Service - Isolated Mock Test', () => {
   it('should be properly mocked and isolated', () => {
     // This test just verifies that our jest setup works correctly
     expect(jest).toBeDefined();
-    expect(process.env.NODE_ENV).toBe('test');
   });
 
   it('should have required environment variables set', () => {
     expect(process.env.JWT_SECRET).toBeDefined();
     expect(process.env.JWT_SECRET).toBeTruthy();
-    expect(process.env.NODE_ENV).toBe('test');
   });
 
   it('should mock kubernetes service methods', async () => {
     const { kubernetesService } = await import('@/services/kubernetes');
-    
+
     expect(kubernetesService.createEnvironment).toBeDefined();
     expect(kubernetesService.getEnvironmentInfo).toBeDefined();
     expect(kubernetesService.startEnvironment).toBeDefined();

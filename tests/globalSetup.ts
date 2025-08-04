@@ -22,7 +22,7 @@ export default async function globalSetup() {
   // Try to set up database - if it fails, we'll use SQLite fallback
   try {
     console.log('Attempting to set up test database...');
-    
+
     // Check if we can use PostgreSQL
     if (process.env.DATABASE_URL?.includes('postgresql://')) {
       try {
@@ -40,7 +40,6 @@ export default async function globalSetup() {
       console.log('📦 Using SQLite for testing');
       process.env.SKIP_DB_SETUP = 'true';
     }
-
   } catch (error) {
     console.log('⚠️  Database setup failed, tests will use mocked data');
     process.env.SKIP_DB_SETUP = 'true';
