@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: devpocket-api
-  namespace: default
+  name: devpocket-nodejs
+  namespace: devpocket-prod
   labels:
-    app.kubernetes.io/name: devpocket-api
+    app.kubernetes.io/name: devpocket-nodejs
     app.kubernetes.io/component: api-server
     app.kubernetes.io/part-of: devpocket-platform
     app.kubernetes.io/version: "1.0.0"
@@ -19,18 +19,18 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app.kubernetes.io/name: devpocket-api
+      app.kubernetes.io/name: devpocket-nodejs
       app.kubernetes.io/component: api-server
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: devpocket-api
+        app.kubernetes.io/name: devpocket-nodejs
         app.kubernetes.io/component: api-server
         app.kubernetes.io/part-of: devpocket-platform
         app.kubernetes.io/version: "1.0.0"
     spec:
       # Use the DevPocket service account for hybrid authentication
-      serviceAccountName: devpocket-api
+      serviceAccountName: devpocket-nodejs
       automountServiceAccountToken: true
       
       # Security context
@@ -42,7 +42,7 @@ spec:
       
       containers:
       - name: api
-        image: devpocket/api:latest
+        image: docker.io/digitop/devpocket-nodejs:latest
         imagePullPolicy: Always
         
         ports:
@@ -225,23 +225,3 @@ spec:
       #   operator: "Equal"
       #   value: "devpocket"
       #   effect: "NoSchedule"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: devpocket-api
-  namespace: default
-  labels:
-    app.kubernetes.io/name: devpocket-api
-    app.kubernetes.io/component: api-server
-    app.kubernetes.io/part-of: devpocket-platform
-spec:
-  type: ClusterIP
-  ports:
-  - port: 8000
-    targetPort: http
-    protocol: TCP
-    name: http
-  selector:
-    app.kubernetes.io/name: devpocket-api
-    app.kubernetes.io/component: api-server

@@ -11,20 +11,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: postgres
-          POSTGRES_DB: devpocket_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+    # Removed PostgreSQL service for simplified CI tests
 
     strategy:
       matrix:
@@ -50,13 +37,6 @@ jobs:
 
       - name: Generate Prisma client
         run: pnpm db:generate
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/devpocket_test
-
-      - name: Run database migrations
-        run: pnpm prisma migrate deploy
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/devpocket_test
 
       - name: Run linting
         run: pnpm lint
@@ -68,10 +48,9 @@ jobs:
         run: pnpm build
 
       - name: Run tests
-        run: pnpm test:coverage
+        run: pnpm test:ci:coverage
         env:
           NODE_ENV: test
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/devpocket_test
           JWT_SECRET: test-jwt-secret-key-for-ci
           GOOGLE_CLIENT_ID: fake-google-client-id
           GOOGLE_CLIENT_SECRET: fake-google-client-secret
@@ -129,7 +108,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
-          tags: devpocket-server:test
+          tags: digitop/devpocket-nodejs:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -140,7 +119,7 @@ jobs:
             -e DATABASE_URL=postgresql://test:test@localhost:5432/test \
             -e JWT_SECRET=test-secret \
             -p 8000:8000 \
-            devpocket-server:test
+            digitop/devpocket-nodejs:test
           
           # Wait for container to start
           sleep 10

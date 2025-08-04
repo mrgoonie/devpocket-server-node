@@ -1,0 +1,44 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: devpocket-nodejs
+  namespace: devpocket-prod
+  labels:
+    app.kubernetes.io/name: devpocket-nodejs
+    app.kubernetes.io/component: api-server
+    app.kubernetes.io/part-of: devpocket-platform
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location ~ /.git { deny all; return 403; }
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: devpocket-nodejs.prod.diginext.site
+    http:
+      paths:
+      - backend:
+          service:
+            name: devpocket-nodejs
+            port:
+              number: 8000
+        path: /
+        pathType: Prefix
+  - host: api.devpocket.app
+    http:
+      paths:
+      - backend:
+          service:
+            name: devpocket-nodejs
+            port:
+              number: 8000
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - devpocket-nodejs.prod.diginext.site
+    secretName: tls-devpocket-nodejs-prod-diginext-site
+  - hosts:
+    - api.devpocket.app
+    secretName: tls-api-devpocket-app

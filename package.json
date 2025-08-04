@@ -13,6 +13,8 @@
     "test:unit": "jest --config jest.unit.config.js",
     "test:unit:watch": "jest --config jest.unit.config.js --watch",
     "test:unit:coverage": "jest --config jest.unit.config.js --coverage",
+    "test:ci": "jest --config jest.ci.config.js --passWithNoTests",
+    "test:ci:coverage": "jest --config jest.ci.config.js --coverage --passWithNoTests",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,json}\"",

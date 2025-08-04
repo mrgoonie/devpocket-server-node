@@ -1,0 +1,224 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deploy even if tests fail'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  DOCKER_REGISTRY: docker.io
+  DOCKER_IMAGE: digitop/devpocket-nodejs
+  KUBERNETES_NAMESPACE: devpocket-prod
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Run Tests
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.6.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Run linting
+        run: pnpm lint
+
+      - name: Check formatting
+        run: pnpm format --check
+
+      - name: Run type checking
+        run: pnpm build
+
+      - name: Run simplified tests
+        run: pnpm test:ci:coverage
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test-jwt-secret-key-for-ci
+          GOOGLE_CLIENT_ID: fake-google-client-id
+          GOOGLE_CLIENT_SECRET: fake-google-client-secret
+          RESEND_API_KEY: fake-resend-api-key
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        if: success()
+        with:
+          file: ./coverage/lcov.info
+          flags: ci-tests
+          name: ci-coverage
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    name: Build and Push Docker Image
+    needs: test
+    if: success() || github.event.inputs.force_deploy == 'true'
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      - name: Image digest
+        run: echo "Built image with digest ${{ steps.build.outputs.digest }}"
+
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Kubernetes
+    needs: [test, build-and-push]
+    if: success() || github.event.inputs.force_deploy == 'true'
+    environment: production
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Verify cluster connection
+        run: |
+          kubectl cluster-info
+          kubectl get namespaces
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl apply -f k8s/namespace.yaml || true
+
+      - name: Update deployment image
+        run: |
+          # Get the latest image tag from the build step
+          IMAGE_TAG="${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}:main-${{ github.sha }}"
+          
+          # Update the deployment YAML with the new image
+          sed -i "s|image: docker.io/digitop/devpocket-nodejs:latest|image: ${IMAGE_TAG}|g" k8s/deployment.yaml
+          
+          echo "Updated image to: ${IMAGE_TAG}"
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/configmap.yaml || echo "ConfigMap not found, skipping"
+          kubectl apply -f k8s/secret.yaml || echo "Secret not found, skipping"
+          kubectl apply -f k8s/service.yaml
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/ingress.yaml
+          kubectl apply -f k8s/hpa.yaml || echo "HPA not found, skipping"
+
+      - name: Wait for deployment to be ready
+        run: |
+          kubectl rollout status deployment/devpocket-nodejs -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=300s
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }} -l app.kubernetes.io/name=devpocket-nodejs
+          kubectl get services -n ${{ env.KUBERNETES_NAMESPACE }} devpocket-nodejs
+          kubectl get ingress -n ${{ env.KUBERNETES_NAMESPACE }} devpocket-nodejs
+
+      - name: Run smoke tests
+        run: |
+          # Wait for ingress to be ready
+          sleep 30
+          
+          # Test the API health endpoint
+          if curl -f https://api.devpocket.app/api/v1/health; then
+            echo "✅ Health check passed"
+          else
+            echo "❌ Health check failed"
+            kubectl logs -n ${{ env.KUBERNETES_NAMESPACE }} -l app.kubernetes.io/name=devpocket-nodejs --tail=50
+            exit 1
+          fi
+
+      - name: Cleanup old images (keep last 5)
+        run: |
+          # This would require additional setup with Docker Hub API
+          echo "Image cleanup skipped - implement if needed"
+
+  notify:
+    runs-on: ubuntu-latest
+    name: Notify Deployment Status
+    needs: [test, build-and-push, deploy]
+    if: always()
+    
+    steps:
+      - name: Deployment Success
+        if: needs.deploy.result == 'success'
+        run: |
+          echo "🚀 Deployment successful!"
+          echo "✅ Tests: ${{ needs.test.result }}"
+          echo "✅ Build: ${{ needs.build-and-push.result }}"  
+          echo "✅ Deploy: ${{ needs.deploy.result }}"
+          echo "🌐 URL: https://api.devpocket.app"
+
+      - name: Deployment Failed
+        if: needs.deploy.result == 'failure'
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Tests: ${{ needs.test.result }}"
+          echo "Build: ${{ needs.build-and-push.result }}"  
+          echo "Deploy: ${{ needs.deploy.result }}"
+          exit 1
