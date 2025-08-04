@@ -12,7 +12,7 @@ const envSchema = z.object({
 
   // Database
   DATABASE_URL: z.string().refine(
-    (url) => {
+    url => {
       // Allow file URLs for SQLite in test/development
       if (url.startsWith('file:')) return true;
       // Otherwise must be a valid URL
@@ -23,7 +23,7 @@ const envSchema = z.object({
         return false;
       }
     },
-    { message: "DATABASE_URL must be a valid URL or file path" }
+    { message: 'DATABASE_URL must be a valid URL or file path' }
   ),
 
   // JWT
