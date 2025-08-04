@@ -1,10 +1,25 @@
+// Mock the Kubernetes client completely
+jest.mock('@kubernetes/client-node', () => {
+  const mockKubeConfig = {
+    getContexts: jest.fn().mockReturnValue([{ name: 'test-context' }]),
+    getCurrentContext: jest.fn().mockReturnValue('test-context'),
+    loadFromCluster: jest.fn(),
+    loadFromString: jest.fn(),
+    makeApiClient: jest.fn().mockReturnValue({}),
+  };
+  
+  return {
+    KubeConfig: jest.fn().mockImplementation(() => mockKubeConfig),
+    CoreV1Api: jest.fn(),
+    AppsV1Api: jest.fn(),
+    BatchV1Api: jest.fn(),
+  };
+});
+
 import { kubernetesService } from '@/services/kubernetes';
 import { prisma } from '@/config/database';
 import { encryptionService } from '@/utils/encryption';
 import logger from '@/config/logger';
-
-// Mock the Kubernetes client
-jest.mock('@kubernetes/client-node');
 jest.mock('@/config/database', () => ({
   prisma: {
     cluster: {
@@ -22,9 +37,19 @@ jest.mock('@/utils/encryption', () => ({
   },
 }));
 
+// Mock fs
+jest.mock('fs', () => ({
+  existsSync: jest.fn().mockReturnValue(false), // Default to not in cluster
+}));
+
 describe('KubernetesService Integration Tests', () => {
   const mockPrisma = prisma as jest.Mocked<typeof prisma>;
   const mockEncryption = encryptionService as jest.Mocked<typeof encryptionService>;
+
+  // Mock the private configureSSLVerification method
+  beforeAll(() => {
+    (kubernetesService as any).configureSSLVerification = jest.fn();
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
