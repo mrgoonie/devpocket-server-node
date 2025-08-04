@@ -424,7 +424,11 @@ async function handleWebSocketMessage(ws: AuthenticatedWebSocket, data: Buffer):
         break;
 
       case 'resize':
-        if (ws.isTerminalConnection && typeof message.cols === 'number' && typeof message.rows === 'number') {
+        if (
+          ws.isTerminalConnection &&
+          typeof message.cols === 'number' &&
+          typeof message.rows === 'number'
+        ) {
           handleTerminalResize(ws, message.cols, message.rows);
         }
         break;

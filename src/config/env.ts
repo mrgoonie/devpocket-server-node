@@ -120,9 +120,9 @@ function loadEnvFiles(): void {
 export function loadConfig(): Env {
   try {
     // Load environment variables from files based on NODE_ENV
-  loadEnvFiles();
+    loadEnvFiles();
 
-  // Validate environment variables
+    // Validate environment variables
     env = envSchema.parse(process.env);
     return env;
   } catch (error) {
