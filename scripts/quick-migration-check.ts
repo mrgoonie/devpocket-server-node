@@ -2,7 +2,7 @@
 
 /**
  * Quick Migration Check
- * 
+ *
  * A lightweight script to quickly verify the migration status
  * without performing any changes. Safe to run in any environment.
  */
@@ -30,7 +30,7 @@ async function quickCheck() {
         AND table_name = 'environments'
       )
     `;
-    
+
     if (Array.isArray(tableExists) && tableExists[0]?.exists) {
       console.log('   ✅ environments table exists\n');
     } else {
@@ -83,7 +83,7 @@ async function quickCheck() {
       }
     } catch (error) {
       console.log('   ⚠️  Could not check migration history (table might not exist)');
-      console.log('   💡 This is normal for databases that haven\'t run Prisma migrations\n');
+      console.log("   💡 This is normal for databases that haven't run Prisma migrations\n");
     }
 
     // Environment count check
@@ -91,10 +91,10 @@ async function quickCheck() {
     try {
       const envCount = await prisma.environment.count();
       console.log(`   📊 Total environments: ${envCount}`);
-      
+
       if (envCount > 0) {
         const envWithErrors = await prisma.environment.count({
-          where: { lastError: { not: null } }
+          where: { lastError: { not: null } },
         });
         console.log(`   🚨 Environments with errors: ${envWithErrors}`);
       }
@@ -109,9 +109,9 @@ async function quickCheck() {
     // Summary
     console.log('📊 SUMMARY');
     console.log('==========');
-    
+
     const issues = [];
-    
+
     // Re-check column for summary
     const finalColumnCheck = await prisma.$queryRaw`
       SELECT EXISTS (
@@ -121,9 +121,9 @@ async function quickCheck() {
         AND table_schema = 'public'
       )
     `;
-    
+
     const hasColumn = Array.isArray(finalColumnCheck) && finalColumnCheck[0]?.exists;
-    
+
     if (hasColumn) {
       console.log('✅ Database is ready - last_error column exists');
       console.log('✅ Environment creation should work properly');
@@ -136,7 +136,6 @@ async function quickCheck() {
       console.log('   2. Or: pnpm tsx scripts/database-migration-manager.ts migrate');
       console.log('   3. Verify: pnpm tsx scripts/quick-migration-check.ts');
     }
-
   } catch (error) {
     console.error('❌ Check failed:', error);
     console.log('\n💡 Common solutions:');

@@ -258,7 +258,9 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction): v
  * Subscription plan middleware factory
  * Requires user to have specific subscription plan or higher
  */
-export const requireSubscription = (requiredPlan: string): ((req: Request, res: Response, next: NextFunction) => void) => {
+export const requireSubscription = (
+  requiredPlan: string
+): ((req: Request, res: Response, next: NextFunction) => void) => {
   const planHierarchy = ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'];
 
   return (req: Request, res: Response, next: NextFunction): void => {

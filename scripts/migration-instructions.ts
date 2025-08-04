@@ -2,7 +2,7 @@
 
 /**
  * Migration Instructions
- * 
+ *
  * Provides clear, step-by-step instructions for applying the database migration
  */
 
