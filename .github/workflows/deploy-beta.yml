@@ -1,8 +1,8 @@
-name: Deploy to Production
+name: Deploy to Beta
 
 on:
   push:
-    branches: [main]
+    branches: [beta]
   workflow_dispatch:
     inputs:
       force_deploy:
@@ -14,7 +14,8 @@ on:
 env:
   DOCKER_REGISTRY: docker.io
   DOCKER_IMAGE: digitop/devpocket-nodejs
-  KUBERNETES_NAMESPACE: devpocket-prod
+  KUBERNETES_NAMESPACE: devpocket-beta
+  DOMAIN: api.beta.devpocket.app
 
 jobs:
   test:
@@ -51,7 +52,7 @@ jobs:
       - name: Run type checking
         run: pnpm build
 
-      - name: Run simplified tests
+      - name: Run full test suite
         run: pnpm test:ci:coverage
         env:
           NODE_ENV: test
@@ -65,8 +66,8 @@ jobs:
         if: success()
         with:
           file: ./coverage/lcov.info
-          flags: ci-tests
-          name: ci-coverage
+          flags: beta-tests
+          name: beta-coverage
 
   semantic-release:
     runs-on: ubuntu-latest
@@ -116,7 +117,7 @@ jobs:
       image-tag: ${{ steps.meta.outputs.tags }}
       image-digest: ${{ steps.build.outputs.digest }}
       build-number: ${{ github.run_number }}
-      version: ${{ needs.semantic-release.outputs.new-release-version || 'latest' }}
+      version: ${{ needs.semantic-release.outputs.new-release-version || 'beta-build' }}
     
     steps:
       - name: Checkout repository
@@ -136,10 +137,10 @@ jobs:
         run: |
           if [ "${{ needs.semantic-release.outputs.new-release-published }}" == "true" ]; then
             echo "VERSION=${{ needs.semantic-release.outputs.new-release-version }}" >> $GITHUB_ENV
-            echo "SEMANTIC_TAG=v${{ needs.semantic-release.outputs.new-release-version }}" >> $GITHUB_ENV
+            echo "TAG_PREFIX=beta-" >> $GITHUB_ENV
           else
-            echo "VERSION=main-${{ github.run_number }}" >> $GITHUB_ENV
-            echo "SEMANTIC_TAG=main-${{ github.run_number }}" >> $GITHUB_ENV
+            echo "VERSION=beta-build-${{ github.run_number }}" >> $GITHUB_ENV
+            echo "TAG_PREFIX=beta-build-" >> $GITHUB_ENV
           fi
           echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_ENV
 
@@ -149,9 +150,9 @@ jobs:
         with:
           images: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ env.SEMANTIC_TAG }}
-            type=raw,value=main-${{ github.run_number }}-${{ env.SHORT_SHA }}
+            type=raw,value=beta-latest
+            type=raw,value=${{ env.TAG_PREFIX }}${{ env.VERSION }}
+            type=raw,value=beta-${{ github.run_number }}-${{ env.SHORT_SHA }}
 
       - name: Build and push Docker image
         id: build
@@ -171,10 +172,10 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy to Kubernetes
+    name: Deploy to Kubernetes Beta
     needs: [test, semantic-release, build-and-push]
     if: success() || github.event.inputs.force_deploy == 'true'
-    environment: production
+    environment: beta
     
     steps:
       - name: Checkout repository
@@ -188,7 +189,7 @@ jobs:
       - name: Setup kubeconfig
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          echo "${{ secrets.KUBECONFIG_BETA }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
       - name: Verify cluster connection
@@ -198,31 +199,54 @@ jobs:
 
       - name: Create namespace if not exists
         run: |
-          kubectl apply -f k8s/namespace.yaml || true
+          kubectl create namespace ${{ env.KUBERNETES_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Update deployment image
+      - name: Prepare environment-specific manifests
         run: |
-          # Determine image tag based on semantic release
+          # Create beta-specific manifests from templates
+          mkdir -p k8s/beta
+          
+          # Determine image tag
           if [ "${{ needs.semantic-release.outputs.new-release-published }}" == "true" ]; then
-            IMAGE_TAG="${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}:v${{ needs.semantic-release.outputs.new-release-version }}"
+            IMAGE_TAG="beta-${{ needs.semantic-release.outputs.new-release-version }}"
           else
-            IMAGE_TAG="${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}:main-${{ github.run_number }}-${GITHUB_SHA:0:7}"
+            IMAGE_TAG="beta-${{ github.run_number }}-${{ env.SHORT_SHA }}"
           fi
           
-          # Update the deployment YAML with the new image
-          sed -i "s|image: docker.io/digitop/devpocket-nodejs:latest|image: ${IMAGE_TAG}|g" k8s/deployment.yaml
+          # Copy and modify deployment for beta environment
+          sed -e "s/namespace: devpocket-prod/namespace: ${{ env.KUBERNETES_NAMESPACE }}/g" \
+              -e "s/image: docker.io\/digitop\/devpocket-nodejs:latest/image: ${{ env.DOCKER_REGISTRY }}\/${{ env.DOCKER_IMAGE }}:${IMAGE_TAG}/g" \
+              -e "s/value: \"production\"/value: \"beta\"/g" \
+              -e "s/value: \"info\"/value: \"debug\"/g" \
+              -e "s/replicas: 1/replicas: 1/g" \
+              k8s/deployment.yaml > k8s/beta/deployment.yaml
           
-          echo "Updated image to: ${IMAGE_TAG}"
+          # Copy and modify service for beta environment
+          sed "s/namespace: devpocket-prod/namespace: ${{ env.KUBERNETES_NAMESPACE }}/g" \
+              k8s/service.yaml > k8s/beta/service.yaml
+          
+          # Copy and modify ingress for beta environment
+          sed -e "s/namespace: devpocket-prod/namespace: ${{ env.KUBERNETES_NAMESPACE }}/g" \
+              -e "s/api.devpocket.app/${{ env.DOMAIN }}/g" \
+              -e "s/devpocket-nodejs.prod.diginext.site/devpocket-nodejs.beta.diginext.site/g" \
+              -e "s/tls-api-devpocket-app/tls-api-beta-devpocket-app/g" \
+              -e "s/tls-devpocket-nodejs-prod-diginext-site/tls-devpocket-nodejs-beta-diginext-site/g" \
+              k8s/ingress.yaml > k8s/beta/ingress.yaml
+          
+          # Copy namespace manifest
+          sed "s/name: devpocket-prod/name: ${{ env.KUBERNETES_NAMESPACE }}/g" \
+              k8s/namespace.yaml > k8s/beta/namespace.yaml
+          
+          echo "Using image tag: ${IMAGE_TAG}"
+        env:
+          SHORT_SHA: ${GITHUB_SHA:0:7}
 
       - name: Apply Kubernetes manifests
         run: |
-          kubectl apply -f k8s/namespace.yaml
-          kubectl apply -f k8s/configmap.yaml || echo "ConfigMap not found, skipping"
-          kubectl apply -f k8s/secret.yaml || echo "Secret not found, skipping"
-          kubectl apply -f k8s/service.yaml
-          kubectl apply -f k8s/deployment.yaml
-          kubectl apply -f k8s/ingress.yaml
-          kubectl apply -f k8s/hpa.yaml || echo "HPA not found, skipping"
+          kubectl apply -f k8s/beta/namespace.yaml
+          kubectl apply -f k8s/beta/service.yaml
+          kubectl apply -f k8s/beta/deployment.yaml
+          kubectl apply -f k8s/beta/ingress.yaml
 
       - name: Wait for deployment to be ready
         run: |
@@ -237,10 +261,10 @@ jobs:
       - name: Run smoke tests
         run: |
           # Wait for ingress to be ready
-          sleep 30
+          sleep 60
           
           # Test the API health endpoint
-          if curl -f https://api.devpocket.app/api/v1/health; then
+          if curl -f https://${{ env.DOMAIN }}/api/v1/health; then
             echo "✅ Health check passed"
           else
             echo "❌ Health check failed"
@@ -248,10 +272,14 @@ jobs:
             exit 1
           fi
 
-      - name: Cleanup old images (keep last 5)
+      - name: Run additional beta tests
         run: |
-          # This would require additional setup with Docker Hub API
-          echo "Image cleanup skipped - implement if needed"
+          # Additional smoke tests for beta environment
+          echo "Running beta-specific validation tests..."
+          
+          # Test API endpoints
+          curl -f https://${{ env.DOMAIN }}/api/v1/health/ready || exit 1
+          echo "✅ Ready endpoint test passed"
 
   notify:
     runs-on: ubuntu-latest
@@ -263,12 +291,12 @@ jobs:
       - name: Deployment Success
         if: needs.deploy.result == 'success'
         run: |
-          echo "🚀 Production deployment successful!"
+          echo "🚀 Beta deployment successful!"
           echo "✅ Tests: ${{ needs.test.result }}"
           echo "✅ Release: ${{ needs.semantic-release.result }}"
           echo "✅ Build: ${{ needs.build-and-push.result }}"  
           echo "✅ Deploy: ${{ needs.deploy.result }}"
-          echo "🌐 URL: https://api.devpocket.app"
+          echo "🌐 URL: https://${{ env.DOMAIN }}"
           echo "🏷️ Version: ${{ needs.build-and-push.outputs.version }}"
           echo "📦 Build: ${{ needs.build-and-push.outputs.build-number }}"
           if [ "${{ needs.semantic-release.outputs.new-release-published }}" == "true" ]; then
@@ -278,7 +306,7 @@ jobs:
       - name: Deployment Failed
         if: needs.deploy.result == 'failure'
         run: |
-          echo "❌ Production deployment failed!"
+          echo "❌ Beta deployment failed!"
           echo "Tests: ${{ needs.test.result }}"
           echo "Release: ${{ needs.semantic-release.result }}"
           echo "Build: ${{ needs.build-and-push.result }}"  

@@ -1,0 +1,218 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devpocket-nodejs
+  namespace: {{ NAMESPACE }}
+  labels:
+    app.kubernetes.io/name: devpocket-nodejs
+    app.kubernetes.io/component: api-server
+    app.kubernetes.io/part-of: devpocket-platform
+    app.kubernetes.io/version: "{{ VERSION }}"
+    environment: {{ ENVIRONMENT }}
+  annotations:
+    description: "DevPocket API server deployment for {{ ENVIRONMENT }} environment"
+spec:
+  replicas: {{ REPLICAS }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: devpocket-nodejs
+      app.kubernetes.io/component: api-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: devpocket-nodejs
+        app.kubernetes.io/component: api-server
+        app.kubernetes.io/part-of: devpocket-platform
+        app.kubernetes.io/version: "{{ VERSION }}"
+        environment: {{ ENVIRONMENT }}
+    spec:
+      # Use the DevPocket service account for hybrid authentication
+      serviceAccountName: devpocket-nodejs
+      automountServiceAccountToken: true
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      
+      containers:
+      - name: api
+        image: {{ IMAGE }}
+        imagePullPolicy: Always
+        
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        
+        env:
+        # Node.js configuration
+        - name: NODE_ENV
+          value: "{{ NODE_ENV }}"
+        - name: PORT
+          value: "8000"
+        
+        # Database configuration
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: devpocket-secrets
+              key: database-url
+        
+        # Redis configuration
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: devpocket-secrets
+              key: redis-url
+        
+        # JWT secrets
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: devpocket-secrets
+              key: jwt-secret
+        - name: JWT_REFRESH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: devpocket-secrets
+              key: jwt-refresh-secret
+        
+        # External service credentials
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: devpocket-secrets
+              key: google-client-id
+              optional: true
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: devpocket-secrets
+              key: google-client-secret
+              optional: true
+        - name: RESEND_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: devpocket-secrets
+              key: resend-api-key
+              optional: true
+        
+        # Application configuration
+        - name: FROM_EMAIL
+          value: "DevPocket <noreply@devpocket.app>"
+        - name: FRONTEND_URL
+          value: "{{ FRONTEND_URL }}"
+        - name: BASE_URL
+          value: "https://{{ DOMAIN }}"
+        - name: CLUSTER_NAME
+          value: "{{ CLUSTER_NAME }}"
+        
+        # Rate limiting
+        - name: RATE_LIMIT_WINDOW_MS
+          value: "{{ RATE_LIMIT_WINDOW_MS }}"
+        - name: RATE_LIMIT_MAX_REQUESTS
+          value: "{{ RATE_LIMIT_MAX_REQUESTS }}"
+        - name: AUTH_RATE_LIMIT_MAX_REQUESTS
+          value: "{{ AUTH_RATE_LIMIT_MAX_REQUESTS }}"
+        - name: ENV_RATE_LIMIT_MAX_REQUESTS
+          value: "{{ ENV_RATE_LIMIT_MAX_REQUESTS }}"
+        
+        # WebSocket configuration
+        - name: WS_HEARTBEAT_INTERVAL
+          value: "30000"
+        - name: WS_MAX_CONNECTIONS_PER_USER
+          value: "10"
+        
+        # Environment limits
+        - name: FREE_PLAN_MAX_ENVIRONMENTS
+          value: "2"
+        - name: STARTER_PLAN_MAX_ENVIRONMENTS
+          value: "5"
+        - name: PRO_PLAN_MAX_ENVIRONMENTS
+          value: "20"
+        
+        # Debug and logging
+        - name: DEBUG
+          value: "{{ DEBUG }}"
+        - name: LOG_LEVEL
+          value: "{{ LOG_LEVEL }}"
+        
+        # Kubernetes-specific configuration
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: KUBERNETES_SERVICE_ACCOUNT
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        
+        resources:
+          requests:
+            memory: "{{ MEMORY_REQUEST }}"
+            cpu: "{{ CPU_REQUEST }}"
+          limits:
+            memory: "{{ MEMORY_LIMIT }}"
+            cpu: "{{ CPU_LIMIT }}"
+        
+        # Health checks
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        
+        # Security context for container
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+        
+        # Volume mounts for logs and temporary files
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+        - name: tmp
+          mountPath: /tmp
+      
+      volumes:
+      - name: logs
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
+      
+      # Restart policy
+      restartPolicy: Always
+      
+      # DNS configuration
+      dnsPolicy: ClusterFirst
+      
+      # Termination grace period
+      terminationGracePeriodSeconds: 30

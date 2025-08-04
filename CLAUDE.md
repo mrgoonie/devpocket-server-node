@@ -43,19 +43,26 @@ docker-compose up -d --scale devpocket-api=3
 docker-compose restart devpocket-api
 ```
 
-### Release Management
+### Multi-Environment CI/CD Pipeline
 
-This project uses [semantic-release](https://semantic-release.gitbook.io/semantic-release/) for automated versioning and releases.
+This project uses an enhanced CI/CD pipeline with semantic release and multi-environment deployments:
+
+#### Environment Configuration
+
+- **Development**: `dev/*` branches → `api.dev.devpocket.app`
+- **Beta**: `beta` branch → `api.beta.devpocket.app`
+- **Production**: `main` branch → `api.devpocket.app`
+
+#### Release Management
+
+The project uses [semantic-release](https://semantic-release.gitbook.io/semantic-release/) for automated versioning:
 
 ```bash
 # Check what the next version would be (dry run)
-semantic-release version --noop --print
+pnpm release:dry
 
-# Create a new release locally (for testing)
-semantic-release version
-
-# Preview changelog for next version
-semantic-release changelog --unreleased
+# Create a new release (happens automatically in CI)
+pnpm release
 ```
 
 #### Commit Message Format
@@ -67,19 +74,55 @@ Follow [Conventional Commits](https://conventionalcommits.org/) for automatic ve
 - `perf:` - Performance improvements (patch version bump)
 - `chore:`, `docs:`, `style:`, `refactor:`, `test:` - No version bump
 
-#### Automated Release Process
+#### Automated Deployment Process
 
-Releases are automatically created when commits are pushed to:
-- `main` branch - Creates production releases
-- `beta/*` branches - Creates pre-release versions with `-beta` suffix
+**Development Deployments** (`dev/*` branches):
+- Fast deployment with development optimizations
+- Debug logging enabled
+- Reduced resource limits
+- Image tags: `dev-latest`, `dev-{branch}-{run-number}-{sha}`
 
-The release workflow:
-1. Analyzes commit messages since last release
-2. Determines next version number using semantic versioning
-3. Updates version in `package.json`
-4. Generates/updates `CHANGELOG.md`
-5. Creates Git tag and GitHub release
-6. Builds and deploys Docker image to production (main branch only)
+**Beta Deployments** (`beta` branch):
+- Semantic versioning with pre-release tags
+- Full test suite execution
+- Pre-production environment testing
+- Image tags: `beta-latest`, `beta-{version}`
+
+**Production Deployments** (`main` branch):
+- Full semantic release process
+- Production optimizations and resource limits
+- Health checks and smoke tests
+- Image tags: `latest`, `v{semantic-version}`
+
+The deployment workflow:
+1. Runs comprehensive tests
+2. Performs semantic release (beta/prod only)
+3. Builds and tags Docker images with environment-specific tags
+4. Deploys to environment-specific namespaces
+5. Runs health checks and smoke tests
+6. Provides rollback capabilities
+
+#### Docker Image Tagging Strategy
+
+- **Production**: `digitop/devpocket-nodejs:latest`, `digitop/devpocket-nodejs:v1.2.3`
+- **Beta**: `digitop/devpocket-nodejs:beta-latest`, `digitop/devpocket-nodejs:beta-1.2.3-beta.1`
+- **Dev**: `digitop/devpocket-nodejs:dev-latest`, `digitop/devpocket-nodejs:dev-feature-123-abc1234`
+
+#### Deployment Management Scripts
+
+The project includes several deployment management scripts in `scripts/deployment/`:
+
+```bash
+# Generate environment-specific manifests
+./scripts/deployment/generate-manifests.sh -e dev -i digitop/devpocket-nodejs:dev-latest
+
+# Cleanup environment deployments
+./scripts/deployment/cleanup-environments.sh -e dev -d  # dry run
+./scripts/deployment/cleanup-environments.sh -e beta -f # force cleanup
+
+# Rollback deployments
+./scripts/deployment/rollback-deployment.sh -e prod -r 3  # rollback to revision 3
+```
 
 ## Important Implementation Details
 

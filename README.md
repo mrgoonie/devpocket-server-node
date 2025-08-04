@@ -459,29 +459,41 @@ docker-compose pull
 docker-compose up -d
 ```
 
-### Production Kubernetes Deployment
+### Multi-Environment Kubernetes Deployment
 
-The project includes comprehensive Kubernetes manifests and automated CI/CD:
+The project uses an enhanced CI/CD pipeline with semantic release and multi-environment deployments:
 
+#### Environment Configuration
+- **Development**: `dev/*` branches → `api.dev.devpocket.app`
+- **Beta**: `beta` branch → `api.beta.devpocket.app`
+- **Production**: `main` branch → `api.devpocket.app`
+
+#### Automated Deployment Features
+- **Semantic Release**: Automated versioning with conventional commits
+- **Multi-Environment**: Separate namespaces and configurations
+- **Docker Registry**: `digitop/devpocket-nodejs` on Docker Hub
+- **Build Tagging**: Incremental build numbers and environment-specific tags
+- **Health Checks**: Comprehensive readiness and liveness probes
+- **Rollback Support**: Automated rollback capabilities
+
+#### Quick Commands
 ```bash
-# Quick deployment
-./scripts/deploy.sh
+# Generate environment manifests
+./scripts/deployment/generate-manifests.sh -e dev -i digitop/devpocket-nodejs:dev-latest
 
-# Deploy specific version
-./scripts/deploy.sh v1.2.3
+# Cleanup environment
+./scripts/deployment/cleanup-environments.sh -e dev -d  # dry run
 
-# Update secrets
-./scripts/update-secrets.sh
+# Rollback deployment
+./scripts/deployment/rollback-deployment.sh -e beta -r 3
 ```
 
-#### Automated Deployment
-- **GitHub Actions**: Automatic build and deploy on push to `main`
-- **Docker Registry**: `digitop/devpocket-api` on Docker Hub
-- **Versioning**: Semantic versioning with Git tags
-- **Health Checks**: Automated readiness and liveness probes
-- **Scaling**: Horizontal Pod Autoscaler (3-10 replicas)
+#### Docker Image Tags
+- **Production**: `latest`, `v1.2.3`
+- **Beta**: `beta-latest`, `beta-1.2.3-beta.1`
+- **Development**: `dev-latest`, `dev-feature-123-abc1234`
 
-See [k8s/README.md](k8s/README.md) for detailed Kubernetes deployment guide.
+See [docs/MULTI_ENVIRONMENT_DEPLOYMENT.md](docs/MULTI_ENVIRONMENT_DEPLOYMENT.md) for comprehensive deployment guide.
 
 ## 🔒 Security Best Practices
 

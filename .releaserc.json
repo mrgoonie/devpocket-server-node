@@ -2,8 +2,12 @@
   "branches": [
     "main",
     {
-      "name": "beta/*",
+      "name": "beta",
       "prerelease": "beta"
+    },
+    {
+      "name": "dev/*",
+      "prerelease": "dev"
     }
   ],
   "plugins": [
@@ -14,7 +18,7 @@
     [
       "@semantic-release/git",
       {
-        "assets": ["package.json", "package-lock.json", "CHANGELOG.md"],
+        "assets": ["package.json", "pnpm-lock.yaml", "CHANGELOG.md"],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ],
