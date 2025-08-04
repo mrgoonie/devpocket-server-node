@@ -2,16 +2,31 @@ import { Router, Request, Response } from 'express';
 import { getConfig } from '@/config/env';
 import db from '@/config/database';
 import { asyncHandler } from '@/middleware/errorHandler';
+import serverInfo from '@/utils/serverInfo';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 const router: Router = Router();
 const config = getConfig();
+
+// Function to get version from package.json
+function getVersionFromPackageJson(): string {
+  try {
+    const packageJsonPath = join(process.cwd(), 'package.json');
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+    return packageJson.version || '1.0.0';
+  } catch (error) {
+    // Fallback to default version if package.json cannot be read
+    return '1.0.0';
+  }
+}
 
 /**
  * @swagger
  * /health:
  *   get:
  *     summary: Health check endpoint
- *     description: Returns the overall health status of the API
+ *     description: Returns the overall health status of the API including server start time and uptime
  *     tags: [Health]
  *     responses:
  *       200:
@@ -36,6 +51,14 @@ const config = getConfig();
  *                 timestamp:
  *                   type: number
  *                   example: 1672531200.0
+ *                 startTime:
+ *                   type: number
+ *                   description: Server start time as Unix timestamp
+ *                   example: 1672530000.0
+ *                 uptime:
+ *                   type: string
+ *                   description: Human-readable server uptime
+ *                   example: "2 hours, 15 minutes, 30 seconds"
  *     security: []
  */
 router.get(
@@ -44,9 +67,11 @@ router.get(
     const health = {
       status: 'healthy',
       service: config.APP_NAME,
-      version: '1.0.0',
+      version: getVersionFromPackageJson(),
       environment: config.NODE_ENV,
       timestamp: Date.now() / 1000,
+      startTime: serverInfo.getStartTimeUnix(),
+      uptime: serverInfo.getUptimeFormatted(),
     };
 
     res.json(health);
