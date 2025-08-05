@@ -1,11 +1,14 @@
 #!/usr/bin/env tsx
 
-import 'dotenv/config';
 import { PrismaClient, TemplateCategory, TemplateStatus } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 import logger from '../src/config/logger';
+import { loadConfig } from '../src/config/env';
+
+// Load environment configuration based on NODE_ENV
+loadConfig();
 
 const prisma = new PrismaClient();
 
@@ -185,7 +188,8 @@ async function loadAllTemplates(): Promise<void> {
 
 async function main() {
   try {
-    logger.info('Starting template loading process...');
+    const nodeEnv = process.env.NODE_ENV || 'development';
+    logger.info(`Starting template loading process for environment: ${nodeEnv}`);
     await loadAllTemplates();
     logger.info('Template loading completed successfully');
   } catch (error) {
@@ -207,14 +211,27 @@ Options:
   --help, -h     Show this help message
   
 Environment Variables:
+  NODE_ENV       Environment (development|beta|production) - determines which .env file to load
   DATABASE_URL   PostgreSQL connection string
   
 Description:
   Loads all YAML template files from ./scripts/templates/ into the database.
   Templates with existing names will be updated.
   
-Example:
-  tsx scripts/load_templates.ts
+  The script automatically selects the appropriate .env file based on NODE_ENV:
+  - development: .env.dev > .env.development > .env
+  - beta: .env.beta > .env
+  - production: .env.prod > .env.production > .env
+  
+Examples:
+  tsx scripts/load_templates.ts                           # Uses development environment
+  NODE_ENV=beta tsx scripts/load_templates.ts             # Uses beta environment
+  NODE_ENV=production tsx scripts/load_templates.ts       # Uses production environment
+  
+  Or use the npm scripts:
+  npm run templates:load:dev                              # Development
+  npm run templates:load:beta                             # Beta
+  npm run templates:load:prod                             # Production
   `);
   process.exit(0);
 }

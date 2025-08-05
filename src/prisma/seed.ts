@@ -1,13 +1,24 @@
 #!/usr/bin/env tsx
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+/* eslint-disable no-console */
+/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 
-import 'dotenv/config';
 import { PrismaClient, SubscriptionPlan, ClusterStatus, User, Cluster } from '@prisma/client';
 import { hashPassword } from '@/utils/password';
 import { loadAllTemplates } from '@/scripts/load_templates';
 import { kubeconfigService } from '@/utils/kubeconfig';
 import { encryptionService } from '@/utils/encryption';
 import logger from '@/config/logger';
+import { loadConfig } from '@/config/env';
 import path from 'path';
+
+// Load environment configuration based on NODE_ENV
+loadConfig();
 
 const prisma = new PrismaClient();
 
@@ -425,7 +436,8 @@ async function seedEnvironments(
 
 async function main() {
   try {
-    logger.info('Starting database seeding...');
+    const nodeEnv = process.env.NODE_ENV || 'development';
+    logger.info(`Starting database seeding for environment: ${nodeEnv}...`);
 
     // Seed in order due to foreign key dependencies
     const users = await seedUsers();
@@ -465,14 +477,22 @@ Options:
   --help, -h     Show this help message
   
 Environment Variables:
+  NODE_ENV       Environment (development|beta|production) - determines which .env file to load
   DATABASE_URL   PostgreSQL connection string
   
 Description:
   Seeds the database with initial data including users, clusters, templates, and demo environments.
   Safe to run multiple times - will update existing records instead of creating duplicates.
   
-Example:
-  tsx src/prisma/seed.ts
+  The script automatically selects the appropriate .env file based on NODE_ENV:
+  - development: .env.dev > .env.development > .env
+  - beta: .env.beta > .env
+  - production: .env.prod > .env.production > .env
+  
+Examples:
+  tsx src/prisma/seed.ts                              # Uses development environment
+  NODE_ENV=beta tsx src/prisma/seed.ts                # Uses beta environment
+  NODE_ENV=production tsx src/prisma/seed.ts          # Uses production environment
   `);
   process.exit(0);
 }

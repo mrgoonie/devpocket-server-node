@@ -66,5 +66,19 @@ module.exports = {
         '@typescript-eslint/no-namespace': 'off',
       },
     },
+    {
+      // Disable strict rules for seed files and utility scripts
+      files: ['**/seed.ts', '**/load_templates.ts', 'scripts/**/*.ts', 'src/prisma/**/*.ts'],
+      rules: {
+        '@typescript-eslint/explicit-module-boundary-types': 'off',
+        '@typescript-eslint/explicit-function-return-type': 'off',
+        '@typescript-eslint/no-var-requires': 'off',
+        '@typescript-eslint/no-unsafe-argument': 'off',
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/no-unsafe-call': 'off',
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        'no-console': 'off',
+      },
+    },
   ],
 };
