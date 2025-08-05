@@ -62,6 +62,8 @@ spec:
           value: "beta"
         - name: PORT
           value: "8000"
+        - name: ALLOWED_ORIGINS
+          value: "http://localhost:3000,https://devpocket.app,https://app.devpocket.app,https://api.devpocket.app,https://api.dev.devpocket.app,https://api.beta.devpocket.app"
         
         # Database configuration
         - name: DATABASE_URL
