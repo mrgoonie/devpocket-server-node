@@ -109,8 +109,12 @@ function loadEnvFiles(): void {
   // Define the priority order for env files based on NODE_ENV
   let envFiles: string[] = [];
 
-  if (nodeEnv === 'local' || nodeEnv === 'development') {
+  if (nodeEnv === 'local') {
     envFiles = ['.env.local', '.env'];
+  } else if (nodeEnv === 'development') {
+    envFiles = ['.env.dev', '.env.development', '.env'];
+  } else if (nodeEnv === 'beta') {
+    envFiles = ['.env.beta', '.env.beta', '.env'];
   } else if (nodeEnv === 'production') {
     envFiles = ['.env.prod', '.env.production', '.env'];
   } else if (nodeEnv === 'staging') {
