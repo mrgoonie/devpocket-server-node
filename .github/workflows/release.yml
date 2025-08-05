@@ -205,7 +205,7 @@ jobs:
           POD_NAME=$(kubectl get pods -n devpocket-prod -l app.kubernetes.io/name=devpocket-nodejs -o jsonpath='{.items[0].metadata.name}')
           
           # Check health endpoint using built-in healthcheck script
-          if kubectl exec -n devpocket-prod $POD_NAME -- node ./dist/scripts/healthcheck.js; then
+          if kubectl exec -n devpocket-prod $POD_NAME -- node ./scripts/healthcheck.js; then
             echo "Health check passed"
           else
             echo "Health check failed"
