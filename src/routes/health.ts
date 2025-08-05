@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
 import { getConfig } from '@/config/env';
-import db from '@/config/database';
 import { asyncHandler } from '@/middleware/errorHandler';
 
 const router: Router = Router();
