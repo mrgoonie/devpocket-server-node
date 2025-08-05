@@ -12,7 +12,6 @@
     "test": "NODE_ENV=test jest",
     "test:watch": "NODE_ENV=test jest --watch",
     "test:coverage": "NODE_ENV=test jest --coverage",
-    "test:ci": "scripts/test-setup.sh && dotenv -e .env.test -- jest && docker-compose -f docker-compose.test.yml down",
     "test:unit": "jest --config jest.unit.config.js",
     "test:unit:watch": "jest --config jest.unit.config.js --watch",
     "test:unit:coverage": "jest --config jest.unit.config.js --coverage",
