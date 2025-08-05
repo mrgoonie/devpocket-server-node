@@ -110,15 +110,15 @@ function loadEnvFiles(): void {
   let envFiles: string[] = [];
 
   if (nodeEnv === 'local') {
-    envFiles = ['.env.local', '.env'];
+    envFiles = ['.env.local'];
   } else if (nodeEnv === 'development') {
-    envFiles = ['.env.dev', '.env.development', '.env'];
+    envFiles = ['.env.dev', '.env.development'];
   } else if (nodeEnv === 'beta') {
-    envFiles = ['.env.beta', '.env.beta', '.env'];
+    envFiles = ['.env.beta'];
   } else if (nodeEnv === 'production') {
-    envFiles = ['.env.prod', '.env.production', '.env'];
+    envFiles = ['.env.prod', '.env.production'];
   } else if (nodeEnv === 'staging') {
-    envFiles = ['.env.staging', '.env'];
+    envFiles = ['.env.staging'];
   } else {
     // Default fallback
     envFiles = ['.env'];
@@ -128,7 +128,7 @@ function loadEnvFiles(): void {
   for (const envFile of envFiles) {
     const envPath = path.resolve(process.cwd(), envFile);
     if (fs.existsSync(envPath)) {
-      dotenv.config({ path: envPath });
+      dotenv.config({ path: envPath, override: true });
       break;
     }
   }
