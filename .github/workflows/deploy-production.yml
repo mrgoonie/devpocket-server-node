@@ -21,14 +21,27 @@ jobs:
     runs-on: ubuntu-latest
     name: Run Tests
     
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: devpocket_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9.6.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -41,6 +54,8 @@ jobs:
 
       - name: Generate Prisma client
         run: pnpm db:generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/devpocket_test
 
       - name: Run linting
         run: pnpm lint
@@ -51,10 +66,11 @@ jobs:
       - name: Run type checking
         run: pnpm build
 
-      - name: Run simplified tests
+      - name: Run tests with coverage
         run: pnpm test:ci:coverage
         env:
           NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/devpocket_test
           JWT_SECRET: test-jwt-secret-key-for-ci
           GOOGLE_CLIENT_ID: fake-google-client-id
           GOOGLE_CLIENT_SECRET: fake-google-client-secret
@@ -87,8 +103,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9.6.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -104,7 +118,6 @@ jobs:
         run: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   build-and-push:
     runs-on: ubuntu-latest
@@ -113,7 +126,6 @@ jobs:
     if: success() || github.event.inputs.force_deploy == 'true'
     
     outputs:
-      image-tag: ${{ steps.meta.outputs.tags }}
       image-digest: ${{ steps.build.outputs.digest }}
       build-number: ${{ github.run_number }}
       version: ${{ needs.semantic-release.outputs.new-release-version || 'latest' }}
@@ -147,7 +159,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}
+          images: ${{ env.DOCKER_IMAGE }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=${{ env.SEMANTIC_TAG }}
@@ -165,6 +177,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
+          build-args: |
+            VERSION=${{ env.VERSION }}
+            BUILD_NUMBER=${{ github.run_number }}
+            COMMIT_SHA=${{ github.sha }}
 
       - name: Image digest
         run: echo "Built image with digest ${{ steps.build.outputs.digest }}"
@@ -196,33 +212,31 @@ jobs:
           kubectl cluster-info
           kubectl get namespaces
 
-      - name: Create namespace if not exists
+      - name: Generate production manifests
         run: |
-          kubectl apply -f k8s/namespace.yaml || true
-
-      - name: Update deployment image
-        run: |
+          echo "Generating production manifests..."
           # Determine image tag based on semantic release
           if [ "${{ needs.semantic-release.outputs.new-release-published }}" == "true" ]; then
-            IMAGE_TAG="${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}:v${{ needs.semantic-release.outputs.new-release-version }}"
+            IMAGE_TAG="v${{ needs.semantic-release.outputs.new-release-version }}"
           else
-            IMAGE_TAG="${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}:main-${{ github.run_number }}-${GITHUB_SHA:0:7}"
+            IMAGE_TAG="main-${{ github.run_number }}-${GITHUB_SHA:0:7}"
           fi
           
-          # Update the deployment YAML with the new image
-          sed -i "s|image: docker.io/digitop/devpocket-nodejs:latest|image: ${IMAGE_TAG}|g" k8s/deployment.yaml
-          
-          echo "Updated image to: ${IMAGE_TAG}"
+          ./scripts/deployment/generate-manifests.sh \
+            -e prod \
+            -i "${{ env.DOCKER_IMAGE }}:$IMAGE_TAG" \
+            -o k8s/generated/prod
 
       - name: Apply Kubernetes manifests
         run: |
-          kubectl apply -f k8s/namespace.yaml
-          kubectl apply -f k8s/configmap.yaml || echo "ConfigMap not found, skipping"
-          kubectl apply -f k8s/secret.yaml || echo "Secret not found, skipping"
-          kubectl apply -f k8s/service.yaml
-          kubectl apply -f k8s/deployment.yaml
-          kubectl apply -f k8s/ingress.yaml
-          kubectl apply -f k8s/hpa.yaml || echo "HPA not found, skipping"
+          # Apply manifests in correct order
+          kubectl apply -f k8s/generated/prod/namespace.yaml
+          kubectl apply -f k8s/generated/prod/configmap.yaml || echo "ConfigMap not found, skipping"
+          kubectl apply -f k8s/generated/prod/secret.yaml || echo "Secret not found, skipping"
+          kubectl apply -f k8s/generated/prod/service.yaml
+          kubectl apply -f k8s/generated/prod/deployment.yaml
+          kubectl apply -f k8s/generated/prod/ingress.yaml
+          kubectl apply -f k8s/generated/prod/hpa.yaml || echo "HPA not found, skipping"
 
       - name: Wait for deployment to be ready
         run: |
@@ -248,10 +262,27 @@ jobs:
             exit 1
           fi
 
-      - name: Cleanup old images (keep last 5)
+      - name: Deployment summary
+        if: always()
         run: |
-          # This would require additional setup with Docker Hub API
-          echo "Image cleanup skipped - implement if needed"
+          echo "Production Deployment Summary"
+          echo "============================="
+          echo "Environment: Production"
+          echo "Namespace: ${{ env.KUBERNETES_NAMESPACE }}"
+          if [ "${{ needs.semantic-release.outputs.new-release-published }}" == "true" ]; then
+            echo "Image: ${{ env.DOCKER_IMAGE }}:v${{ needs.semantic-release.outputs.new-release-version }}"
+            echo "Version: v${{ needs.semantic-release.outputs.new-release-version }}"
+          else
+            echo "Image: ${{ env.DOCKER_IMAGE }}:main-${{ github.run_number }}-${GITHUB_SHA:0:7}"
+            echo "Version: main-${{ github.run_number }}"
+          fi
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Build: ${{ github.run_number }}"
+          echo ""
+          echo "Access URL: https://api.devpocket.app"
+          echo ""
+          kubectl get all -n ${{ env.KUBERNETES_NAMESPACE }}
 
   notify:
     runs-on: ubuntu-latest

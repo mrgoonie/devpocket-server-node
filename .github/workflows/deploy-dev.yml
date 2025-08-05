@@ -3,14 +3,20 @@ name: Deploy to Development
 on:
   push:
     branches:
-      - dev
-      - develop
+      - dev/*
+      - develop/*
+      - development/*
   workflow_dispatch:
     inputs:
       image_tag:
         description: 'Docker image tag to deploy'
         required: false
         default: 'dev-latest'
+
+env:
+  DOCKER_REGISTRY: docker.io
+  DOCKER_IMAGE: digitop/devpocket-nodejs
+  KUBERNETES_NAMESPACE: devpocket-dev
 
 jobs:
   test:
@@ -68,10 +74,65 @@ jobs:
           GOOGLE_CLIENT_SECRET: fake-google-client-secret
           RESEND_API_KEY: fake-resend-api-key
 
+  semantic-release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    needs: test
+    
+    outputs:
+      new-release-published: ${{ steps.semantic.outputs.new-release-published }}
+      new-release-version: ${{ steps.semantic.outputs.new-release-version }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run semantic release (dry-run for dev)
+        id: semantic
+        run: |
+          # For dev branches, we do a dry run to get the version
+          # but don't create actual releases
+          OUTPUT=$(pnpm release:dry --no-ci 2>&1 | tee /tmp/semantic-output.log)
+          
+          # Extract version from output
+          VERSION=$(echo "$OUTPUT" | grep -oP 'Published release \K[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.\+]+)?' || echo "")
+          
+          if [ -n "$VERSION" ]; then
+            echo "new-release-published=true" >> $GITHUB_OUTPUT
+            echo "new-release-version=$VERSION" >> $GITHUB_OUTPUT
+          else
+            # Generate a dev version based on branch and run number
+            BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+            BRANCH_SLUG=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+            DEV_VERSION="0.0.0-dev.$BRANCH_SLUG.$GITHUB_RUN_NUMBER"
+            echo "new-release-published=false" >> $GITHUB_OUTPUT
+            echo "new-release-version=$DEV_VERSION" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, semantic-release]
+    
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
     
     steps:
       - name: Checkout repository
@@ -90,13 +151,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: devpocket/server
+          images: ${{ env.DOCKER_IMAGE }}
           tags: |
-            type=ref,event=branch,suffix=-{{sha}}
             type=raw,value=dev-latest
-            type=raw,value=dev-{{date 'YYYYMMDD-HHmmss'}}
+            type=raw,value=dev-${{ needs.semantic-release.outputs.new-release-version }}
+            type=raw,value=dev-${{ github.ref_name }}-${{ github.run_number }}-${{ github.sha }}
 
       - name: Build and push Docker image
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -106,11 +168,15 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ needs.semantic-release.outputs.new-release-version }}
+            BUILD_NUMBER=${{ github.run_number }}
+            COMMIT_SHA=${{ github.sha }}
 
   deploy:
     name: Deploy to Development
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, semantic-release]
     environment: development
     
     steps:
@@ -136,10 +202,10 @@ jobs:
       - name: Generate development manifests
         run: |
           echo "Generating development manifests..."
-          IMAGE_TAG="${{ github.event.inputs.image_tag || 'dev-latest' }}"
+          IMAGE_TAG="${{ github.event.inputs.image_tag || format('dev-{0}', needs.semantic-release.outputs.new-release-version) }}"
           ./scripts/deployment/generate-manifests.sh \
             -e dev \
-            -i "devpocket/server:$IMAGE_TAG" \
+            -i "${{ env.DOCKER_IMAGE }}:$IMAGE_TAG" \
             -o k8s/generated/dev
 
       - name: Deploy to development
@@ -153,23 +219,23 @@ jobs:
           kubectl apply -f k8s/generated/dev/ingress.yaml
           
           # Wait for deployment to be ready
-          kubectl rollout status deployment/devpocket-nodejs -n devpocket-dev --timeout=600s
+          kubectl rollout status deployment/devpocket-nodejs -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=600s
           
           # Verify deployment
-          kubectl get pods -n devpocket-dev -l app.kubernetes.io/name=devpocket-nodejs
+          kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }} -l app.kubernetes.io/name=devpocket-nodejs
 
       - name: Health check
         run: |
           echo "Performing health checks..."
           
           # Wait for pods to be ready
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=devpocket-nodejs -n devpocket-dev --timeout=300s
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=devpocket-nodejs -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=300s
           
           # Get pod name for health check
-          POD_NAME=$(kubectl get pods -n devpocket-dev -l app.kubernetes.io/name=devpocket-nodejs -o jsonpath='{.items[0].metadata.name}')
+          POD_NAME=$(kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }} -l app.kubernetes.io/name=devpocket-nodejs -o jsonpath='{.items[0].metadata.name}')
           
           # Check health endpoint
-          if kubectl exec -n devpocket-dev $POD_NAME -- curl -f http://localhost:8000/api/v1/health; then
+          if kubectl exec -n ${{ env.KUBERNETES_NAMESPACE }} $POD_NAME -- curl -f http://localhost:8000/api/v1/health; then
             echo "Development deployment health check passed"
           else
             echo "Development deployment health check failed"
@@ -180,13 +246,15 @@ jobs:
         if: always()
         run: |
           echo "Development Deployment Summary"
-          echo "============================="
+          echo "=============================="
           echo "Environment: Development"
-          echo "Namespace: devpocket-dev"
-          echo "Image: devpocket/server:${{ github.event.inputs.image_tag || 'dev-latest' }}"
+          echo "Namespace: ${{ env.KUBERNETES_NAMESPACE }}"
+          echo "Image: ${{ env.DOCKER_IMAGE }}:dev-${{ needs.semantic-release.outputs.new-release-version }}"
+          echo "Version: ${{ needs.semantic-release.outputs.new-release-version }}"
           echo "Commit: ${{ github.sha }}"
           echo "Branch: ${{ github.ref_name }}"
+          echo "Build: ${{ github.run_number }}"
           echo ""
           echo "Access URL: https://api.dev.devpocket.app"
           echo ""
-          kubectl get all -n devpocket-dev
+          kubectl get all -n ${{ env.KUBERNETES_NAMESPACE }}

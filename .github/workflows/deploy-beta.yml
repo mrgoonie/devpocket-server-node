@@ -3,13 +3,18 @@ name: Deploy to Beta
 on:
   push:
     branches:
-      - beta/*
+      - beta
   workflow_dispatch:
     inputs:
       image_tag:
         description: 'Docker image tag to deploy'
         required: false
         default: 'beta-latest'
+
+env:
+  DOCKER_REGISTRY: docker.io
+  DOCKER_IMAGE: digitop/devpocket-nodejs
+  KUBERNETES_NAMESPACE: devpocket-beta
 
 jobs:
   test:
@@ -57,7 +62,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/devpocket_test
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: pnpm test:coverage
         env:
           NODE_ENV: test
@@ -67,10 +72,48 @@ jobs:
           GOOGLE_CLIENT_SECRET: fake-google-client-secret
           RESEND_API_KEY: fake-resend-api-key
 
+  semantic-release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    needs: test
+    
+    outputs:
+      new-release-published: ${{ steps.semantic.outputs.new-release-published }}
+      new-release-version: ${{ steps.semantic.outputs.new-release-version }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run semantic release
+        id: semantic
+        run: pnpm release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, semantic-release]
+    
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      version: ${{ needs.semantic-release.outputs.new-release-version || 'beta-latest' }}
     
     steps:
       - name: Checkout repository
@@ -85,28 +128,29 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PAT }}
 
-      - name: Extract version from branch
-        id: version
+      - name: Set version variables
         run: |
-          BRANCH_NAME="${{ github.ref_name }}"
-          if [[ "$BRANCH_NAME" =~ ^beta/(.+)$ ]]; then
-            VERSION="${BASH_REMATCH[1]}"
+          if [ "${{ needs.semantic-release.outputs.new-release-published }}" == "true" ]; then
+            echo "VERSION=${{ needs.semantic-release.outputs.new-release-version }}" >> $GITHUB_ENV
+            echo "SEMANTIC_TAG=v${{ needs.semantic-release.outputs.new-release-version }}" >> $GITHUB_ENV
           else
-            VERSION="beta-$(date +%Y%m%d-%H%M%S)"
+            echo "VERSION=beta-${{ github.run_number }}" >> $GITHUB_ENV
+            echo "SEMANTIC_TAG=beta-${{ github.run_number }}" >> $GITHUB_ENV
           fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_ENV
 
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: devpocket/server
+          images: ${{ env.DOCKER_IMAGE }}
           tags: |
-            type=ref,event=branch,suffix=-{{sha}}
             type=raw,value=beta-latest
-            type=raw,value=beta-${{ steps.version.outputs.version }}
+            type=raw,value=beta-${{ env.VERSION }}
+            type=raw,value=${{ env.SEMANTIC_TAG }}
 
       - name: Build and push Docker image
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -116,11 +160,15 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ env.VERSION }}
+            BUILD_NUMBER=${{ github.run_number }}
+            COMMIT_SHA=${{ github.sha }}
 
   deploy:
     name: Deploy to Beta
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, semantic-release]
     environment: beta
     
     steps:
@@ -146,10 +194,10 @@ jobs:
       - name: Generate beta manifests
         run: |
           echo "Generating beta manifests..."
-          IMAGE_TAG="${{ github.event.inputs.image_tag || 'beta-latest' }}"
+          IMAGE_TAG="${{ github.event.inputs.image_tag || format('beta-{0}', needs.build.outputs.version) }}"
           ./scripts/deployment/generate-manifests.sh \
             -e beta \
-            -i "devpocket/server:$IMAGE_TAG" \
+            -i "${{ env.DOCKER_IMAGE }}:$IMAGE_TAG" \
             -o k8s/generated/beta
 
       - name: Deploy to beta
@@ -163,23 +211,23 @@ jobs:
           kubectl apply -f k8s/generated/beta/ingress.yaml
           
           # Wait for deployment to be ready
-          kubectl rollout status deployment/devpocket-nodejs -n devpocket-beta --timeout=600s
+          kubectl rollout status deployment/devpocket-nodejs -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=600s
           
           # Verify deployment
-          kubectl get pods -n devpocket-beta -l app.kubernetes.io/name=devpocket-nodejs
+          kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }} -l app.kubernetes.io/name=devpocket-nodejs
 
       - name: Health check
         run: |
           echo "Performing health checks..."
           
           # Wait for pods to be ready
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=devpocket-nodejs -n devpocket-beta --timeout=300s
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=devpocket-nodejs -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=300s
           
           # Get pod name for health check
-          POD_NAME=$(kubectl get pods -n devpocket-beta -l app.kubernetes.io/name=devpocket-nodejs -o jsonpath='{.items[0].metadata.name}')
+          POD_NAME=$(kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }} -l app.kubernetes.io/name=devpocket-nodejs -o jsonpath='{.items[0].metadata.name}')
           
           # Check health endpoint
-          if kubectl exec -n devpocket-beta $POD_NAME -- curl -f http://localhost:8000/api/v1/health; then
+          if kubectl exec -n ${{ env.KUBERNETES_NAMESPACE }} $POD_NAME -- curl -f http://localhost:8000/api/v1/health; then
             echo "Beta deployment health check passed"
           else
             echo "Beta deployment health check failed"
@@ -190,7 +238,7 @@ jobs:
         run: |
           echo "Running integration tests against beta environment..."
           # This would run integration tests against the beta environment
-          # kubectl port-forward -n devpocket-beta svc/devpocket-nodejs 8080:8000 &
+          # kubectl port-forward -n ${{ env.KUBERNETES_NAMESPACE }} svc/devpocket-nodejs 8080:8000 &
           # sleep 10
           # npm run test:integration -- --baseUrl=http://localhost:8080
           echo "Integration tests passed (placeholder)"
@@ -201,11 +249,16 @@ jobs:
           echo "Beta Deployment Summary"
           echo "======================="
           echo "Environment: Beta"
-          echo "Namespace: devpocket-beta"
-          echo "Image: devpocket/server:${{ github.event.inputs.image_tag || 'beta-latest' }}"
+          echo "Namespace: ${{ env.KUBERNETES_NAMESPACE }}"
+          echo "Image: ${{ env.DOCKER_IMAGE }}:beta-${{ needs.build.outputs.version }}"
+          echo "Version: ${{ needs.build.outputs.version }}"
+          if [ "${{ needs.semantic-release.outputs.new-release-published }}" == "true" ]; then
+            echo "Release: v${{ needs.semantic-release.outputs.new-release-version }}"
+          fi
           echo "Commit: ${{ github.sha }}"
           echo "Branch: ${{ github.ref_name }}"
+          echo "Build: ${{ github.run_number }}"
           echo ""
           echo "Access URL: https://api.beta.devpocket.app"
           echo ""
-          kubectl get all -n devpocket-beta
+          kubectl get all -n ${{ env.KUBERNETES_NAMESPACE }}

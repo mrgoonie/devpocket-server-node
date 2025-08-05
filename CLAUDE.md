@@ -96,17 +96,20 @@ Follow [Conventional Commits](https://conventionalcommits.org/) for automatic ve
 
 The deployment workflow:
 1. Runs comprehensive tests
-2. Performs semantic release (beta/prod only)
-3. Builds and tags Docker images with environment-specific tags
-4. Deploys to environment-specific namespaces
-5. Runs health checks and smoke tests
-6. Provides rollback capabilities
+2. Performs semantic release (all environments now use semantic versioning)
+3. Builds and tags Docker images with semantic versions
+4. Pushes images to Docker Hub with multiple tags (latest + semantic version)
+5. Deploys to environment-specific namespaces using generated manifests
+6. Runs health checks and smoke tests
+7. Provides rollback capabilities
 
 #### Docker Image Tagging Strategy
 
-- **Production**: `digitop/devpocket-nodejs:latest`, `digitop/devpocket-nodejs:v1.2.3`
-- **Beta**: `digitop/devpocket-nodejs:beta-latest`, `digitop/devpocket-nodejs:beta-1.2.3-beta.1`
-- **Dev**: `digitop/devpocket-nodejs:dev-latest`, `digitop/devpocket-nodejs:dev-feature-123-abc1234`
+All environments now use semantic-release for consistent versioning:
+
+- **Production**: `digitop/devpocket-nodejs:latest`, `digitop/devpocket-nodejs:v1.2.3` (semantic version)
+- **Beta**: `digitop/devpocket-nodejs:beta-latest`, `digitop/devpocket-nodejs:beta-1.2.3-beta.1` (semantic pre-release)
+- **Dev**: `digitop/devpocket-nodejs:dev-latest`, `digitop/devpocket-nodejs:dev-0.0.0-dev.branch.123` (generated dev version)
 
 #### Deployment Management Scripts
 
