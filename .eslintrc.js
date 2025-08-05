@@ -79,6 +79,7 @@ module.exports = {
         '@typescript-eslint/no-unsafe-assignment': 'off',
         '@typescript-eslint/restrict-template-expressions': 'off',
         '@typescript-eslint/no-explicit-any': 'off',
+        'prettier/prettier': 'off',
         'no-console': 'off',
       },
     },

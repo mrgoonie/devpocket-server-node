@@ -213,8 +213,8 @@ jobs:
           # Get pod name for health check
           POD_NAME=$(kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }} -l app.kubernetes.io/name=devpocket-nodejs -o jsonpath='{.items[0].metadata.name}')
           
-          # Check health endpoint
-          if kubectl exec -n ${{ env.KUBERNETES_NAMESPACE }} $POD_NAME -- curl -f http://localhost:8000/health; then
+          # Check health endpoint using built-in healthcheck script
+          if kubectl exec -n ${{ env.KUBERNETES_NAMESPACE }} $POD_NAME -- node ./dist/scripts/healthcheck.js; then
             echo "Development deployment health check passed"
           else
             echo "Development deployment health check failed"

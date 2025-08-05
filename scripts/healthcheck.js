@@ -14,7 +14,7 @@ const TIMEOUT = parseInt(process.env.HEALTH_CHECK_TIMEOUT) || 5000;
 function healthCheck() {
   return new Promise((resolve, reject) => {
     const url = new URL(HEALTH_CHECK_URL);
-    
+
     const options = {
       hostname: url.hostname,
       port: url.port || 80,
@@ -22,21 +22,21 @@ function healthCheck() {
       method: 'GET',
       timeout: TIMEOUT,
       headers: {
-        'User-Agent': 'Docker-Healthcheck/1.0'
-      }
+        'User-Agent': 'Docker-Healthcheck/1.0',
+      },
     };
 
-    const req = http.request(options, (res) => {
+    const req = http.request(options, res => {
       let data = '';
-      
-      res.on('data', (chunk) => {
+
+      res.on('data', chunk => {
         data += chunk;
       });
-      
+
       res.on('end', () => {
         try {
           const response = JSON.parse(data);
-          
+
           if (res.statusCode === 200 && response.status === 'healthy') {
             console.log('✅ Health check passed');
             resolve(response);
@@ -54,7 +54,7 @@ function healthCheck() {
       });
     });
 
-    req.on('error', (error) => {
+    req.on('error', error => {
       console.error('❌ Health check failed - network error');
       console.error('Error:', error.message);
       reject(error);
@@ -72,11 +72,11 @@ function healthCheck() {
 
 // Run the health check
 healthCheck()
-  .then((response) => {
+  .then(response => {
     console.log('Health check details:', JSON.stringify(response, null, 2));
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('Health check error:', error.message);
     process.exit(1);
   });
