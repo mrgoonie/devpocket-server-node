@@ -174,16 +174,6 @@ spec:
             cpu: "500m"
         
         # Health checks
-        readinessProbe:
-          httpGet:
-            path: /api/v1/health/ready
-            port: http
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 5
-          successThreshold: 1
-          failureThreshold: 3
-        
         livenessProbe:
           httpGet:
             path: /api/v1/health

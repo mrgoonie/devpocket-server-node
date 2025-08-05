@@ -388,11 +388,9 @@ describe('Kubernetes Manifest Generation and Validation', () => {
 
       const container = deployment.spec.template.spec.containers[0];
       expect(container.livenessProbe).toBeDefined();
-      expect(container.readinessProbe).toBeDefined();
 
       // Check probe configurations
       expect(container.livenessProbe.httpGet?.path).toBe('/api/v1/health');
-      expect(container.readinessProbe.httpGet?.path).toBe('/api/v1/health/ready');
     });
   });
 });

@@ -56,20 +56,6 @@ Check API health status.
 }
 ```
 
-### GET /health/ready
-Kubernetes readiness check.
-
-**Authentication**: None required  
-**Response**: 
-```json
-{
-  "status": "ready",
-  "checks": {
-    "database": "healthy"
-  }
-}
-```
-
 ### GET /health/live
 Kubernetes liveness check.
 

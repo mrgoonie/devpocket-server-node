@@ -473,7 +473,7 @@ The project uses an enhanced CI/CD pipeline with semantic release and multi-envi
 - **Multi-Environment**: Separate namespaces and configurations
 - **Docker Registry**: `digitop/devpocket-nodejs` on Docker Hub
 - **Build Tagging**: Incremental build numbers and environment-specific tags
-- **Health Checks**: Comprehensive readiness and liveness probes
+- **Health Checks**: Comprehensive liveness probes
 - **Rollback Support**: Automated rollback capabilities
 
 #### Quick Commands
@@ -556,7 +556,6 @@ See [docs/MULTI_ENVIRONMENT_DEPLOYMENT.md](docs/MULTI_ENVIRONMENT_DEPLOYMENT.md)
 ### Health Checks
 
 - **Health**: `GET /health` - Basic service health
-- **Readiness**: `GET /health/ready` - Database connectivity
 - **Liveness**: `GET /health/live` - Service responsiveness
 
 ### Logging

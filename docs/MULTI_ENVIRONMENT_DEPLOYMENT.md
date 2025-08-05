@@ -262,12 +262,10 @@ For critical issues requiring immediate action:
 
 Each deployment includes health check endpoints:
 - `/api/v1/health` - Basic health check
-- `/api/v1/health/ready` - Readiness probe
 
 ### Monitoring Integration
 
 The deployments are configured with:
-- **Readiness Probes**: Check if the application is ready to serve traffic
 - **Liveness Probes**: Ensure the application is running correctly
 - **Resource Monitoring**: CPU and memory usage tracking
 

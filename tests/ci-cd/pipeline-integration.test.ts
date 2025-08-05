@@ -181,9 +181,7 @@ describe('CI/CD Pipeline Integration Tests', () => {
         const container = deployment.spec?.template?.spec?.containers?.[0];
         if (container) {
           expect(container.livenessProbe?.httpGet?.path).toBe('/api/v1/health');
-          expect(container.readinessProbe?.httpGet?.path).toBe('/api/v1/health/ready');
           expect(container.livenessProbe?.httpGet?.port).toBe(8000);
-          expect(container.readinessProbe?.httpGet?.port).toBe(8000);
         }
       }
     });

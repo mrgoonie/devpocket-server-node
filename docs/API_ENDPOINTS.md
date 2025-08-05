@@ -20,10 +20,6 @@ Health check endpoint
 - **Authentication:** Not required
 - **Returns:** Service health status with version and environment info
 
-### GET /health/ready
-Readiness check for Kubernetes
-- **Authentication:** Not required  
-- **Returns:** Service readiness status with database connectivity check
 
 ### GET /health/live
 Liveness check for Kubernetes
