@@ -6,15 +6,7 @@
       "prerelease": "beta"
     },
     {
-      "name": "dev/*",
-      "prerelease": "dev"
-    },
-    {
-      "name": "develop/*",
-      "prerelease": "dev"
-    },
-    {
-      "name": "development/*",
+      "name": "development",
       "prerelease": "dev"
     }
   ],
