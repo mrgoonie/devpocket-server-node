@@ -2,13 +2,13 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: devpocket-nodejs
-  namespace: {{ NAMESPACE }}
+  namespace: devpocket-beta
   labels:
     app.kubernetes.io/name: devpocket-nodejs
     app.kubernetes.io/component: api-server
     app.kubernetes.io/part-of: devpocket-platform
-    app.kubernetes.io/version: "{{ VERSION }}"
-    app.kubernetes.io/environment: {{ ENVIRONMENT }}
+    app.kubernetes.io/version: "latest"
+    app.kubernetes.io/environment: beta
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/proxy-body-size: "100m"
@@ -17,7 +17,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: {{ DOMAIN }}
+  - host: api.beta.devpocket.app
     http:
       paths:
       - backend:
@@ -29,5 +29,5 @@ spec:
         pathType: Prefix
   tls:
   - hosts:
-    - {{ DOMAIN }}
-    secretName: tls-{{ DOMAIN_SAFE }}
+    - api.beta.devpocket.app
+    secretName: tls-api-beta-devpocket-app

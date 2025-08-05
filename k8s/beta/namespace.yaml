@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devpocket-beta
+  labels:
+    app.kubernetes.io/name: devpocket
+    app.kubernetes.io/environment: beta
+    app.kubernetes.io/part-of: devpocket-platform
+  annotations:
+    description: "DevPocket beta environment namespace"

@@ -1,0 +1,35 @@
+# DevPocket prod Environment Manifests
+
+Generated on: Tue Aug  5 12:45:38 +07 2025
+Environment: prod
+Image: digitop/devpocket-nodejs:latest
+Version: latest
+
+## Files
+
+- `namespace.yaml` - Namespace definition
+- `service.yaml` - Service definition
+- `deployment.yaml` - Deployment definition
+- `ingress.yaml` - Ingress definition
+
+## Deployment
+
+To deploy these manifests:
+
+```bash
+kubectl apply -f namespace.yaml
+kubectl apply -f service.yaml
+kubectl apply -f deployment.yaml
+kubectl apply -f ingress.yaml
+```
+
+## Cleanup
+
+To remove the deployment:
+
+```bash
+kubectl delete -f ingress.yaml
+kubectl delete -f deployment.yaml
+kubectl delete -f service.yaml
+kubectl delete -f namespace.yaml
+```

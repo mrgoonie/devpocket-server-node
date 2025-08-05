@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devpocket-prod
+  labels:
+    app.kubernetes.io/name: devpocket
+    app.kubernetes.io/environment: prod
+    app.kubernetes.io/part-of: devpocket-platform
+  annotations:
+    description: "DevPocket prod environment namespace"
