@@ -129,7 +129,7 @@ if eval $COMMAND; then
     echo ""
     print_status "Available services:"
     echo "  🌐 API Server:          http://localhost:8000"
-    echo "  📊 API Health:          http://localhost:8000/api/v1/health"
+    echo "  📊 API Health:          http://localhost:8000/health"
     echo "  📚 API Documentation:   http://localhost:8000/api/v1/docs"
     
     if [[ $PROFILE == *"dev-tools"* ]]; then

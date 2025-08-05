@@ -254,7 +254,7 @@ jobs:
           sleep 30
           
           # Test the API health endpoint
-          if curl -f https://api.devpocket.app/api/v1/health; then
+          if curl -f https://api.devpocket.app/health; then
             echo "✅ Health check passed"
           else
             echo "❌ Health check failed"

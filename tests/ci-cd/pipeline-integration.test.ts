@@ -180,7 +180,7 @@ describe('CI/CD Pipeline Integration Tests', () => {
 
         const container = deployment.spec?.template?.spec?.containers?.[0];
         if (container) {
-          expect(container.livenessProbe?.httpGet?.path).toBe('/api/v1/health');
+          expect(container.livenessProbe?.httpGet?.path).toBe('/health');
           expect(container.livenessProbe?.httpGet?.port).toBe(8000);
         }
       }
@@ -199,7 +199,7 @@ describe('CI/CD Pipeline Integration Tests', () => {
           const content = fs.readFileSync(workflowPath, 'utf8');
 
           // Check smoke test configuration
-          expect(content).toContain('/api/v1/health');
+          expect(content).toContain('/health');
 
           if (domain !== 'api.devpocket.app') {
             expect(content).toContain(domain);

@@ -91,7 +91,7 @@ describe('Backward Compatibility Tests', () => {
         const deployment = yaml.load(content) as any;
 
         const container = deployment.spec.template.spec.containers[0];
-        expect(container.livenessProbe.httpGet.path).toBe('/api/v1/health');
+        expect(container.livenessProbe.httpGet.path).toBe('/health');
       }
     });
 
@@ -149,7 +149,7 @@ describe('Backward Compatibility Tests', () => {
         const content = fs.readFileSync(deploymentPath, 'utf8');
 
         // Health checks should use /api/v1 prefix
-        expect(content).toContain('/api/v1/health');
+        expect(content).toContain('/health');
         // Both readiness and liveness probes use the same endpoint
       } else {
         // Skip if deployment file doesn't exist

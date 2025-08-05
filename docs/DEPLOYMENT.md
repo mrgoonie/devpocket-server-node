@@ -107,7 +107,7 @@ For faster CI/CD pipeline, we use simplified testing:
 ## Health Checks
 
 ### Application Health
-- **Endpoint**: `https://api.devpocket.app/api/v1/health`
+- **Endpoint**: `https://api.devpocket.app/health`
 - **Expected**: HTTP 200 OK
 - **Kubernetes**: Readiness and liveness probes configured
 

@@ -83,7 +83,7 @@ expect(workflow.jobs['build-and-push'].needs).toContain('test');
 // Example manifest validation
 expect(generatedContent.metadata.namespace).toBe(env.namespace);
 expect(container.resources.requests.memory).toBe('128Mi'); // Dev environment
-expect(container.livenessProbe.httpGet.path).toBe('/api/v1/health');
+expect(container.livenessProbe.httpGet.path).toBe('/health');
 ```
 
 ### 3. Deployment Scripts Testing (35 test cases)

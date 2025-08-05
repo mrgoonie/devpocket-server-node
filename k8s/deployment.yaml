@@ -169,7 +169,7 @@ spec:
         # Health checks
         livenessProbe:
           httpGet:
-            path: /api/v1/health
+            path: /health
             port: http
           initialDelaySeconds: 30
           periodSeconds: 30

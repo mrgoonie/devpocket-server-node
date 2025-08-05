@@ -141,7 +141,7 @@ docker-compose logs -f devpocket-api
 After starting the services, access:
 
 - **🌐 API Server**: http://localhost:8000
-- **📊 Health Check**: http://localhost:8000/api/v1/health
+- **📊 Health Check**: http://localhost:8000/health
 - **📚 API Documentation**: http://localhost:8000/api/v1/docs
 - **🗄️ Database Admin** (with `--with-tools`): http://localhost:8080
 - **🔴 Redis Commander** (with `--with-tools`): http://localhost:8081

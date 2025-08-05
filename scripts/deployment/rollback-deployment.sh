@@ -220,7 +220,7 @@ verify_rollback() {
         local pod_name
         pod_name=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=devpocket-nodejs --no-headers | head -1 | awk '{print $1}')
         
-        if kubectl exec -n "$NAMESPACE" "$pod_name" -- curl -s http://localhost:8000/api/v1/health >/dev/null 2>&1; then
+        if kubectl exec -n "$NAMESPACE" "$pod_name" -- curl -s http://localhost:8000/health >/dev/null 2>&1; then
             success "Application health check passed"
         else
             warn "Application health check failed or not available"

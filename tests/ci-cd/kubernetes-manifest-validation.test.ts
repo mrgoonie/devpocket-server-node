@@ -390,7 +390,7 @@ describe('Kubernetes Manifest Generation and Validation', () => {
       expect(container.livenessProbe).toBeDefined();
 
       // Check probe configurations
-      expect(container.livenessProbe.httpGet?.path).toBe('/api/v1/health');
+      expect(container.livenessProbe.httpGet?.path).toBe('/health');
     });
   });
 });

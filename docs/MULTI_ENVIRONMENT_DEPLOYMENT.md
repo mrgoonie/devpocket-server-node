@@ -261,7 +261,7 @@ For critical issues requiring immediate action:
 ### Health Endpoints
 
 Each deployment includes health check endpoints:
-- `/api/v1/health` - Basic health check
+- `/health` - Basic health check
 
 ### Monitoring Integration
 

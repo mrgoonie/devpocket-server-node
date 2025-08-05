@@ -8,7 +8,7 @@
 const http = require('http');
 const { URL } = require('url');
 
-const HEALTH_CHECK_URL = process.env.HEALTH_CHECK_URL || 'http://localhost:8000/api/v1/health';
+const HEALTH_CHECK_URL = process.env.HEALTH_CHECK_URL || 'http://localhost:8000/health';
 const TIMEOUT = parseInt(process.env.HEALTH_CHECK_TIMEOUT) || 5000;
 
 function healthCheck() {
