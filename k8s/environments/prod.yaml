@@ -8,7 +8,7 @@ NODE_ENV: production
 
 # Domain configuration
 DOMAIN: api.devpocket.app
-FRONTEND_URL: https://app.devpocket.com
+FRONTEND_URL: https://devpocket.com
 
 # Application configuration
 DEBUG: "false"
