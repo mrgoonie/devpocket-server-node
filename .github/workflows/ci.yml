@@ -121,7 +121,7 @@ jobs:
           # Start container with test environment (without --rm so we can get logs even if it crashes)
           CONTAINER_ID=$(docker run -d --name test-container \
             -e NODE_ENV=test \
-            -e DATABASE_URL=file:///app/test.db \
+            -e DATABASE_URL=postgresql://test:test@localhost:5432/test \
             -e JWT_SECRET=test-jwt-secret-key-for-testing-that-is-long-enough \
             -e LOG_LEVEL=debug \
             -e GOOGLE_CLIENT_ID=fake-google-client-id \
@@ -130,6 +130,7 @@ jobs:
             -e FROM_EMAIL=test@example.com \
             -e SUPPORT_EMAIL=support@example.com \
             -e ALLOWED_ORIGINS=http://localhost:3000 \
+            -e SECRET_KEY=test-secret-key-for-testing-environments-only \
             -p 8000:8000 \
             digitop/devpocket-nodejs:test)
           
@@ -153,21 +154,32 @@ jobs:
             
             # Test health endpoint (expect 200 for basic health check)
             echo "Testing health endpoint..."
-            curl -f http://localhost:8000/health || {
+            HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:8000/health || echo "FAILED")
+            echo "Health response: $HEALTH_RESPONSE"
+            
+            # Check if we got a 200 response (last line should be 200)
+            if echo "$HEALTH_RESPONSE" | tail -n 1 | grep -q "200"; then
+              echo "Health check passed!"
+            else
               echo "Health check failed, final container logs:"
               docker logs test-container 2>&1 || true
               docker rm -f test-container 2>/dev/null || true
               exit 1
-            }
+            fi
             
             # Test that ready endpoint returns 503 (expected without real database)
             echo "Testing ready endpoint..."
-            curl -s http://localhost:8000/health/ready | grep '"status":"not ready"' || {
-              echo "Ready check failed, showing response:"
-              curl -s http://localhost:8000/health/ready || true
+            READY_RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:8000/health/ready || echo "FAILED")
+            echo "Ready response: $READY_RESPONSE"
+            
+            # Check if we got a 503 response (database not available)
+            if echo "$READY_RESPONSE" | tail -n 1 | grep -q "503"; then
+              echo "Ready check correctly returned 503 (database unavailable)!"
+            else
+              echo "Ready check unexpected response, should be 503"
               docker rm -f test-container 2>/dev/null || true
               exit 1
-            }
+            fi
             
             echo "All tests passed!"
           else
