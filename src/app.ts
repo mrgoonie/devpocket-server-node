@@ -125,11 +125,8 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url:
-          config.NODE_ENV === 'production'
-            ? 'https://api.devpocket.app'
-            : `http://localhost:${config.PORT}`,
-        description: config.NODE_ENV === 'production' ? 'Production' : 'Development',
+        url: config.BASE_URL,
+        description: `Environment: ${config.NODE_ENV}`,
       },
     ],
     components: {
