@@ -1,6 +1,6 @@
 # DevPocket prod Environment Manifests
 
-Generated on: Tue Aug  5 12:45:38 +07 2025
+Generated on: Tue Aug  5 13:04:30 +07 2025
 Environment: prod
 Image: digitop/devpocket-nodejs:latest
 Version: latest

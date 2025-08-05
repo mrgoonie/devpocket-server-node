@@ -112,7 +112,7 @@ ssl/
 config.local.yaml
 docker-compose.override.yml
 k8s/kube_config_ovh.yaml
-k8s/secrets.yaml
+k8s/**/secrets.yaml
 
 # Temporary files
 *.tmp

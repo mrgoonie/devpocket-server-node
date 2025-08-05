@@ -35,6 +35,10 @@ spec:
       serviceAccountName: devpocket-nodejs
       automountServiceAccountToken: true
       
+      # Docker registry secret for pulling images
+      imagePullSecrets:
+      - name: digitopdockerhub-docker-registry-key
+      
       # Security context
       securityContext:
         runAsNonRoot: true
