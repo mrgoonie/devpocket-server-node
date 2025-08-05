@@ -117,7 +117,7 @@ spec:
         
         # Application configuration
         - name: FROM_EMAIL
-          value: "DevPocket <noreply@devpocket.app>"
+          value: "noreply@devpocket.app"
         - name: FRONTEND_URL
           value: "https://app.devpocket.com"
         - name: BASE_URL
