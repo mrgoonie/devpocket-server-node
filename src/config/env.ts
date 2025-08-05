@@ -5,7 +5,7 @@ import fs from 'fs';
 
 const envSchema = z.object({
   // Application
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z.enum(['local', 'development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(8000),
   HOST: z.string().default('0.0.0.0'),
   APP_NAME: z.string().default('DevPocket API'),

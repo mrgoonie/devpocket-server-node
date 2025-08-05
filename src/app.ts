@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -147,9 +148,9 @@ const swaggerOptions = {
     ],
   },
   apis: [
-    config.NODE_ENV === 'production'
-      ? ['./dist/routes/*.js', './dist/types/*.js']
-      : ['./src/routes/*.ts', './src/types/*.ts'],
+    config.NODE_ENV === 'local'
+      ? ['./src/routes/*.ts', './src/types/*.ts']
+      : ['./dist/routes/*.js', './dist/types/*.js'],
   ].flat(), // Path to the API files
 };
 
