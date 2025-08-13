@@ -116,7 +116,7 @@ describe('KubernetesService - Error Scenarios', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Clear service cache
     (kubernetesService as any).clients.clear();
     (kubernetesService as any).kubeConfigs.clear();
@@ -133,9 +133,9 @@ describe('KubernetesService - Error Scenarios', () => {
     it('should handle cluster not found error gracefully', async () => {
       mockPrisma.cluster.findUnique.mockResolvedValue(null);
 
-      await expect(
-        kubernetesService.createEnvironment(testEnvironmentOptions)
-      ).rejects.toThrow(KubernetesError);
+      await expect(kubernetesService.createEnvironment(testEnvironmentOptions)).rejects.toThrow(
+        KubernetesError
+      );
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Failed to create environment in Kubernetes',
@@ -160,9 +160,9 @@ describe('KubernetesService - Error Scenarios', () => {
         throw new Error('Decryption failed');
       });
 
-      await expect(
-        (kubernetesService as any).getKubernetesClient('test-cluster')
-      ).rejects.toThrow(/Invalid kubeconfig format/);
+      await expect((kubernetesService as any).getKubernetesClient('test-cluster')).rejects.toThrow(
+        /Invalid kubeconfig format/
+      );
     });
 
     it('should handle kubeconfig load failure', async () => {
@@ -178,16 +178,17 @@ describe('KubernetesService - Error Scenarios', () => {
         throw new Error('Invalid kubeconfig content');
       });
 
-      await expect(
-        (kubernetesService as any).getKubernetesClient('test-cluster')
-      ).rejects.toThrow(/Invalid kubeconfig format/);
+      await expect((kubernetesService as any).getKubernetesClient('test-cluster')).rejects.toThrow(
+        /Invalid kubeconfig format/
+      );
     });
 
     it('should handle API client creation failure', async () => {
       mockPrisma.cluster.findUnique.mockResolvedValue({
         id: 'test-cluster',
         name: 'Test Cluster',
-        kubeconfig: 'apiVersion: v1\nkind: Config\nclusters:\n- name: test\ncontexts:\n- name: test',
+        kubeconfig:
+          'apiVersion: v1\nkind: Config\nclusters:\n- name: test\ncontexts:\n- name: test',
         status: 'ACTIVE',
       });
 
@@ -199,16 +200,17 @@ describe('KubernetesService - Error Scenarios', () => {
         throw new Error('Failed to create API client');
       });
 
-      await expect(
-        (kubernetesService as any).getKubernetesClient('test-cluster')
-      ).rejects.toThrow(KubernetesError);
+      await expect((kubernetesService as any).getKubernetesClient('test-cluster')).rejects.toThrow(
+        KubernetesError
+      );
     });
 
     it('should handle context validation failure', async () => {
       mockPrisma.cluster.findUnique.mockResolvedValue({
         id: 'test-cluster',
         name: 'Test Cluster',
-        kubeconfig: 'apiVersion: v1\nkind: Config\nclusters:\n- name: test\ncontexts:\n- name: test',
+        kubeconfig:
+          'apiVersion: v1\nkind: Config\nclusters:\n- name: test\ncontexts:\n- name: test',
         status: 'ACTIVE',
       });
 
@@ -218,9 +220,9 @@ describe('KubernetesService - Error Scenarios', () => {
 
       mockKubeConfig.getContexts.mockReturnValue([]);
 
-      await expect(
-        (kubernetesService as any).getKubernetesClient('test-cluster')
-      ).rejects.toThrow(/No contexts found in kubeconfig/);
+      await expect((kubernetesService as any).getKubernetesClient('test-cluster')).rejects.toThrow(
+        /No contexts found in kubeconfig/
+      );
     });
   });
 
@@ -229,7 +231,7 @@ describe('KubernetesService - Error Scenarios', () => {
       mockPrisma.environment.findUnique.mockResolvedValue({
         clusterId: 'test-cluster',
       });
-      
+
       jest.spyOn(kubernetesService as any, 'getKubernetesClient').mockResolvedValue({
         coreV1Api: mockCoreV1Api,
         appsV1Api: mockAppsV1Api,
@@ -240,9 +242,9 @@ describe('KubernetesService - Error Scenarios', () => {
       mockCoreV1Api.readNamespace.mockRejectedValue(new Error('Namespace not found'));
       mockCoreV1Api.createNamespace.mockRejectedValue(new Error('Insufficient permissions'));
 
-      await expect(
-        kubernetesService.createEnvironment(testEnvironmentOptions)
-      ).rejects.toThrow(KubernetesError);
+      await expect(kubernetesService.createEnvironment(testEnvironmentOptions)).rejects.toThrow(
+        KubernetesError
+      );
 
       // Should update environment status to ERROR
       expect(mockPrisma.environment.update).toHaveBeenCalledWith({
@@ -261,9 +263,9 @@ describe('KubernetesService - Error Scenarios', () => {
       );
       mockCoreV1Api.createNamespacedConfigMap.mockResolvedValue({ body: {} });
 
-      await expect(
-        kubernetesService.createEnvironment(testEnvironmentOptions)
-      ).rejects.toThrow(/Storage quota exceeded/);
+      await expect(kubernetesService.createEnvironment(testEnvironmentOptions)).rejects.toThrow(
+        /Storage quota exceeded/
+      );
     });
 
     it('should handle ConfigMap creation failure', async () => {
@@ -273,22 +275,20 @@ describe('KubernetesService - Error Scenarios', () => {
         new Error('ConfigMap size too large')
       );
 
-      await expect(
-        kubernetesService.createEnvironment(testEnvironmentOptions)
-      ).rejects.toThrow(/ConfigMap size too large/);
+      await expect(kubernetesService.createEnvironment(testEnvironmentOptions)).rejects.toThrow(
+        /ConfigMap size too large/
+      );
     });
 
     it('should handle deployment creation failure', async () => {
       mockCoreV1Api.readNamespace.mockResolvedValue({ body: {} });
       mockCoreV1Api.createNamespacedPersistentVolumeClaim.mockResolvedValue({ body: {} });
       mockCoreV1Api.createNamespacedConfigMap.mockResolvedValue({ body: {} });
-      mockAppsV1Api.createNamespacedDeployment.mockRejectedValue(
-        new Error('Image pull failed')
-      );
+      mockAppsV1Api.createNamespacedDeployment.mockRejectedValue(new Error('Image pull failed'));
 
-      await expect(
-        kubernetesService.createEnvironment(testEnvironmentOptions)
-      ).rejects.toThrow(/Image pull failed/);
+      await expect(kubernetesService.createEnvironment(testEnvironmentOptions)).rejects.toThrow(
+        /Image pull failed/
+      );
     });
 
     it('should handle service creation failure', async () => {
@@ -296,13 +296,11 @@ describe('KubernetesService - Error Scenarios', () => {
       mockCoreV1Api.createNamespacedPersistentVolumeClaim.mockResolvedValue({ body: {} });
       mockCoreV1Api.createNamespacedConfigMap.mockResolvedValue({ body: {} });
       mockAppsV1Api.createNamespacedDeployment.mockResolvedValue({ body: {} });
-      mockCoreV1Api.createNamespacedService.mockRejectedValue(
-        new Error('Service port conflict')
-      );
+      mockCoreV1Api.createNamespacedService.mockRejectedValue(new Error('Service port conflict'));
 
-      await expect(
-        kubernetesService.createEnvironment(testEnvironmentOptions)
-      ).rejects.toThrow(/Service port conflict/);
+      await expect(kubernetesService.createEnvironment(testEnvironmentOptions)).rejects.toThrow(
+        /Service port conflict/
+      );
     });
 
     it('should handle database update failure during creation', async () => {
@@ -316,27 +314,25 @@ describe('KubernetesService - Error Scenarios', () => {
       // Mock database update failure
       mockPrisma.environment.update.mockRejectedValue(new Error('Database connection lost'));
 
-      await expect(
-        kubernetesService.createEnvironment(testEnvironmentOptions)
-      ).rejects.toThrow(KubernetesError);
+      await expect(kubernetesService.createEnvironment(testEnvironmentOptions)).rejects.toThrow(
+        KubernetesError
+      );
     });
 
     it('should handle cleanup failure during error recovery', async () => {
       mockCoreV1Api.readNamespace.mockResolvedValue({ body: {} });
       mockCoreV1Api.createNamespacedPersistentVolumeClaim.mockResolvedValue({ body: {} });
       mockCoreV1Api.createNamespacedConfigMap.mockResolvedValue({ body: {} });
-      mockAppsV1Api.createNamespacedDeployment.mockRejectedValue(
-        new Error('Deployment failed')
-      );
+      mockAppsV1Api.createNamespacedDeployment.mockRejectedValue(new Error('Deployment failed'));
 
       // Mock cleanup failure
-      jest.spyOn(kubernetesService as any, 'cleanupFailedEnvironment').mockRejectedValue(
-        new Error('Cleanup failed')
-      );
+      jest
+        .spyOn(kubernetesService as any, 'cleanupFailedEnvironment')
+        .mockRejectedValue(new Error('Cleanup failed'));
 
-      await expect(
-        kubernetesService.createEnvironment(testEnvironmentOptions)
-      ).rejects.toThrow(KubernetesError);
+      await expect(kubernetesService.createEnvironment(testEnvironmentOptions)).rejects.toThrow(
+        KubernetesError
+      );
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Failed to cleanup after environment creation failure',
@@ -351,17 +347,15 @@ describe('KubernetesService - Error Scenarios', () => {
 
     it('should handle database error update failure during error recovery', async () => {
       mockCoreV1Api.readNamespace.mockResolvedValue({ body: {} });
-      mockAppsV1Api.createNamespacedDeployment.mockRejectedValue(
-        new Error('Deployment failed')
-      );
+      mockAppsV1Api.createNamespacedDeployment.mockRejectedValue(new Error('Deployment failed'));
 
       // Mock cleanup success but database update failure
       jest.spyOn(kubernetesService as any, 'cleanupFailedEnvironment').mockResolvedValue(undefined);
       mockPrisma.environment.update.mockRejectedValue(new Error('Database update failed'));
 
-      await expect(
-        kubernetesService.createEnvironment(testEnvironmentOptions)
-      ).rejects.toThrow(KubernetesError);
+      await expect(kubernetesService.createEnvironment(testEnvironmentOptions)).rejects.toThrow(
+        KubernetesError
+      );
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Failed to update environment status',
@@ -383,7 +377,7 @@ describe('KubernetesService - Error Scenarios', () => {
         kubernetesPodName: 'env-env-error-test',
         kubernetesServiceName: 'svc-env-error-test',
       });
-      
+
       jest.spyOn(kubernetesService as any, 'getKubernetesClient').mockResolvedValue({
         coreV1Api: mockCoreV1Api,
         appsV1Api: mockAppsV1Api,
@@ -391,9 +385,7 @@ describe('KubernetesService - Error Scenarios', () => {
     });
 
     it('should handle deployment read failure in getEnvironmentInfo', async () => {
-      mockAppsV1Api.readNamespacedDeployment.mockRejectedValue(
-        new Error('Deployment not found')
-      );
+      mockAppsV1Api.readNamespacedDeployment.mockRejectedValue(new Error('Deployment not found'));
 
       const result = await kubernetesService.getEnvironmentInfo('env-error-test');
 
@@ -418,9 +410,9 @@ describe('KubernetesService - Error Scenarios', () => {
         new Error('Deployment scaling failed')
       );
 
-      await expect(
-        kubernetesService.startEnvironment('env-error-test')
-      ).rejects.toThrow(KubernetesError);
+      await expect(kubernetesService.startEnvironment('env-error-test')).rejects.toThrow(
+        KubernetesError
+      );
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Failed to start environment',
@@ -438,9 +430,9 @@ describe('KubernetesService - Error Scenarios', () => {
         new Error('Deployment scaling failed')
       );
 
-      await expect(
-        kubernetesService.stopEnvironment('env-error-test')
-      ).rejects.toThrow(KubernetesError);
+      await expect(kubernetesService.stopEnvironment('env-error-test')).rejects.toThrow(
+        KubernetesError
+      );
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Failed to stop environment',
@@ -454,13 +446,13 @@ describe('KubernetesService - Error Scenarios', () => {
     });
 
     it('should handle client initialization failure in deleteEnvironment', async () => {
-      jest.spyOn(kubernetesService as any, 'getKubernetesClient').mockRejectedValue(
-        new Error('Client initialization failed')
-      );
+      jest
+        .spyOn(kubernetesService as any, 'getKubernetesClient')
+        .mockRejectedValue(new Error('Client initialization failed'));
 
-      await expect(
-        kubernetesService.deleteEnvironment('env-error-test')
-      ).rejects.toThrow(KubernetesError);
+      await expect(kubernetesService.deleteEnvironment('env-error-test')).rejects.toThrow(
+        KubernetesError
+      );
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Failed to delete environment from Kubernetes',
@@ -481,7 +473,7 @@ describe('KubernetesService - Error Scenarios', () => {
         kubernetesNamespace: 'devpocket-user-error-test',
         kubernetesPodName: 'env-env-error-test',
       });
-      
+
       jest.spyOn(kubernetesService as any, 'getKubernetesClient').mockResolvedValue({
         coreV1Api: mockCoreV1Api,
         appsV1Api: mockAppsV1Api,
@@ -546,12 +538,18 @@ describe('KubernetesService - Error Scenarios', () => {
 
       // Mock Exec to simulate execution failure
       const mockExecInstance = {
-        exec: jest.fn().mockImplementation((namespace, pod, container, command, stdout, stderr, stdin, tty, callback) => {
-          callback({ status: 'Failure', message: 'Command execution failed' });
-        }),
+        exec: jest
+          .fn()
+          .mockImplementation(
+            (namespace, pod, container, command, stdout, stderr, stdin, tty, callback) => {
+              callback({ status: 'Failure', message: 'Command execution failed' });
+            }
+          ),
       };
-      
-      (require('@kubernetes/client-node').Exec as jest.Mock).mockImplementation(() => mockExecInstance);
+
+      (require('@kubernetes/client-node').Exec as jest.Mock).mockImplementation(
+        () => mockExecInstance
+      );
 
       const result = await kubernetesService.executeCommand('env-error-test', 'invalid-command');
 
@@ -570,7 +568,7 @@ describe('KubernetesService - Error Scenarios', () => {
         kubernetesNamespace: 'devpocket-user-error-test',
         kubernetesPodName: 'env-env-error-test',
       });
-      
+
       jest.spyOn(kubernetesService as any, 'getKubernetesClient').mockResolvedValue({
         coreV1Api: mockCoreV1Api,
         appsV1Api: mockAppsV1Api,
@@ -620,9 +618,9 @@ describe('KubernetesService - Error Scenarios', () => {
     });
 
     it('should handle client initialization failure in log retrieval', async () => {
-      jest.spyOn(kubernetesService as any, 'getKubernetesClient').mockRejectedValue(
-        new Error('Client failed')
-      );
+      jest
+        .spyOn(kubernetesService as any, 'getKubernetesClient')
+        .mockRejectedValue(new Error('Client failed'));
 
       const result = await kubernetesService.getEnvironmentLogs('env-error-test');
 
@@ -748,7 +746,8 @@ contexts:
       mockPrisma.cluster.findUnique.mockResolvedValue({
         id: 'test-cluster',
         name: 'Test Cluster',
-        kubeconfig: 'apiVersion: v1\nkind: Config\nclusters:\n- name: test\ncontexts:\n- name: test',
+        kubeconfig:
+          'apiVersion: v1\nkind: Config\nclusters:\n- name: test\ncontexts:\n- name: test',
         status: 'ACTIVE',
       });
 
@@ -757,16 +756,16 @@ contexts:
       });
 
       // Simulate concurrent calls to getKubernetesClient
-      const promises = Array(5).fill(null).map(() =>
-        (kubernetesService as any).getKubernetesClient('test-cluster')
-      );
+      const promises = Array(5)
+        .fill(null)
+        .map(() => (kubernetesService as any).getKubernetesClient('test-cluster'));
 
       const results = await Promise.allSettled(promises);
 
       // All should either succeed or fail with the same error
       const statuses = results.map(r => r.status);
       const uniqueStatuses = [...new Set(statuses)];
-      
+
       // Should handle concurrent initialization properly
       expect(uniqueStatuses.length).toBeLessThanOrEqual(2); // Either all fulfilled or all rejected
     });

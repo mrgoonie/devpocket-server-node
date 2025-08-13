@@ -428,7 +428,10 @@ class KubernetesService {
       const { kubernetesNamespace: namespace, kubernetesPodName: deploymentName } = environment;
 
       // Get deployment status
-      const deploymentResponse = await client.appsV1Api.readNamespacedDeployment(deploymentName, namespace);
+      const deploymentResponse = await client.appsV1Api.readNamespacedDeployment(
+        deploymentName,
+        namespace
+      );
       const deployment = deploymentResponse.body;
 
       let status = 'UNKNOWN';
@@ -437,7 +440,9 @@ class KubernetesService {
 
       if (readyReplicas === replicas && readyReplicas > 0) {
         status = 'RUNNING';
-      } else if (deployment.status?.conditions?.some(c => c.type === 'Progressing' && c.status === 'True')) {
+      } else if (
+        deployment.status?.conditions?.some(c => c.type === 'Progressing' && c.status === 'True')
+      ) {
         status = 'PROVISIONING';
       } else if (readyReplicas === 0) {
         status = 'STOPPED';
@@ -458,7 +463,7 @@ class KubernetesService {
           undefined,
           `app=${deploymentName}`
         );
-        
+
         if (podsResponse.body.items.length > 0) {
           const samplePod = podsResponse.body.items[0];
           if (samplePod) {
@@ -543,7 +548,10 @@ class KubernetesService {
         data: { status: 'RUNNING' },
       });
 
-      logger.info('Environment start initiated (scaled up deployment)', { environmentId, deploymentName });
+      logger.info('Environment start initiated (scaled up deployment)', {
+        environmentId,
+        deploymentName,
+      });
     } catch (error) {
       logger.error('Failed to start environment', {
         environmentId,
@@ -607,7 +615,10 @@ class KubernetesService {
         data: { status: 'STOPPING' },
       });
 
-      logger.info('Environment stop initiated (scaled down deployment)', { environmentId, deploymentName });
+      logger.info('Environment stop initiated (scaled down deployment)', {
+        environmentId,
+        deploymentName,
+      });
     } catch (error) {
       logger.error('Failed to stop environment', {
         environmentId,
@@ -655,7 +666,10 @@ class KubernetesService {
           client.appsV1Api
             .deleteNamespacedDeployment(environment.kubernetesPodName, namespace)
             .catch((err: unknown) =>
-              logger.warn('Failed to delete deployment', { deployment: environment.kubernetesPodName, err })
+              logger.warn('Failed to delete deployment', {
+                deployment: environment.kubernetesPodName,
+                err,
+              })
             )
         );
       }
@@ -744,7 +758,7 @@ class KubernetesService {
       // Find a running pod from the deployment
       const deploymentName = environment.kubernetesPodName;
       const namespace = environment.kubernetesNamespace;
-      
+
       const podsResponse = await client.coreV1Api.listNamespacedPod(
         namespace,
         undefined,
@@ -754,9 +768,7 @@ class KubernetesService {
         `app=${deploymentName}`
       );
 
-      const runningPods = podsResponse.body.items.filter(
-        pod => pod.status?.phase === 'Running'
-      );
+      const runningPods = podsResponse.body.items.filter(pod => pod.status?.phase === 'Running');
 
       if (runningPods.length === 0) {
         return { success: false, error: 'No running pods found for environment' };
@@ -1082,8 +1094,6 @@ class KubernetesService {
     logger.debug('ConfigMap created', { namespace, configMapName });
   }
 
-
-
   /**
    * Create deployment for environment
    */
@@ -1100,8 +1110,15 @@ class KubernetesService {
       configMapName: string;
     }
   ): Promise<V1Deployment> {
-    const { deploymentName, dockerImage, port, resources, environmentVariables, pvcName, configMapName } =
-      options;
+    const {
+      deploymentName,
+      dockerImage,
+      port,
+      resources,
+      environmentVariables,
+      pvcName,
+      configMapName,
+    } = options;
 
     const deployment: V1Deployment = {
       metadata: {
@@ -1259,7 +1276,12 @@ class KubernetesService {
     };
 
     const response = await client.coreV1Api.createNamespacedService(namespace, service);
-    logger.debug('Service created for deployment', { namespace, serviceName, deploymentName, port });
+    logger.debug('Service created for deployment', {
+      namespace,
+      serviceName,
+      deploymentName,
+      port,
+    });
     return response.body;
   }
 

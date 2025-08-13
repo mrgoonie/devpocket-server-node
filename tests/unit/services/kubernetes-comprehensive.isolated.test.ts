@@ -11,7 +11,7 @@ jest.mock('@/services/kubernetes', () => {
     executeCommand: jest.fn(),
     getEnvironmentLogs: jest.fn(),
   };
-  
+
   return {
     kubernetesService: mockService,
     default: mockService,
@@ -185,8 +185,9 @@ describe('KubernetesService - Comprehensive Test Coverage', () => {
       for (const error of errors) {
         kubernetesService.createEnvironment.mockRejectedValue(error);
 
-        await expect(kubernetesService.createEnvironment(mockOptions))
-          .rejects.toThrow(error.message);
+        await expect(kubernetesService.createEnvironment(mockOptions)).rejects.toThrow(
+          error.message
+        );
       }
     });
 
@@ -195,18 +196,19 @@ describe('KubernetesService - Comprehensive Test Coverage', () => {
 
       // Test start failure
       kubernetesService.startEnvironment.mockRejectedValue(new Error('Deployment scaling failed'));
-      await expect(kubernetesService.startEnvironment(envId))
-        .rejects.toThrow('Deployment scaling failed');
+      await expect(kubernetesService.startEnvironment(envId)).rejects.toThrow(
+        'Deployment scaling failed'
+      );
 
       // Test stop failure
       kubernetesService.stopEnvironment.mockRejectedValue(new Error('Deployment not found'));
-      await expect(kubernetesService.stopEnvironment(envId))
-        .rejects.toThrow('Deployment not found');
+      await expect(kubernetesService.stopEnvironment(envId)).rejects.toThrow(
+        'Deployment not found'
+      );
 
       // Test delete with partial failures (should not throw)
       kubernetesService.deleteEnvironment.mockResolvedValue(undefined);
-      await expect(kubernetesService.deleteEnvironment(envId))
-        .resolves.not.toThrow();
+      await expect(kubernetesService.deleteEnvironment(envId)).resolves.not.toThrow();
     });
 
     it('should test command execution failures', async () => {
@@ -234,7 +236,7 @@ describe('KubernetesService - Comprehensive Test Coverage', () => {
       // 2. PVC and ConfigMap in parallel
       // 3. Deployment (not Pod)
       // 4. Service
-      
+
       const mockOptions = {
         environmentId: 'env-deployment-test',
         userId: 'user-test',
@@ -250,7 +252,7 @@ describe('KubernetesService - Comprehensive Test Coverage', () => {
         // Verify the service receives correct parameters
         expect(options.startupCommands).toEqual(['npm run build', 'npm start']);
         expect(options.environmentVariables.NODE_ENV).toBe('production');
-        
+
         return Promise.resolve({
           status: 'PROVISIONING',
           deploymentName: `env-${options.environmentId}`,
@@ -349,10 +351,13 @@ describe('KubernetesService - Comprehensive Test Coverage', () => {
       };
 
       // Mock creation failure that triggers cleanup
-      kubernetesService.createEnvironment.mockRejectedValue(new Error('Deployment creation failed'));
+      kubernetesService.createEnvironment.mockRejectedValue(
+        new Error('Deployment creation failed')
+      );
 
-      await expect(kubernetesService.createEnvironment(mockOptions))
-        .rejects.toThrow('Deployment creation failed');
+      await expect(kubernetesService.createEnvironment(mockOptions)).rejects.toThrow(
+        'Deployment creation failed'
+      );
 
       // In the real implementation, cleanup would be triggered automatically
       expect(kubernetesService.createEnvironment).toHaveBeenCalledWith(mockOptions);
@@ -432,12 +437,7 @@ describe('KubernetesService - Comprehensive Test Coverage', () => {
   describe('Integration Points', () => {
     it('should test WebSocket integration for command execution', async () => {
       const envId = 'env-websocket-test';
-      const commands = [
-        'cd /workspace',
-        'npm install',
-        'npm run test',
-        'ps aux',
-      ];
+      const commands = ['cd /workspace', 'npm install', 'npm run test', 'ps aux'];
 
       for (const command of commands) {
         kubernetesService.executeCommand.mockResolvedValue({
@@ -456,7 +456,7 @@ describe('KubernetesService - Comprehensive Test Coverage', () => {
     it('should test tmux session integration', async () => {
       // The service should support persistent tmux sessions
       const envId = 'env-tmux-test';
-      
+
       kubernetesService.executeCommand.mockImplementation((_id: any, command: any) => {
         if (command.includes('tmux')) {
           return Promise.resolve({

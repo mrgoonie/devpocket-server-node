@@ -24,7 +24,6 @@ describe('Health API', () => {
     });
   });
 
-
   describe('GET /health/live', () => {
     it('should return liveness status', async () => {
       const response = await request(app).get('/health/live').expect(200);

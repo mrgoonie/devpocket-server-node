@@ -52,7 +52,6 @@ router.get(
   })
 );
 
-
 /**
  * @swagger
  * /health/live:

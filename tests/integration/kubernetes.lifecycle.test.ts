@@ -72,7 +72,7 @@ jest.mock('@/config/logger', () => ({
     warn: jest.fn(),
     error: jest.fn(),
   },
-  serializeError: jest.fn().mockImplementation((error) => ({
+  serializeError: jest.fn().mockImplementation(error => ({
     name: error.name,
     message: error.message,
     stack: error.stack,
@@ -132,13 +132,13 @@ current-context: integration-context
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Clear service cache
     (kubernetesService as any).clients.clear();
     (kubernetesService as any).kubeConfigs.clear();
 
     // Setup default mocks
-    mockKubeConfig.makeApiClient.mockImplementation((ApiClient) => {
+    mockKubeConfig.makeApiClient.mockImplementation(ApiClient => {
       if (ApiClient.name === 'CoreV1Api') return mockCoreV1Api;
       if (ApiClient.name === 'AppsV1Api') return mockAppsV1Api;
       return {};
@@ -395,9 +395,9 @@ current-context: integration-context
       mockCoreV1Api.deleteNamespacedConfigMap.mockResolvedValueOnce({ body: {} });
 
       // Attempt creation (should fail)
-      await expect(
-        kubernetesService.createEnvironment(environmentOptions)
-      ).rejects.toThrow(KubernetesError);
+      await expect(kubernetesService.createEnvironment(environmentOptions)).rejects.toThrow(
+        KubernetesError
+      );
 
       // Verify cleanup was attempted
       expect(mockCoreV1Api.deleteNamespacedPersistentVolumeClaim).toHaveBeenCalledWith(
@@ -482,12 +482,18 @@ current-context: integration-context
 
       // Mock Exec constructor and execution
       const mockExecInstance = {
-        exec: jest.fn().mockImplementation((namespace, pod, container, command, stdout, stderr, stdin, tty, callback) => {
-          callback({ status: 'Success' });
-        }),
+        exec: jest
+          .fn()
+          .mockImplementation(
+            (namespace, pod, container, command, stdout, stderr, stdin, tty, callback) => {
+              callback({ status: 'Success' });
+            }
+          ),
       };
-      
-      (require('@kubernetes/client-node').Exec as jest.Mock).mockImplementation(() => mockExecInstance);
+
+      (require('@kubernetes/client-node').Exec as jest.Mock).mockImplementation(
+        () => mockExecInstance
+      );
 
       const result = await kubernetesService.executeCommand(testEnvironment.id, 'ps aux');
 
@@ -511,25 +517,25 @@ current-context: integration-context
       // Mock successful operations
       mockCoreV1Api.readNamespace.mockRejectedValueOnce(new Error('Namespace not found'));
       mockCoreV1Api.createNamespace.mockResolvedValueOnce({ body: {} });
-      
+
       // Track call order using resolved promises
       const callOrder: string[] = [];
-      
+
       mockCoreV1Api.createNamespacedPersistentVolumeClaim.mockImplementation(async () => {
         callOrder.push('pvc');
         return { body: {} };
       });
-      
+
       mockCoreV1Api.createNamespacedConfigMap.mockImplementation(async () => {
         callOrder.push('configmap');
         return { body: {} };
       });
-      
+
       mockAppsV1Api.createNamespacedDeployment.mockImplementation(async () => {
         callOrder.push('deployment');
         return { body: {} };
       });
-      
+
       mockCoreV1Api.createNamespacedService.mockImplementation(async () => {
         callOrder.push('service');
         return { body: {} };
@@ -558,12 +564,12 @@ current-context: integration-context
       // Mock namespace creation success
       mockCoreV1Api.readNamespace.mockRejectedValueOnce(new Error('Namespace not found'));
       mockCoreV1Api.createNamespace.mockResolvedValueOnce({ body: {} });
-      
+
       // Make PVC creation fail
       mockCoreV1Api.createNamespacedPersistentVolumeClaim.mockRejectedValueOnce(
         new Error('Storage quota exceeded')
       );
-      
+
       // ConfigMap creation should still be attempted
       mockCoreV1Api.createNamespacedConfigMap.mockResolvedValueOnce({ body: {} });
 
@@ -573,9 +579,9 @@ current-context: integration-context
       mockCoreV1Api.deleteNamespacedPersistentVolumeClaim.mockResolvedValueOnce({ body: {} });
       mockCoreV1Api.deleteNamespacedConfigMap.mockResolvedValueOnce({ body: {} });
 
-      await expect(
-        kubernetesService.createEnvironment(environmentOptions)
-      ).rejects.toThrow(/Storage quota exceeded/);
+      await expect(kubernetesService.createEnvironment(environmentOptions)).rejects.toThrow(
+        /Storage quota exceeded/
+      );
 
       // Verify both operations were attempted
       expect(mockCoreV1Api.createNamespacedPersistentVolumeClaim).toHaveBeenCalled();
@@ -610,9 +616,9 @@ current-context: integration-context
     it('should handle authentication errors without retry', async () => {
       mockCoreV1Api.readNamespace.mockRejectedValue(new Error('authentication failed'));
 
-      await expect(
-        kubernetesService.createEnvironment(environmentOptions)
-      ).rejects.toThrow(KubernetesError);
+      await expect(kubernetesService.createEnvironment(environmentOptions)).rejects.toThrow(
+        KubernetesError
+      );
 
       // Should not retry authentication failures
       expect(mockCoreV1Api.readNamespace).toHaveBeenCalledTimes(1);
