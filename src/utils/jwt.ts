@@ -158,6 +158,6 @@ export function generateTokens(userId: string): TokenPair {
   return jwtService.generateTokenPair({ userId });
 }
 
-export async function verifyToken(token: string): Promise<JwtPayload> {
+export function verifyToken(token: string): JwtPayload {
   return jwtService.verifyToken(token);
 }

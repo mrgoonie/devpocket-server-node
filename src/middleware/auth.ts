@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '@/config/database';
-import jwtService, { JwtPayload } from '@/utils/jwt';
+import jwtService, { JwtPayload, TokenType } from '@/utils/jwt';
 import logger from '@/config/logger';
 
 // Extend Express Request type to include user
@@ -64,7 +64,7 @@ export const authenticate = async (
     }
 
     // Check if it's an access token
-    if (payload.type !== 'access') {
+    if (payload.type !== TokenType.ACCESS) {
       res.status(401).json({
         error: 'Unauthorized',
         message: 'Invalid token type',
@@ -162,7 +162,7 @@ export const optionalAuthenticate = async (
     try {
       const payload = jwtService.verifyToken(token);
 
-      if (payload.type === 'access') {
+      if (payload.type === TokenType.ACCESS) {
         const user = await prisma.user.findUnique({
           where: { id: payload.userId },
           select: {
