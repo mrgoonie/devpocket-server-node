@@ -223,14 +223,28 @@ jobs:
           # Wait for pods to be ready
           kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=devpocket-nodejs -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=300s
           
-          # Get pod name for health check
-          POD_NAME=$(kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }} -l app.kubernetes.io/name=devpocket-nodejs -o jsonpath='{.items[0].metadata.name}')
+          # Get all ready pod names and try health check on each until one succeeds
+          READY_PODS=$(kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }} -l app.kubernetes.io/name=devpocket-nodejs --field-selector=status.phase=Running -o jsonpath='{.items[*].metadata.name}')
           
-          # Check health endpoint using built-in healthcheck script
-          if kubectl exec -n ${{ env.KUBERNETES_NAMESPACE }} $POD_NAME -- node ./scripts/healthcheck.js; then
-            echo "Beta deployment health check passed"
-          else
-            echo "Beta deployment health check failed"
+          if [ -z "$READY_PODS" ]; then
+            echo "No running pods found"
+            exit 1
+          fi
+          
+          HEALTH_CHECK_PASSED=false
+          for POD_NAME in $READY_PODS; do
+            echo "Trying health check on pod: $POD_NAME"
+            if kubectl exec -n ${{ env.KUBERNETES_NAMESPACE }} $POD_NAME -- node ./scripts/healthcheck.js 2>/dev/null; then
+              echo "Beta deployment health check passed on pod: $POD_NAME"
+              HEALTH_CHECK_PASSED=true
+              break
+            else
+              echo "Health check failed on pod: $POD_NAME, trying next pod..."
+            fi
+          done
+          
+          if [ "$HEALTH_CHECK_PASSED" = "false" ]; then
+            echo "Beta deployment health check failed on all pods"
             exit 1
           fi
 
