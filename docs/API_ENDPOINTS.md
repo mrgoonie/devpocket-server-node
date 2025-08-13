@@ -128,11 +128,13 @@ Delete current user account
 ## Environments API
 
 ### POST /api/v1/environments
-Create a new development environment
+Create a new development environment using Kubernetes Deployments
 - **Authentication:** Required
 - **Body:** Environment creation data (name, template_id, etc.)
-- **Returns:** Created environment object
+- **Returns:** Created environment object with "creating" status
 - **Status:** 201 Created
+- **Architecture:** Uses Kubernetes Deployments for self-healing capabilities
+- **Provisioning:** Parallel resource creation for faster deployment (PVC, ConfigMap, Deployment, Service)
 
 ### GET /api/v1/environments
 List user's environments
@@ -160,16 +162,20 @@ Delete an environment
 - **Status:** 204 No Content
 
 ### POST /api/v1/environments/{environment_id}/start
-Start an environment
+Start an environment by scaling Deployment to 1 replica
 - **Authentication:** Required
 - **Returns:** Success message
 - **Note:** Environment must be in stopped state
+- **Mechanism:** Uses Kubernetes Deployment scaling (0→1 replicas) for fast startup
+- **Benefits:** Preserves configuration, faster than pod recreation, automatic restart on failure
 
 ### POST /api/v1/environments/{environment_id}/stop
-Stop an environment
+Stop an environment by scaling Deployment to 0 replicas
 - **Authentication:** Required
 - **Returns:** Success message
 - **Note:** Environment must be in running state
+- **Mechanism:** Uses Kubernetes Deployment scaling (1→0 replicas) for graceful shutdown
+- **Benefits:** Preserves Deployment configuration and persistent storage for quick restart
 
 ### POST /api/v1/environments/{environment_id}/restart
 Restart an environment
@@ -366,8 +372,8 @@ The system includes these default templates:
   "environment_variables": {},
   "installation_completed": true,
   "kubernetes_namespace": "devpocket-user-123",
-  "kubernetes_pod_name": "env-abc123",
-  "kubernetes_service_name": "env-abc123-svc",
+  "kubernetes_deployment_name": "env-abc123",
+  "kubernetes_service_name": "svc-abc123",
   "cpu_usage": 0.25,
   "memory_usage": 0.45,
   "storage_usage": 0.10,

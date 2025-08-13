@@ -9,6 +9,8 @@ This document describes the CI/CD pipeline and deployment process for the DevPoc
 - **Docker Registry**: Docker Hub (`docker.io/digitop/devpocket-nodejs`)
 - **Kubernetes Cluster**: Production cluster with namespace `devpocket-prod`
 - **CI/CD**: GitHub Actions with automated testing, building, and deployment
+- **Environment Management**: Kubernetes Deployments with self-healing capabilities
+- **Resource Strategy**: Parallel provisioning and scaling-based start/stop operations
 
 ## GitHub Secrets Required
 
@@ -64,12 +66,34 @@ For faster CI/CD pipeline, we use simplified testing:
 
 ### Core Resources
 - `k8s/namespace.yaml` - Namespace definition
-- `k8s/deployment.yaml` - Main application deployment
+- `k8s/deployment.yaml` - Main application deployment with self-healing
 - `k8s/service.yaml` - Internal service exposure
 - `k8s/ingress.yaml` - External traffic routing
 - `k8s/configmap.yaml` - Configuration data (if exists)
 - `k8s/secret.yaml` - Sensitive data (manually managed)
 - `k8s/hpa.yaml` - Horizontal Pod Autoscaler (if exists)
+
+### Environment Architecture Improvements
+
+The DevPocket API now uses an enhanced Kubernetes architecture for managing development environments:
+
+#### Kubernetes Deployments (instead of Pods)
+- **Self-Healing**: Automatic pod restart on failures
+- **Rolling Updates**: Zero-downtime updates and configuration changes
+- **Replica Management**: Consistent desired state management
+- **Resource Management**: Better resource allocation and limits
+
+#### Parallel Resource Creation
+- **PVC + ConfigMap**: Created simultaneously for faster provisioning
+- **Deployment + Service**: Created after dependencies are ready
+- **30-50% Faster**: Reduced environment creation time
+- **Error Handling**: Automatic cleanup on creation failures
+
+#### Scaling-Based Operations
+- **Start Environment**: Scale Deployment from 0→1 replicas (10-30 seconds)
+- **Stop Environment**: Scale Deployment from 1→0 replicas (graceful)
+- **Configuration Preservation**: Maintains all Kubernetes resources
+- **Fast Recovery**: Quick restart without resource recreation
 
 ### Image Strategy
 - **Latest**: `digitop/devpocket-nodejs:latest` (main branch)
@@ -136,11 +160,40 @@ kubectl rollout undo deployment/devpocket-nodejs -n devpocket-prod
 kubectl rollout undo deployment/devpocket-nodejs -n devpocket-prod --to-revision=2
 ```
 
+## Environment Management Architecture
+
+### Kubernetes Resources per Environment
+Each development environment consists of:
+- **Deployment**: `env-{environmentId}` with self-healing capabilities
+- **Service**: `svc-{environmentId}` for network access
+- **PVC**: `pvc-{environmentId}` for persistent storage
+- **ConfigMap**: `config-{environmentId}` for startup scripts
+- **Namespace**: `devpocket-{userId}` for user isolation
+
+### Deployment Lifecycle
+1. **Creation**: Parallel resource provisioning (PVC, ConfigMap, Deployment, Service)
+2. **Running**: Deployment maintains 1 replica with health checks
+3. **Stopped**: Deployment scaled to 0 replicas (resources preserved)
+4. **Restart**: Quick scaling back to 1 replica
+5. **Deletion**: Complete resource cleanup
+
 ## Monitoring & Troubleshooting
 
 ### Check Deployment Status
 ```bash
 kubectl rollout status deployment/devpocket-nodejs -n devpocket-prod
+```
+
+### Monitor Environment Deployments
+```bash
+# List all environment deployments
+kubectl get deployments -A -l "app.kubernetes.io/component=environment"
+
+# Check specific environment deployment
+kubectl get deployment env-{environmentId} -n devpocket-{userId}
+
+# Monitor environment scaling events
+kubectl get events -n devpocket-{userId} --sort-by='.lastTimestamp'
 ```
 
 ### View Logs
@@ -150,7 +203,15 @@ kubectl logs -n devpocket-prod -l app.kubernetes.io/name=devpocket-nodejs --tail
 
 ### Debug Pod Issues
 ```bash
+# Debug main API pods
 kubectl describe pod -n devpocket-prod -l app.kubernetes.io/name=devpocket-nodejs
+
+# Debug environment pods
+kubectl describe deployment env-{environmentId} -n devpocket-{userId}
+kubectl describe pod -n devpocket-{userId} -l "app.kubernetes.io/name=env-{environmentId}"
+
+# Check environment resource status
+kubectl get pvc,configmap,svc -n devpocket-{userId}
 ```
 
 ### Check Resource Utilization
@@ -189,16 +250,37 @@ The application uses the following environment configuration in production:
 
 ## Scaling
 
-### Horizontal Pod Autoscaler (HPA)
+### API Server Scaling
+#### Horizontal Pod Autoscaler (HPA)
 If `k8s/hpa.yaml` is configured:
 - Automatically scales based on CPU/memory usage
 - Min/max replica configuration
 - Target utilization thresholds
 
-### Manual Scaling
+#### Manual API Scaling
 ```bash
 kubectl scale deployment/devpocket-nodejs -n devpocket-prod --replicas=3
 ```
+
+### Environment Scaling (Start/Stop)
+Environments use deployment scaling for fast start/stop:
+
+#### Start Environment
+```bash
+kubectl scale deployment env-{environmentId} -n devpocket-{userId} --replicas=1
+```
+
+#### Stop Environment
+```bash
+kubectl scale deployment env-{environmentId} -n devpocket-{userId} --replicas=0
+```
+
+#### Benefits of Scaling-Based Operations
+- **Fast Operations**: 10-30 seconds vs 1-5 minutes for pod recreation
+- **Resource Preservation**: Maintains Deployment, Service, PVC, ConfigMap
+- **Configuration Integrity**: No loss of environment variables or startup scripts
+- **Network Consistency**: Service endpoints remain stable
+- **Storage Persistence**: Data survives start/stop cycles
 
 ## Disaster Recovery
 

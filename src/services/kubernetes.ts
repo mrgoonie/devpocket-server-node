@@ -5,6 +5,7 @@ import {
   BatchV1Api,
   Exec,
   V1Pod,
+  V1Deployment,
   V1Service,
   V1ConfigMap,
   V1PersistentVolumeClaim,
@@ -39,7 +40,7 @@ interface EnvironmentCreateOptions {
 
 interface EnvironmentInfo {
   status: string;
-  podName?: string;
+  deploymentName?: string;
   serviceName?: string;
   namespace: string;
   internalUrl?: string;
@@ -279,36 +280,39 @@ class KubernetesService {
 
       const client = await this.getKubernetesClient(environment.clusterId);
       const namespace = `devpocket-${userId}`;
-      const podName = `env-${environmentId}`;
+      const deploymentName = `env-${environmentId}`;
       const serviceName = `svc-${environmentId}`;
       const pvcName = `pvc-${environmentId}`;
       const configMapName = `config-${environmentId}`;
 
-      // Ensure namespace exists
+      // Ensure namespace exists first
       await this.retryOperation(() => this.ensureNamespace(client, namespace), 'Create namespace', {
         environmentId,
         namespace,
       });
 
-      // Create persistent volume claim for workspace storage
-      await this.retryOperation(
-        () => this.createPersistentVolumeClaim(client, namespace, pvcName, resources.storage),
-        'Create PVC',
-        { environmentId, pvcName, storage: resources.storage }
-      );
+      // Create resources in parallel where safe
+      const resourceCreationTasks = [
+        this.retryOperation(
+          () => this.createPersistentVolumeClaim(client, namespace, pvcName, resources.storage),
+          'Create PVC',
+          { environmentId, pvcName, storage: resources.storage }
+        ),
+        this.retryOperation(
+          () => this.createConfigMap(client, namespace, configMapName, startupCommands),
+          'Create ConfigMap',
+          { environmentId, configMapName }
+        ),
+      ];
 
-      // Create ConfigMap with startup scripts
-      await this.retryOperation(
-        () => this.createConfigMap(client, namespace, configMapName, startupCommands),
-        'Create ConfigMap',
-        { environmentId, configMapName }
-      );
+      // Wait for PVC and ConfigMap creation
+      await Promise.all(resourceCreationTasks);
 
-      // Create pod for the environment
+      // Create deployment after dependencies are ready
       await this.retryOperation(
         () =>
-          this.createPod(client, namespace, {
-            podName,
+          this.createDeployment(client, namespace, {
+            deploymentName,
             dockerImage,
             port,
             resources,
@@ -316,13 +320,13 @@ class KubernetesService {
             pvcName,
             configMapName,
           }),
-        'Create Pod',
-        { environmentId, podName, dockerImage }
+        'Create Deployment',
+        { environmentId, deploymentName, dockerImage }
       );
 
-      // Create service to expose the pod
+      // Create service for the deployment
       await this.retryOperation(
-        () => this.createService(client, namespace, serviceName, podName, port),
+        () => this.createServiceForDeployment(client, namespace, serviceName, deploymentName, port),
         'Create Service',
         { environmentId, serviceName, port }
       );
@@ -333,22 +337,22 @@ class KubernetesService {
         data: {
           status: 'PROVISIONING',
           kubernetesNamespace: namespace,
-          kubernetesPodName: podName,
+          kubernetesPodName: deploymentName, // Store deployment name in existing field for backward compatibility
           kubernetesServiceName: serviceName,
           externalUrl: `http://${serviceName}.${namespace}.svc.cluster.local:${port}`,
         },
       });
 
-      logger.info('Environment created in Kubernetes', {
+      logger.info('Environment created in Kubernetes with Deployment', {
         environmentId,
         namespace,
-        podName,
+        deploymentName,
         serviceName,
       });
 
       return {
         status: 'PROVISIONING',
-        podName,
+        deploymentName,
         serviceName,
         namespace,
         internalUrl: `http://${serviceName}.${namespace}.svc.cluster.local:${port}`,
@@ -366,6 +370,16 @@ class KubernetesService {
         userId,
         error: errorDetails,
       });
+
+      // Cleanup on failure - delete any created resources
+      try {
+        await this.cleanupFailedEnvironment(environmentId, userId);
+      } catch (cleanupError) {
+        logger.error('Failed to cleanup after environment creation failure', {
+          environmentId,
+          cleanupError: serializeError(cleanupError),
+        });
+      }
 
       // Update environment status to error
       try {
@@ -401,7 +415,7 @@ class KubernetesService {
         select: {
           clusterId: true,
           kubernetesNamespace: true,
-          kubernetesPodName: true,
+          kubernetesPodName: true, // This now stores the deployment name for backward compatibility
           kubernetesServiceName: true,
         },
       });
@@ -411,34 +425,62 @@ class KubernetesService {
       }
 
       const client = await this.getKubernetesClient(environment.clusterId);
-      const { kubernetesNamespace: namespace, kubernetesPodName: podName } = environment;
+      const { kubernetesNamespace: namespace, kubernetesPodName: deploymentName } = environment;
 
-      // Get pod status
-      const podResponse = await client.coreV1Api.readNamespacedPod(podName, namespace);
-      const pod = podResponse.body;
+      // Get deployment status
+      const deploymentResponse = await client.appsV1Api.readNamespacedDeployment(deploymentName, namespace);
+      const deployment = deploymentResponse.body;
 
       let status = 'UNKNOWN';
-      if (pod.status?.phase === 'Running') {
+      const readyReplicas = deployment.status?.readyReplicas || 0;
+      const replicas = deployment.spec?.replicas || 1;
+
+      if (readyReplicas === replicas && readyReplicas > 0) {
         status = 'RUNNING';
-      } else if (pod.status?.phase === 'Pending') {
+      } else if (deployment.status?.conditions?.some(c => c.type === 'Progressing' && c.status === 'True')) {
         status = 'PROVISIONING';
-      } else if (pod.status?.phase === 'Failed') {
-        status = 'ERROR';
-      } else if (pod.status?.phase === 'Succeeded') {
+      } else if (readyReplicas === 0) {
         status = 'STOPPED';
+      } else {
+        status = 'ERROR';
       }
 
-      // Get resource usage (simplified - in production use metrics-server)
-      const cpuUsage = this.extractCpuUsage(pod);
-      const memoryUsage = this.extractMemoryUsage(pod);
+      // Get a sample pod for resource usage (simplified - in production use metrics-server)
+      let cpuUsage: number | undefined;
+      let memoryUsage: number | undefined;
+
+      try {
+        const podsResponse = await client.coreV1Api.listNamespacedPod(
+          namespace,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          `app=${deploymentName}`
+        );
+        
+        if (podsResponse.body.items.length > 0) {
+          const samplePod = podsResponse.body.items[0];
+          if (samplePod) {
+            cpuUsage = this.extractCpuUsage(samplePod);
+            memoryUsage = this.extractMemoryUsage(samplePod);
+          }
+        }
+      } catch (podError) {
+        logger.debug('Failed to get pod metrics for deployment', {
+          deploymentName,
+          namespace,
+          error: podError instanceof Error ? podError.message : 'Unknown error',
+        });
+      }
 
       return {
         status,
-        podName,
+        deploymentName,
         serviceName: environment.kubernetesServiceName || '',
         namespace,
-        cpuUsage,
-        memoryUsage,
+        cpuUsage: cpuUsage || 0,
+        memoryUsage: memoryUsage || 0,
       };
     } catch (error) {
       logger.error('Failed to get environment info from Kubernetes', {
@@ -463,7 +505,7 @@ class KubernetesService {
         select: {
           clusterId: true,
           kubernetesNamespace: true,
-          kubernetesPodName: true,
+          kubernetesPodName: true, // This now stores the deployment name
         },
       });
 
@@ -472,12 +514,28 @@ class KubernetesService {
       }
 
       const client = await this.getKubernetesClient(environment.clusterId);
+      const deploymentName = environment.kubernetesPodName;
+      const namespace = environment.kubernetesNamespace;
 
-      // For simplicity, we'll restart the pod by deleting it
-      // Kubernetes will recreate it automatically if it's managed by a deployment
-      await client.coreV1Api.deleteNamespacedPod(
-        environment.kubernetesPodName,
-        environment.kubernetesNamespace
+      // Scale up the deployment to 1 replica
+      const patch = [
+        {
+          op: 'replace',
+          path: '/spec/replicas',
+          value: 1,
+        },
+      ];
+
+      await client.appsV1Api.patchNamespacedDeployment(
+        deploymentName,
+        namespace,
+        patch,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { headers: { 'Content-Type': 'application/json-patch+json' } }
       );
 
       await prisma.environment.update({
@@ -485,7 +543,7 @@ class KubernetesService {
         data: { status: 'RUNNING' },
       });
 
-      logger.info('Environment start initiated', { environmentId });
+      logger.info('Environment start initiated (scaled up deployment)', { environmentId, deploymentName });
     } catch (error) {
       logger.error('Failed to start environment', {
         environmentId,
@@ -511,7 +569,7 @@ class KubernetesService {
         select: {
           clusterId: true,
           kubernetesNamespace: true,
-          kubernetesPodName: true,
+          kubernetesPodName: true, // This now stores the deployment name
         },
       });
 
@@ -520,11 +578,28 @@ class KubernetesService {
       }
 
       const client = await this.getKubernetesClient(environment.clusterId);
+      const deploymentName = environment.kubernetesPodName;
+      const namespace = environment.kubernetesNamespace;
 
-      // Scale down by deleting the pod
-      await client.coreV1Api.deleteNamespacedPod(
-        environment.kubernetesPodName,
-        environment.kubernetesNamespace
+      // Scale down the deployment to 0 replicas
+      const patch = [
+        {
+          op: 'replace',
+          path: '/spec/replicas',
+          value: 0,
+        },
+      ];
+
+      await client.appsV1Api.patchNamespacedDeployment(
+        deploymentName,
+        namespace,
+        patch,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { headers: { 'Content-Type': 'application/json-patch+json' } }
       );
 
       await prisma.environment.update({
@@ -532,7 +607,7 @@ class KubernetesService {
         data: { status: 'STOPPING' },
       });
 
-      logger.info('Environment stop initiated', { environmentId });
+      logger.info('Environment stop initiated (scaled down deployment)', { environmentId, deploymentName });
     } catch (error) {
       logger.error('Failed to stop environment', {
         environmentId,
@@ -558,7 +633,7 @@ class KubernetesService {
         select: {
           clusterId: true,
           kubernetesNamespace: true,
-          kubernetesPodName: true,
+          kubernetesPodName: true, // This now stores the deployment name
           kubernetesServiceName: true,
         },
       });
@@ -571,20 +646,22 @@ class KubernetesService {
       const client = await this.getKubernetesClient(environment.clusterId);
       const { kubernetesNamespace: namespace } = environment;
 
-      // Delete all resources associated with this environment
+      // Delete all resources associated with this environment in parallel
       const resourceCleanup = [];
 
       if (environment.kubernetesPodName) {
+        // Delete deployment
         resourceCleanup.push(
-          client.coreV1Api
-            .deleteNamespacedPod(environment.kubernetesPodName, namespace)
+          client.appsV1Api
+            .deleteNamespacedDeployment(environment.kubernetesPodName, namespace)
             .catch((err: unknown) =>
-              logger.warn('Failed to delete pod', { pod: environment.kubernetesPodName, err })
+              logger.warn('Failed to delete deployment', { deployment: environment.kubernetesPodName, err })
             )
         );
       }
 
       if (environment.kubernetesServiceName) {
+        // Delete service
         resourceCleanup.push(
           client.coreV1Api
             .deleteNamespacedService(environment.kubernetesServiceName, namespace)
@@ -612,6 +689,7 @@ class KubernetesService {
           )
       );
 
+      // Execute all deletions in parallel
       await Promise.allSettled(resourceCleanup);
 
       await prisma.environment.update({
@@ -619,7 +697,7 @@ class KubernetesService {
         data: { status: 'TERMINATED' },
       });
 
-      logger.info('Environment deleted from Kubernetes', { environmentId });
+      logger.info('Environment deleted from Kubernetes (deployment-based)', { environmentId });
     } catch (error) {
       logger.error('Failed to delete environment from Kubernetes', {
         environmentId,
@@ -649,7 +727,7 @@ class KubernetesService {
         select: {
           clusterId: true,
           kubernetesNamespace: true,
-          kubernetesPodName: true,
+          kubernetesPodName: true, // This now stores the deployment name
         },
       });
 
@@ -657,9 +735,38 @@ class KubernetesService {
         return { success: false, error: 'Environment not deployed' };
       }
 
+      const client = await this.getKubernetesClient(environment.clusterId);
       const kc = this.kubeConfigs.get(environment.clusterId);
       if (!kc) {
         return { success: false, error: 'Cluster not available' };
+      }
+
+      // Find a running pod from the deployment
+      const deploymentName = environment.kubernetesPodName;
+      const namespace = environment.kubernetesNamespace;
+      
+      const podsResponse = await client.coreV1Api.listNamespacedPod(
+        namespace,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        `app=${deploymentName}`
+      );
+
+      const runningPods = podsResponse.body.items.filter(
+        pod => pod.status?.phase === 'Running'
+      );
+
+      if (runningPods.length === 0) {
+        return { success: false, error: 'No running pods found for environment' };
+      }
+
+      // Use the first running pod
+      const firstPod = runningPods[0];
+      const podName = firstPod?.metadata?.name;
+      if (!podName) {
+        return { success: false, error: 'Pod name not found' };
       }
 
       const exec = new Exec(kc);
@@ -669,8 +776,8 @@ class KubernetesService {
         const error = '';
 
         exec.exec(
-          environment.kubernetesNamespace!,
-          environment.kubernetesPodName!,
+          namespace,
+          podName,
           'devpocket', // container name
           ['/bin/bash', '-c', command],
           process.stdout,
@@ -717,7 +824,7 @@ class KubernetesService {
         select: {
           clusterId: true,
           kubernetesNamespace: true,
-          kubernetesPodName: true,
+          kubernetesPodName: true, // This now stores the deployment name
         },
       });
 
@@ -726,10 +833,33 @@ class KubernetesService {
       }
 
       const client = await this.getKubernetesClient(environment.clusterId);
+      const deploymentName = environment.kubernetesPodName;
+      const namespace = environment.kubernetesNamespace;
+
+      // Find pods from the deployment
+      const podsResponse = await client.coreV1Api.listNamespacedPod(
+        namespace,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        `app=${deploymentName}`
+      );
+
+      if (podsResponse.body.items.length === 0) {
+        return 'No pods found for environment';
+      }
+
+      // Get logs from the first available pod
+      const firstPod = podsResponse.body.items[0];
+      const podName = firstPod?.metadata?.name;
+      if (!podName) {
+        return 'Pod name not found';
+      }
 
       const logsResponse = await client.coreV1Api.readNamespacedPodLog(
-        environment.kubernetesPodName,
-        environment.kubernetesNamespace,
+        podName,
+        namespace,
         'devpocket', // container name
         follow,
         undefined, // limitBytes
@@ -952,11 +1082,16 @@ class KubernetesService {
     logger.debug('ConfigMap created', { namespace, configMapName });
   }
 
-  private async createPod(
+
+
+  /**
+   * Create deployment for environment
+   */
+  private async createDeployment(
     client: KubernetesClient,
     namespace: string,
     options: {
-      podName: string;
+      deploymentName: string;
       dockerImage: string;
       port: number;
       resources: { cpu: string; memory: string; storage: string };
@@ -964,105 +1099,134 @@ class KubernetesService {
       pvcName: string;
       configMapName: string;
     }
-  ): Promise<V1Pod> {
-    const { podName, dockerImage, port, resources, environmentVariables, pvcName, configMapName } =
+  ): Promise<V1Deployment> {
+    const { deploymentName, dockerImage, port, resources, environmentVariables, pvcName, configMapName } =
       options;
 
-    const pod: V1Pod = {
+    const deployment: V1Deployment = {
       metadata: {
-        name: podName,
+        name: deploymentName,
         namespace,
         labels: {
           'app.kubernetes.io/name': 'devpocket',
           'app.kubernetes.io/component': 'environment',
-          'devpocket.io/environment': podName,
+          'devpocket.io/environment': deploymentName,
+          app: deploymentName, // For service selector
         },
       },
       spec: {
-        containers: [
-          {
-            name: 'devpocket',
-            image: dockerImage,
-            command: ['/bin/bash', '/config/startup.sh'],
-            ports: [
+        replicas: 1,
+        selector: {
+          matchLabels: {
+            app: deploymentName,
+          },
+        },
+        template: {
+          metadata: {
+            labels: {
+              'app.kubernetes.io/name': 'devpocket',
+              'app.kubernetes.io/component': 'environment',
+              'devpocket.io/environment': deploymentName,
+              app: deploymentName,
+            },
+          },
+          spec: {
+            containers: [
               {
-                containerPort: port,
-                name: 'app-port',
-              },
-              {
-                containerPort: 22,
-                name: 'ssh',
+                name: 'devpocket',
+                image: dockerImage,
+                command: ['/bin/bash', '/config/startup.sh'],
+                ports: [
+                  {
+                    containerPort: port,
+                    name: 'app-port',
+                  },
+                  {
+                    containerPort: 22,
+                    name: 'ssh',
+                  },
+                ],
+                env: Object.entries(environmentVariables).map(([name, value]) => ({
+                  name,
+                  value,
+                })),
+                resources: {
+                  requests: {
+                    cpu: resources.cpu,
+                    memory: resources.memory,
+                  },
+                  limits: {
+                    cpu: resources.cpu,
+                    memory: resources.memory,
+                  },
+                },
+                volumeMounts: [
+                  {
+                    name: 'workspace',
+                    mountPath: '/home/devpocket/workspace',
+                  },
+                  {
+                    name: 'tmux-data',
+                    mountPath: '/home/devpocket/.tmux',
+                  },
+                  {
+                    name: 'startup-config',
+                    mountPath: '/config',
+                  },
+                ],
+                securityContext: {
+                  runAsUser: 0, // Start as root, then switch to devpocket user
+                  allowPrivilegeEscalation: true,
+                },
               },
             ],
-            env: Object.entries(environmentVariables).map(([name, value]) => ({
-              name,
-              value,
-            })),
-            resources: {
-              requests: {
-                cpu: resources.cpu,
-                memory: resources.memory,
-              },
-              limits: {
-                cpu: resources.cpu,
-                memory: resources.memory,
-              },
-            },
-            volumeMounts: [
+            volumes: [
               {
                 name: 'workspace',
-                mountPath: '/home/devpocket/workspace',
+                persistentVolumeClaim: {
+                  claimName: pvcName,
+                },
               },
               {
                 name: 'tmux-data',
-                mountPath: '/home/devpocket/.tmux',
+                persistentVolumeClaim: {
+                  claimName: pvcName,
+                },
               },
               {
                 name: 'startup-config',
-                mountPath: '/config',
+                configMap: {
+                  name: configMapName,
+                  defaultMode: 0o755,
+                },
               },
             ],
-            securityContext: {
-              runAsUser: 0, // Start as root, then switch to devpocket user
-              allowPrivilegeEscalation: true,
-            },
+            restartPolicy: 'Always',
           },
-        ],
-        volumes: [
-          {
-            name: 'workspace',
-            persistentVolumeClaim: {
-              claimName: pvcName,
-            },
+        },
+        strategy: {
+          type: 'RollingUpdate',
+          rollingUpdate: {
+            maxSurge: 1,
+            maxUnavailable: 0,
           },
-          {
-            name: 'tmux-data',
-            persistentVolumeClaim: {
-              claimName: pvcName,
-            },
-          },
-          {
-            name: 'startup-config',
-            configMap: {
-              name: configMapName,
-              defaultMode: 0o755,
-            },
-          },
-        ],
-        restartPolicy: 'Always',
+        },
       },
     };
 
-    const response = await client.coreV1Api.createNamespacedPod(namespace, pod);
-    logger.debug('Pod created', { namespace, podName, dockerImage });
+    const response = await client.appsV1Api.createNamespacedDeployment(namespace, deployment);
+    logger.debug('Deployment created', { namespace, deploymentName, dockerImage });
     return response.body;
   }
 
-  private async createService(
+  /**
+   * Create service for deployment (updated selector)
+   */
+  private async createServiceForDeployment(
     client: KubernetesClient,
     namespace: string,
     serviceName: string,
-    podName: string,
+    deploymentName: string,
     port: number
   ): Promise<V1Service> {
     const service: V1Service = {
@@ -1076,7 +1240,7 @@ class KubernetesService {
       },
       spec: {
         selector: {
-          'devpocket.io/environment': podName,
+          app: deploymentName, // Match deployment labels
         },
         ports: [
           {
@@ -1095,8 +1259,47 @@ class KubernetesService {
     };
 
     const response = await client.coreV1Api.createNamespacedService(namespace, service);
-    logger.debug('Service created', { namespace, serviceName, port });
+    logger.debug('Service created for deployment', { namespace, serviceName, deploymentName, port });
     return response.body;
+  }
+
+  /**
+   * Cleanup failed environment creation
+   */
+  private async cleanupFailedEnvironment(environmentId: string, userId: string): Promise<void> {
+    try {
+      const environment = await prisma.environment.findUnique({
+        where: { id: environmentId },
+        select: { clusterId: true },
+      });
+
+      if (!environment) {
+        return;
+      }
+
+      const client = await this.getKubernetesClient(environment.clusterId);
+      const namespace = `devpocket-${userId}`;
+      const deploymentName = `env-${environmentId}`;
+      const serviceName = `svc-${environmentId}`;
+      const pvcName = `pvc-${environmentId}`;
+      const configMapName = `config-${environmentId}`;
+
+      // Clean up all resources that might have been created
+      const cleanupPromises = [
+        client.appsV1Api.deleteNamespacedDeployment(deploymentName, namespace).catch(() => {}),
+        client.coreV1Api.deleteNamespacedService(serviceName, namespace).catch(() => {}),
+        client.coreV1Api.deleteNamespacedPersistentVolumeClaim(pvcName, namespace).catch(() => {}),
+        client.coreV1Api.deleteNamespacedConfigMap(configMapName, namespace).catch(() => {}),
+      ];
+
+      await Promise.allSettled(cleanupPromises);
+      logger.debug('Cleaned up failed environment resources', { environmentId, namespace });
+    } catch (error) {
+      logger.warn('Failed to cleanup environment resources', {
+        environmentId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
   }
 
   private extractCpuUsage(_pod: V1Pod): number {
